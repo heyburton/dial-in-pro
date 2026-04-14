@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dial-In Pro">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<title>Dial-In Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0a;--surface:#111111;--surface2:#1a1a1a;--border:#2a2a2a;--accent:#e8ff00;--accent2:#ff6b00;--text:#f0f0f0;--muted:#666;--success:#00ff88;--danger:#ff3333;--mono:'Share Tech Mono',monospace;--display:'Barlow Condensed',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--display);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:1000}
+header{border-bottom:2px solid var(--accent);padding:12px 20px;display:flex;align-items:baseline;justify-content:space-between;background:var(--surface)}
+header h1{font-size:2rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);line-height:1}
+header .hdr-right{display:flex;align-items:center;gap:10px}
+header span{font-family:var(--mono);font-size:.7rem;color:var(--muted);letter-spacing:.1em}
+.weather-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:6px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.weather-bar .wx-item{display:flex;align-items:center;gap:5px}
+.weather-bar .wx-val{color:var(--text)}
+.weather-bar .wx-status{margin-left:auto;display:flex;align-items:center;gap:6px}
+.wx-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.wx-dot.live{background:var(--success);box-shadow:0 0 6px var(--success)}
+.wx-dot.stale{background:var(--accent2)}
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-tab{font-family:var(--display);font-weight:700;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;padding:12px 14px;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .2s;margin-bottom:-1px;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.page{display:none;padding:20px;max-width:1100px;margin:0 auto}
+.page.active{display:block}
+.predict-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.predict-grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);padding:18px}
+.card-title{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.field{margin-bottom:12px}
+label{display:block;font-size:.7rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:.95rem;padding:8px 10px;outline:none;transition:border-color .2s;-webkit-appearance:none;border-radius:0}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--bg)}
+.btn{font-family:var(--display);font-weight:900;font-size:1rem;letter-spacing:.15em;text-transform:uppercase;padding:13px 24px;border:none;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:#000;width:100%;margin-top:6px}
+.btn-primary:hover,.btn-primary:active{background:#fff}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:transparent;color:var(--danger);border:1px solid var(--danger);font-size:.75rem;padding:5px 10px}
+.btn-sm{font-size:.75rem;padding:7px 14px;margin-top:0}
+.result-box{margin-top:18px;background:var(--surface);border:2px solid var(--accent);padding:24px;text-align:center;display:none}
+.result-label{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.result-distance{font-size:.8rem;letter-spacing:.2em;color:var(--accent2);text-transform:uppercase;margin-bottom:4px;font-weight:700}
+.result-et{font-family:var(--mono);font-size:3.8rem;color:var(--accent);line-height:1;letter-spacing:-.02em}
+.result-sub{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:8px;line-height:1.6}
+.result-splits{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.split-item{text-align:center}
+.split-val{font-family:var(--mono);font-size:1rem;color:var(--text)}
+.split-lbl{font-size:.6rem;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.no-data-msg{font-family:var(--mono);font-size:.8rem;color:var(--accent2);padding:14px;border:1px solid var(--accent2);background:rgba(255,107,0,.05);margin-top:14px}
+.log-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:700px){.log-form-grid{grid-template-columns:1fr 1fr}}
+.section-title{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent2);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.section-title:first-child{margin-top:0}
+.runs-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.runs-count{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem}
+th{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid rgba(42,42,42,.5);color:var(--text);white-space:nowrap}
+tr:hover td{background:var(--surface2)}
+.badge{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px}
+.badge-win{background:rgba(0,255,136,.15);color:var(--success)}
+.badge-loss{background:rgba(255,51,51,.1);color:var(--danger)}
+.badge-eighth{background:rgba(232,255,0,.1);color:var(--accent)}
+.badge-quarter{background:rgba(255,107,0,.1);color:var(--accent2)}
+.import-zone{border:2px dashed var(--border);padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:14px}
+.import-zone:hover,.import-zone.drag-over{border-color:var(--accent);background:rgba(232,255,0,.03)}
+.import-zone p{font-size:.8rem;color:var(--muted);letter-spacing:.05em}
+.import-zone strong{color:var(--accent)}
+#csv-file-input,#json-file-input{display:none}
+.template-link{font-family:var(--mono);font-size:.72rem;color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:none}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border-left:4px solid var(--accent);padding:12px 18px;font-family:var(--mono);font-size:.75rem;color:var(--text);z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{border-left-color:var(--danger)}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-state p{font-family:var(--mono);font-size:.8rem;margin-top:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-bottom:18px}
+@media(max-width:600px){.stat-strip{grid-template-columns:repeat(2,1fr)}}
+.stat-cell{background:var(--surface);padding:12px 14px}
+.stat-val{font-family:var(--mono);font-size:1.3rem;color:var(--accent);line-height:1}
+.stat-lbl{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+.info-box{background:rgba(232,255,0,.04);border:1px solid rgba(232,255,0,.15);padding:10px 14px;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-bottom:14px;line-height:1.7}
+.track-card{background:var(--surface);border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.track-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.track-name{font-weight:700;font-size:1rem;letter-spacing:.05em}
+.track-meta{font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-top:4px}
+.track-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+@media(max-width:500px){.track-form{grid-template-columns:1fr}}
+.settings-section{margin-bottom:24px}
+.settings-section h3{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.wx-interval-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wind-display{font-family:var(--mono);font-size:.75rem;color:var(--accent2);padding:3px 8px;background:rgba(255,107,0,.1);border:1px solid rgba(255,107,0,.3);margin-top:4px;display:inline-block}
+/* Condensed filter row */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.filter-row select{width:auto;font-family:var(--display);font-size:.75rem;padding:5px 8px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dial-In Pro</h1>
+  <div class="hdr-right">
+    <span id="hdr-vehicle">// 2007 MUSTANG GT</span>
+    <button class="btn btn-secondary btn-sm" onclick="showPage('settings')" style="font-size:.65rem;padding:5px 10px">⚙ Settings</button>
+  </div>
+</header>
+
+<div class="weather-bar" id="weather-bar">
+  <div class="wx-item">DA: <span class="wx-val" id="wx-da">—</span> ft</div>
+  <div class="wx-item">Temp: <span class="wx-val" id="wx-temp">—</span>°F</div>
+  <div class="wx-item">Hum: <span class="wx-val" id="wx-hum">—</span>%</div>
+  <div class="wx-item">Wind: <span class="wx-val" id="wx-wind">—</span></div>
+  <div class="wx-status">
+    <span id="wx-age" style="font-size:.65rem">No data</span>
+    <div class="wx-dot" id="wx-dot"></div>
+    <button onclick="fetchWeather(true)" style="background:none;border:none;color:var(--accent);font-family:var(--mono);font-size:.65rem;cursor:pointer;padding:0">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showPage('predict',this)">Predict</button>
+  <button class="nav-tab" onclick="showPage('log',this)">Log Run</button>
+  <button class="nav-tab" onclick="showPage('runs',this)">Runs</button>
+  <button class="nav-tab" onclick="showPage('tracks',this)">Tracks</button>
+  <button class="nav-tab" onclick="showPage('import',this)">Import</button>
+</div>
+
+<!-- PREDICT PAGE -->
+<div id="page-predict" class="page active">
+  <div class="predict-grid">
+    <div>
+      <div class="card">
+        <div class="card-title">// Current Conditions</div>
+        <div class="field">
+          <label>Density Altitude (ft)</label>
+          <input type="number" id="p-da" placeholder="e.g. 1850">
+        </div>
+        <div class="field">
+          <label>Temperature (°F)</label>
+          <input type="number" id="p-temp" placeholder="e.g. 78">
+        </div>
+        <div class="field">
+          <label>Humidity (%)</label>
+          <input type="number" id="p-humidity" placeholder="e.g. 45">
+        </div>
+        <div class="field">
+          <label>Wind Speed (mph)</label>
+          <input type="number" id="p-wind-speed" placeholder="e.g. 8">
+        </div>
+        <div class="field">
+          <label>Wind Direction</label>
+          <select id="p-wind-compass">
+            <option value="">-- Select --</option>
+            <option value="0">N — Northerly</option>
+            <option value="45">NE — Northeasterly</option>
+            <option value="90">E — Easterly</option>
+            <option value="135">SE — Southeasterly</option>
+            <option value="180">S — Southerly</option>
+            <option value="225">SW — Southwesterly</option>
+            <option value="270">W — Westerly</option>
+            <option value="315">NW — Northwesterly</option>
+            <option value="calm">Calm / No Wind</option>
+          </select>
+          <div class="wind-display" id="p-wind-effect">Select track &amp; wind direction</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">// Race Setup</div>
+        <div class="field">
+          <label>Track</label>
+          <select id="p-track" onchange="updateWindEffect()">
+            <option value="all">All Tracks (combined)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Distance</label>
+          <select id="p-distance">
+            <option value="eighth">1/8 Mile (660')</option>
+            <option value="quarter">1/4 Mile (1,320')</option>
+          </select>
+        </div>
+        <div class="card-title" style="margin-top:18px">// Track Conditions</div>
+        <div class="field">
+          <label>Sun on Track</label>
+          <select id="p-sun">
+            <option value="full">Full Sun</option>
+            <option value="partial">Partial / Overcast</option>
+            <option value="shade">Shade / Night</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="predict()">Generate Prediction</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box" id="result-box">
+    <div class="result-label">// Predicted ET</div>
+    <div class="result-distance" id="result-distance"></div>
+    <div class="result-et" id="result-et">-.---</div>
+    <div class="result-sub" id="result-sub"></div>
+    <div class="result-splits" id="result-splits"></div>
+  </div>
+  <div class="no-data-msg" id="no-data-msg" style="display:none">
+    ⚠ Not enough logged runs to generate a prediction for this distance/track combo. Log at least 5 runs.
+  </div>
+</div>
+
+<!-- LOG RUN PAGE -->
+<div id="page-log" class="page">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">// Log a Run</div>
+        <div class="section-title">Conditions</div>
+        <div class="log-form-grid">
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="l-date">
+          </div>
+          <div class="field">
+            <label>Time</label>
+            <input type="text" id="l-time" placeholder="e.g. 3:47 PM">
+          </div>
+          <div class="field">
+            <label>Track</label>
+            <select id="l-track"></select>
+          </div>
+          <div class="field">
+            <label>Distance</label>
+            <select id="l-distance">
+              <option value="eighth">1/8 Mile</option>
+              <option value="quarter">1/4 Mile</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DA (ft)</label>
+            <input type="number" id="l-da" placeholder="e.g. 1850">
+          </div>
+          <div class="field">
+            <label>Temp (°F)</label>
+            <input type="number" id="l-temp" placeholder="e.g. 78">
+          </div>
+          <div class="field">
+            <label>Humidity (%)</label>
+            <input type="number" id="l-humidity" placeholder="e.g. 45">
+          </div>
+          <div class="field">
+            <label>Wind Speed (mph)</label>
+            <input type="number" id="l-wind-speed" placeholder="e.g. 8">
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <label>Wind Direction (compass)</label>
+            <select id="l-wind-compass">
+              <option value="calm">Calm / No Wind</option>
+              <option value="0">N — Northerly</option>
+              <option value="45">NE — Northeasterly</option>
+              <option value="90">E — Easterly</option>
+              <option value="135">SE — Southeasterly</option>
+              <option value="180">S — Southerly</option>
+              <option value="225">SW — Southwesterly</option>
+              <option value="270">W — Westerly</option>
+              <option value="315">NW — Northwesterly</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Sun</label>
+            <select id="l-sun">
+              <option value="full">Full Sun</option>
+              <option value="partial">Partial</option>
+              <option value="shade">Shade/Night</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-title">Performance</div>
+        <div class="log-form-grid">
+          <div class="field">
+            <label>Dial-In</label>
+            <input type="number" step="0.001" id="l-dialin" placeholder="e.g. 8.420">
+          </div>
+          <div class="field">
+            <label>Reaction Time</label>
+            <input type="number" step="0.001" id="l-rt" placeholder="e.g. 0.012">
+          </div>
+          <div class="field">
+            <label>60' Time</label>
+            <input type="number" step="0.001" id="l-60ft" placeholder="e.g. 1.890">
+          </div>
+          <div class="field">
+            <label>330' Time</label>
+            <input type="number" step="0.001" id="l-330ft" placeholder="e.g. 4.821">
+          </div>
+          <div class="field">
+            <label>660' ET</label>
+            <input type="number" step="0.001" id="l-660ft" placeholder="e.g. 8.412">
+          </div>
+          <div class="field">
+            <label>660' MPH</label>
+            <input type="number" step="0.01" id="l-660mph" placeholder="e.g. 79.4">
+          </div>
+          <div class="field">
+            <label>1000' Time</label>
+            <input type="number" step="0.001" id="l-1000ft" placeholder="e.g. 11.02">
+          </div>
+          <div class="field">
+            <label>1320' ET</label>
+            <input type="number" step="0.001" id="l-1320ft" placeholder="e.g. 13.21">
+          </div>
+          <div class="field">
+            <label>1320' MPH</label>
+            <input type="number" step="0.01" id="l-1320mph" placeholder="e.g. 101.2">
+          </div>
+          <div class="field">
+            <label>Result</label>
+            <select id="l-result">
+              <option value="">-- Optional --</option>
+              <option value="win">Win</option>
+              <option value="loss">Loss</option>
+              <option value="bye">Bye Run</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:6px">
+          <label>Notes (optional)</label>
+          <input type="text" id="l-notes" placeholder="e.g. Soft launch, track was sprayed">
+        </div>
+        <button class="btn btn-primary" onclick="saveRun()" style="margin-top:10px">Save Run</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">// Quick Stats</div>
+        <div id="quick-stats-log"><p style="font-family:var(--mono);font-size:.8rem;color:var(--muted)">No runs logged yet.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RUN HISTORY PAGE -->
+<div id="page-runs" class="page">
+  <div class="stat-strip" id="stat-strip"></div>
+  <div class="runs-header">
+    <span class="runs-count" id="runs-count">0 runs</span>
+    <div class="filter-row">
+      <select id="filter-track" onchange="renderRunsTable()">
+        <option value="all">All Tracks</option>
+      </select>
+      <select id="filter-distance" onchange="renderRunsTable()">
+        <option value="all">All Dist.</option>
+        <option value="eighth">1/8 Only</option>
+        <option value="quarter">1/4 Only</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="runs-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th>
+          <th>DA</th><th>Temp</th><th>Hum</th><th>Wind</th><th>Sun</th>
+          <th>Dial</th><th>RT</th><th>60'</th><th>330'</th>
+          <th>660' ET</th><th>660 MPH</th><th>1000'</th>
+          <th>1320' ET</th><th>1320 MPH</th><th>Result</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="runs-tbody"></tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="empty-state" style="display:none">
+    <div style="font-size:3rem;opacity:.15">🏁</div>
+    <p>No runs logged yet.</p>
+  </div>
+</div>
+
+<!-- TRACKS PAGE -->
+<div id="page-tracks" class="page">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">// Manage Tracks</div>
+        <div class="info-box">Tracks drive wind headwind/tailwind math. Set the track heading in degrees (direction cars travel). Use your phone's compass app to verify.</div>
+        <div id="tracks-list"></div>
+        <button class="btn btn-secondary btn-sm" onclick="addTrack()" style="margin-top:10px;width:100%">+ Add New Track</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">// Wind Direction Math</div>
+        <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);line-height:1.8">
+          <div>• Wind direction is stored as compass degrees</div>
+          <div>• App calculates headwind/tailwind component using track heading</div>
+          <div style="margin-top:8px;color:var(--text)">Example: Redding runs North→South (180°)</div>
+          <div>A Southerly wind (180°) = direct headwind</div>
+          <div>A Northerly wind (0°) = direct tailwind</div>
+          <div>An Easterly wind (90°) = pure crosswind</div>
+          <div style="margin-top:8px;color:var(--text)">Effective headwind component:</div>
+          <div>cos(wind_deg − track_deg) × wind_speed</div>
+          <div style="margin-top:8px;color:var(--accent)">+ = headwind (slower ET)</div>
+          <div style="color:var(--success)">− = tailwind (faster ET)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT PAGE -->
+<div id="page-import" class="page">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">// Import Runs</div>
+        <div class="info-box">Import from Dr. Dial-In (JSON export) or a Dial-In Pro CSV backup.</div>
+        <div style="margin-bottom:10px">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('json-file-input').click()">Import Dr. Dial-In JSON</button>
+          &nbsp;
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('csv-file-input').click()">Import CSV</button>
+        </div>
+        <div class="import-zone" id="import-zone" onclick="document.getElementById('json-file-input').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <p><strong>Click to browse</strong> or drag &amp; drop a JSON or CSV file</p>
+          <p style="margin-top:4px;font-size:.7rem">Dr. Dial-In .json or Dial-In Pro .csv</p>
+        </div>
+        <input type="file" id="json-file-input" accept=".json" onchange="handleJsonSelect(event)">
+        <input type="file" id="csv-file-input" accept=".csv" onchange="handleFileSelect(event)">
+        <div id="import-preview"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">// Tips</div>
+        <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);line-height:1.8">
+          <div>• Export JSON from Dr. Dial-In → Log Entries</div>
+          <div>• All 105 imported runs are already loaded</div>
+          <div>• Wind is stored as compass degrees and auto-converts based on track heading</div>
+          <div>• Sun field defaults to Partial for imported runs — you can edit if needed</div>
+          <div style="margin-top:10px;color:var(--accent)">1/8 mile predictions:</div>
+          <div>The 660' split is captured on all 105 quarter-mile runs, giving the 1/8 mile predictor a full dataset to work with.</div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="template-link" onclick="downloadTemplate()">⬇ Download CSV Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div id="page-settings" class="page">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">// Weather Auto-Refresh</div>
+        <div class="field">
+          <label>Auto-Refresh Interval</label>
+          <select id="wx-interval" onchange="saveSettings()">
+            <option value="0">Manual Only</option>
+            <option value="5">Every 5 minutes</option>
+            <option value="15" selected>Every 15 minutes</option>
+            <option value="30">Every 30 minutes</option>
+          </select>
+        </div>
+        <div class="info-box" style="margin-top:6px">Weather auto-fetches from Open-Meteo using your GPS location. Always refreshes when Generate Prediction is pressed. Tiny API calls — no battery/data impact at any interval.</div>
+        <button class="btn btn-primary" onclick="fetchWeather(true)">Fetch Weather Now</button>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="card-title">// Vehicle / Profile</div>
+        <div class="field">
+          <label>Vehicle Name</label>
+          <input type="text" id="s-vehicle-name" placeholder="e.g. 2007 Mustang GT" oninput="saveSettings()">
+        </div>
+        <div class="field">
+          <label>Year / Make / Model</label>
+          <input type="text" id="s-vehicle-info" placeholder="e.g. 2007 Ford Mustang GT 4.6 3V" oninput="saveSettings()">
+        </div>
+        <div class="field">
+          <label>Engine / Notes</label>
+          <input type="text" id="s-vehicle-notes" placeholder="e.g. Stock 4.6 3V, 305/45/17 rear" oninput="saveSettings()">
+        </div>
+        <div class="info-box" style="margin-top:6px">For a second driver, they should install this app on their own device and enter their car info here separately.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">// Data Management</div>
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()" style="width:100%;margin-bottom:8px">Export All Runs (CSV)</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportJSON()" style="width:100%;margin-bottom:8px">Export All Runs (JSON)</button>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <button class="btn btn-danger" onclick="clearAllRuns()" style="width:100%">⚠ Clear All Run Data</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <div class="card-title">// App Info</div>
+        <div style="font-family:var(--mono);font-size:.72rem;color:var(--muted);line-height:1.8">
+          <div>Dial-In Pro v2.0</div>
+          <div>Weather: Open-Meteo API (free, no key)</div>
+          <div>Storage: Browser localStorage</div>
+          <div style="margin-top:8px;color:var(--text)">GitHub Pages deploy:</div>
+          <div>Upload index.html + manifest.json + sw.js</div>
+          <div>Enable Pages in repo Settings</div>
+          <div>Open in Safari → Share → Add to Home Screen</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SEED DATA (imported from Dr. Dial-In) ─────────────────────────────────────
+const SEED_RUNS = [{"id":1000,"date":"2026-03-04","time":"7:59 PM","track":"Sonoma","distance":"quarter","da":-326.3,"temp":53.6,"humidity":66.7,"windSpeed":16.1,"windDegrees":290,"sun":"partial","dialin":8.74,"rt":0.099,"ft60":2.038,"ft330":5.683,"ft660":8.703,"mph660":81.65,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1001,"date":"2026-03-04","time":"5:45 PM","track":"Sonoma","distance":"quarter","da":243.4,"temp":60.8,"humidity":59,"windSpeed":17.3,"windDegrees":260,"sun":"partial","dialin":null,"rt":0.016,"ft60":2.034,"ft330":5.68,"ft660":8.684,"mph660":81.89,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1002,"date":"2026-03-22","time":"1:51 PM","track":"Redding","distance":"quarter","da":2099.9,"temp":78.8,"humidity":24.2,"windSpeed":8.1,"windDegrees":350,"sun":"partial","dialin":8.69,"rt":0.019,"ft60":2.036,"ft330":5.711,"ft660":8.702,"mph660":82.45,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1003,"date":"2026-03-04","time":"5:55 PM","track":"Sonoma","distance":"quarter","da":-5.6,"temp":57.2,"humidity":67.1,"windSpeed":16.1,"windDegrees":270,"sun":"partial","dialin":null,"rt":0.033,"ft60":2.05,"ft330":5.705,"ft660":8.726,"mph660":81.59,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1004,"date":"2026-03-21","time":"4:33 PM","track":"Redding","distance":"quarter","da":2547.3,"temp":84.2,"humidity":25.1,"windSpeed":5.8,"windDegrees":80,"sun":"partial","dialin":13.67,"rt":0.113,"ft60":2.061,"ft330":5.76,"ft660":8.785,"mph660":81.9,"ft1000":11.401,"ft1320":13.617,"mph1320":104.71,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1005,"date":"2026-03-21","time":"2:16 PM","track":"Redding","distance":"quarter","da":2450.8,"temp":82.4,"humidity":30.4,"windSpeed":5.8,"windDegrees":120,"sun":"partial","dialin":8.83,"rt":0.024,"ft60":2.076,"ft330":5.787,"ft660":8.821,"mph660":81.57,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1006,"date":"2026-03-21","time":"10:42 AM","track":"Redding","distance":"quarter","da":1708.8,"temp":69.8,"humidity":60.3,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.068,"ft60":2.072,"ft330":5.779,"ft660":8.809,"mph660":81.8,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1007,"date":"2026-03-22","time":"11:39 AM","track":"Redding","distance":"quarter","da":1666.3,"temp":73.4,"humidity":25.2,"windSpeed":10.4,"windDegrees":340,"sun":"partial","dialin":13.4,"rt":-0.003,"ft60":2.02,"ft330":5.663,"ft660":8.644,"mph660":83.07,"ft1000":11.221,"ft1320":13.403,"mph1320":106.29,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1008,"date":"2026-03-22","time":"1:19 PM","track":"Redding","distance":"quarter","da":2077.2,"temp":78.8,"humidity":24.2,"windSpeed":5.8,"windDegrees":320,"sun":"partial","dialin":13.44,"rt":-0.006,"ft60":2.035,"ft330":5.695,"ft660":8.686,"mph660":82.76,"ft1000":11.273,"ft1320":13.464,"mph1320":105.85,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1009,"date":"2026-03-22","time":"9:44 AM","track":"Redding","distance":"quarter","da":1176.4,"temp":66.2,"humidity":29.9,"windSpeed":9.2,"windDegrees":340,"sun":"partial","dialin":null,"rt":0.016,"ft60":2.033,"ft330":5.671,"ft660":8.645,"mph660":83.17,"ft1000":11.21,"ft1320":13.379,"mph1320":103.87,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1010,"date":"2026-03-21","time":"10:19 AM","track":"Redding","distance":"quarter","da":1444.8,"temp":66.2,"humidity":63.9,"windSpeed":3.5,"windDegrees":110,"sun":"partial","dialin":null,"rt":0.018,"ft60":2.052,"ft330":5.733,"ft660":8.746,"mph660":82.17,"ft1000":11.353,"ft1320":13.561,"mph1320":104.85,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1011,"date":"2026-03-04","time":"6:47 PM","track":"Sonoma","distance":"quarter","da":-136.2,"temp":55.4,"humidity":71.7,"windSpeed":18.4,"windDegrees":290,"sun":"partial","dialin":null,"rt":0.069,"ft60":2.054,"ft330":5.709,"ft660":8.735,"mph660":81.42,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1012,"date":"2026-03-21","time":"1:41 PM","track":"Redding","distance":"quarter","da":2402.2,"temp":82.4,"humidity":28.4,"windSpeed":4.6,"windDegrees":110,"sun":"partial","dialin":13.63,"rt":0.05,"ft60":2.072,"ft330":5.781,"ft660":8.814,"mph660":81.6,"ft1000":11.442,"ft1320":13.674,"mph1320":103.81,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1013,"date":"2026-03-22","time":"10:09 AM","track":"Redding","distance":"quarter","da":1397.3,"temp":69.8,"humidity":26.5,"windSpeed":13.8,"windDegrees":350,"sun":"partial","dialin":null,"rt":0.051,"ft60":2.038,"ft330":5.669,"ft660":8.64,"mph660":83.26,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1014,"date":"2026-03-22","time":"3:28 PM","track":"Redding","distance":"quarter","da":2278.5,"temp":80.6,"humidity":24.5,"windSpeed":3.5,"windDegrees":40,"sun":"partial","dialin":8.7,"rt":0.012,"ft60":2.029,"ft330":5.693,"ft660":8.692,"mph660":82.45,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1015,"date":"2026-03-21","time":"5:06 PM","track":"Redding","distance":"quarter","da":2547.3,"temp":84.2,"humidity":25.1,"windSpeed":5.8,"windDegrees":10,"sun":"partial","dialin":8.79,"rt":0.007,"ft60":2.071,"ft330":5.778,"ft660":8.808,"mph660":81.82,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1016,"date":"2026-03-22","time":"12:05 PM","track":"Redding","distance":"quarter","da":1683.6,"temp":73.4,"humidity":27,"windSpeed":8.1,"windDegrees":360,"sun":"partial","dialin":8.64,"rt":0.055,"ft60":2.03,"ft330":5.682,"ft660":8.667,"mph660":82.87,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1017,"date":"2026-03-22","time":"4:21 PM","track":"Redding","distance":"quarter","da":2300.5,"temp":80.6,"humidity":26.3,"windSpeed":5.8,"windDegrees":120,"sun":"partial","dialin":8.69,"rt":0.056,"ft60":2.027,"ft330":5.692,"ft660":8.695,"mph660":82.38,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1018,"date":"2025-10-05","time":"8:56 AM","track":"Firebird AZ","distance":"quarter","da":2654.5,"temp":73.4,"humidity":25.2,"windSpeed":5.8,"windDegrees":100,"sun":"partial","dialin":13.6,"rt":0.07,"ft60":2.064,"ft330":5.739,"ft660":8.754,"mph660":82.16,"ft1000":11.361,"ft1320":13.58,"mph1320":102.1,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1019,"date":"2025-10-18","time":"1:20 PM","track":"Redding","distance":"quarter","da":1734.5,"temp":73.4,"humidity":38.2,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.72,"rt":-0.003,"ft60":2.042,"ft330":5.702,"ft660":8.702,"mph660":82.31,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1020,"date":"2025-10-04","time":"5:54 PM","track":"Firebird AZ","distance":"quarter","da":3399.5,"temp":84.9,"humidity":12.2,"windSpeed":9.2,"windDegrees":300,"sun":"partial","dialin":13.6,"rt":0.051,"ft60":2.073,"ft330":5.762,"ft660":8.78,"mph660":82.02,"ft1000":11.385,"ft1320":13.601,"mph1320":102.04,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1021,"date":"2025-10-02","time":"2:56 PM","track":"Firebird AZ","distance":"quarter","da":4241.7,"temp":99,"humidity":16.1,"windSpeed":4.6,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.03,"ft60":2.159,"ft330":5.918,"ft660":8.986,"mph660":80.9,"ft1000":11.634,"ft1320":13.891,"mph1320":100.23,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1022,"date":"2025-10-04","time":"12:03 PM","track":"Firebird AZ","distance":"quarter","da":3327.6,"temp":84.2,"humidity":17.7,"windSpeed":6.9,"windDegrees":260,"sun":"partial","dialin":13.66,"rt":0.058,"ft60":2.087,"ft330":5.783,"ft660":8.808,"mph660":81.82,"ft1000":11.425,"ft1320":13.65,"mph1320":101.75,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1023,"date":"2025-10-05","time":"11:32 AM","track":"Firebird AZ","distance":"quarter","da":3110.6,"temp":80.6,"humidity":18.5,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":13.6,"rt":0.027,"ft60":2.087,"ft330":5.779,"ft660":8.804,"mph660":81.96,"ft1000":11.413,"ft1320":13.633,"mph1320":101.85,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1024,"date":"2025-10-19","time":"10:57 AM","track":"Redding","distance":"quarter","da":1193.8,"temp":64.4,"humidity":63.6,"windSpeed":3.5,"windDegrees":230,"sun":"partial","dialin":8.65,"rt":0.011,"ft60":2.03,"ft330":5.678,"ft660":8.67,"mph660":82.5,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1025,"date":"2025-10-03","time":"10:32 AM","track":"Firebird AZ","distance":"quarter","da":3808,"temp":91.4,"humidity":22.9,"windSpeed":9.2,"windDegrees":150,"sun":"partial","dialin":null,"rt":0.043,"ft60":2.122,"ft330":5.852,"ft660":8.901,"mph660":81.34,"ft1000":11.535,"ft1320":13.782,"mph1320":100.73,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1026,"date":"2025-10-18","time":"11:38 AM","track":"Redding","distance":"quarter","da":1496.8,"temp":69.8,"humidity":46.2,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.012,"ft60":2.048,"ft330":5.717,"ft660":8.719,"mph660":82.36,"ft1000":11.312,"ft1320":13.509,"mph1320":102.6,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1027,"date":"2025-10-08","time":"4:32 PM","track":"Sonoma","distance":"quarter","da":1156.1,"temp":68,"humidity":64.1,"windSpeed":13.8,"windDegrees":240,"sun":"partial","dialin":null,"rt":0.014,"ft60":2.039,"ft330":5.692,"ft660":8.712,"mph660":81.68,"ft1000":11.335,"ft1320":13.565,"mph1320":101.03,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1028,"date":"2025-10-18","time":"3:18 PM","track":"Redding","distance":"quarter","da":2097.3,"temp":78.8,"humidity":29.9,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.7,"rt":0.062,"ft60":2.025,"ft330":5.69,"ft660":8.695,"mph660":82.22,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1029,"date":"2025-10-04","time":"9:39 AM","track":"Firebird AZ","distance":"quarter","da":3028.2,"temp":78.8,"humidity":26,"windSpeed":6.9,"windDegrees":260,"sun":"partial","dialin":13.7,"rt":0.031,"ft60":2.083,"ft330":5.78,"ft660":8.807,"mph660":81.8,"ft1000":11.421,"ft1320":13.647,"mph1320":101.75,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1030,"date":"2025-10-17","time":"8:17 PM","track":"Redding","distance":"quarter","da":1146.6,"temp":62.6,"humidity":59.3,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":1.015,"ft60":2.024,"ft330":5.68,"ft660":8.676,"mph660":82.33,"ft1000":11.269,"ft1320":13.465,"mph1320":102.76,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1031,"date":"2025-10-18","time":"4:07 PM","track":"Redding","distance":"quarter","da":2108.6,"temp":78.8,"humidity":29.9,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.69,"rt":0.046,"ft60":2.006,"ft330":null,"ft660":8.66,"mph660":82.2,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1032,"date":"2025-10-18","time":"9:58 AM","track":"Redding","distance":"quarter","da":866.1,"temp":60.8,"humidity":59.1,"windSpeed":3.5,"windDegrees":20,"sun":"partial","dialin":null,"rt":0.045,"ft60":2.013,"ft330":5.655,"ft660":8.643,"mph660":82.58,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1033,"date":"2025-10-02","time":"1:17 PM","track":"Firebird AZ","distance":"quarter","da":4216.5,"temp":98.6,"humidity":18.3,"windSpeed":6.9,"windDegrees":130,"sun":"partial","dialin":null,"rt":-0.01,"ft60":2.141,"ft330":5.885,"ft660":8.939,"mph660":81.34,"ft1000":11.574,"ft1320":13.819,"mph1320":100.79,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1034,"date":"2025-10-08","time":"7:39 PM","track":"Sonoma","distance":"quarter","da":676.8,"temp":60.8,"humidity":82.4,"windSpeed":5.8,"windDegrees":300,"sun":"partial","dialin":13.54,"rt":0.038,"ft60":2.051,"ft330":5.704,"ft660":8.718,"mph660":81.9,"ft1000":11.336,"ft1320":13.561,"mph1320":101.28,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1035,"date":"2025-10-19","time":"9:47 AM","track":"Redding","distance":"quarter","da":683,"temp":57.2,"humidity":76.9,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.044,"ft60":2.019,"ft330":5.646,"ft660":8.63,"mph660":82.74,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1036,"date":"2025-10-03","time":"6:28 PM","track":"Firebird AZ","distance":"quarter","da":4142.8,"temp":95,"humidity":16.7,"windSpeed":16.1,"windDegrees":280,"sun":"partial","dialin":13.7,"rt":0.049,"ft60":2.096,"ft330":5.819,"ft660":8.865,"mph660":81.43,"ft1000":11.49,"ft1320":13.724,"mph1320":101.19,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1037,"date":"2025-10-19","time":"12:09 PM","track":"Redding","distance":"quarter","da":1691.2,"temp":71.6,"humidity":49.7,"windSpeed":9.2,"windDegrees":180,"sun":"partial","dialin":8.66,"rt":0.008,"ft60":2.047,"ft330":5.687,"ft660":8.681,"mph660":82.26,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1038,"date":"2025-10-18","time":"5:41 PM","track":"Redding","distance":"quarter","da":1995.3,"temp":77,"humidity":31.7,"windSpeed":4.6,"windDegrees":150,"sun":"partial","dialin":8.69,"rt":0.019,"ft60":2.033,"ft330":5.696,"ft660":8.693,"mph660":82.25,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1039,"date":"2025-10-03","time":"5:05 PM","track":"Firebird AZ","distance":"quarter","da":4391.7,"temp":98.6,"humidity":16,"windSpeed":16.1,"windDegrees":290,"sun":"partial","dialin":13.77,"rt":0.078,"ft60":2.119,"ft330":5.826,"ft660":8.855,"mph660":81.9,"ft1000":11.466,"ft1320":13.689,"mph1320":101.77,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1040,"date":"2025-10-04","time":"3:38 PM","track":"Firebird AZ","distance":"quarter","da":3479.6,"temp":86,"humidity":13.4,"windSpeed":9.2,"windDegrees":280,"sun":"partial","dialin":13.67,"rt":0.067,"ft60":2.093,"ft330":5.779,"ft660":8.797,"mph660":82.2,"ft1000":11.398,"ft1320":13.607,"mph1320":102.53,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1041,"date":"2025-10-04","time":"12:55 PM","track":"Firebird AZ","distance":"quarter","da":3343.4,"temp":84.2,"humidity":16.4,"windSpeed":9.2,"windDegrees":290,"sun":"partial","dialin":13.66,"rt":0.014,"ft60":2.072,"ft330":5.765,"ft660":8.783,"mph660":81.96,"ft1000":11.395,"ft1320":13.617,"mph1320":101.85,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1042,"date":"2025-10-29","time":"4:06 PM","track":"Sonoma","distance":"quarter","da":1664.4,"temp":80.6,"humidity":36.9,"windSpeed":4.6,"windDegrees":200,"sun":"partial","dialin":null,"rt":0.006,"ft60":2.055,"ft330":5.684,"ft660":8.671,"mph660":82.65,"ft1000":11.257,"ft1320":13.45,"mph1320":102.88,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1043,"date":"2025-10-29","time":"5:24 PM","track":"Sonoma","distance":"quarter","da":1675.8,"temp":80.6,"humidity":36.9,"windSpeed":5.8,"windDegrees":210,"sun":"partial","dialin":null,"rt":0.003,"ft60":2.04,"ft330":5.665,"ft660":8.652,"mph660":82.58,"ft1000":11.246,"ft1320":13.449,"mph1320":102.33,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1044,"date":"2025-10-08","time":"5:34 PM","track":"Sonoma","distance":"quarter","da":1039.9,"temp":66.2,"humidity":68.2,"windSpeed":12.7,"windDegrees":240,"sun":"partial","dialin":null,"rt":0.059,"ft60":2.059,"ft330":5.716,"ft660":8.737,"mph660":81.79,"ft1000":11.359,"ft1320":13.589,"mph1320":101.03,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1045,"date":"2025-10-02","time":"11:34 AM","track":"Firebird AZ","distance":"quarter","da":3905.3,"temp":93.2,"humidity":24.7,"windSpeed":6.9,"windDegrees":120,"sun":"partial","dialin":null,"rt":0.062,"ft60":2.15,"ft330":5.901,"ft660":8.958,"mph660":81.11,"ft1000":11.594,"ft1320":13.841,"mph1320":100.64,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1046,"date":"2025-10-29","time":"6:33 PM","track":"Sonoma","distance":"quarter","da":1053.1,"temp":69.8,"humidity":60.3,"windSpeed":3.5,"windDegrees":120,"sun":"partial","dialin":null,"rt":0.011,"ft60":2.042,"ft330":5.67,"ft660":8.665,"mph660":82.34,"ft1000":11.27,"ft1320":13.487,"mph1320":101.64,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1047,"date":"2025-10-19","time":"12:27 PM","track":"Redding","distance":"quarter","da":1817.3,"temp":73.4,"humidity":46.8,"windSpeed":9.2,"windDegrees":180,"sun":"partial","dialin":13.5,"rt":0.027,"ft60":2.035,"ft330":5.686,"ft660":8.689,"mph660":82.13,"ft1000":11.293,"ft1320":13.501,"mph1320":102.14,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1048,"date":"2025-10-19","time":"11:35 AM","track":"Redding","distance":"quarter","da":1564.5,"temp":69.8,"humidity":52.8,"windSpeed":10.4,"windDegrees":140,"sun":"partial","dialin":8.67,"rt":0.04,"ft60":2.023,"ft330":5.667,"ft660":8.663,"mph660":82.31,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1049,"date":"2025-10-03","time":"9:08 AM","track":"Firebird AZ","distance":"quarter","da":3467.2,"temp":86,"humidity":27.1,"windSpeed":5.8,"windDegrees":120,"sun":"partial","dialin":null,"rt":0.061,"ft60":2.104,"ft330":5.809,"ft660":8.837,"mph660":81.77,"ft1000":11.455,"ft1320":13.685,"mph1320":101.52,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1050,"date":"2025-10-18","time":"6:16 PM","track":"Redding","distance":"quarter","da":1905.8,"temp":75.2,"humidity":36,"windSpeed":3.5,"windDegrees":100,"sun":"partial","dialin":8.69,"rt":0,"ft60":2.044,"ft330":5.697,"ft660":8.694,"mph660":82.28,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1051,"date":"2025-10-03","time":"12:37 PM","track":"Firebird AZ","distance":"quarter","da":4280.4,"temp":98.6,"humidity":17.1,"windSpeed":4.6,"windDegrees":210,"sun":"partial","dialin":null,"rt":0.053,"ft60":2.11,"ft330":5.842,"ft660":8.893,"mph660":81.31,"ft1000":11.525,"ft1320":13.768,"mph1320":100.74,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1052,"date":"2025-10-08","time":"6:34 PM","track":"Sonoma","distance":"quarter","da":923.2,"temp":64.4,"humidity":72.6,"windSpeed":10.4,"windDegrees":260,"sun":"partial","dialin":null,"rt":0.039,"ft60":2.044,"ft330":5.693,"ft660":8.707,"mph660":81.9,"ft1000":11.324,"ft1320":13.55,"mph1320":101.29,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1053,"date":"2025-10-18","time":"2:21 PM","track":"Redding","distance":"quarter","da":1847.1,"temp":75.2,"humidity":33.6,"windSpeed":3.5,"windDegrees":320,"sun":"partial","dialin":13.5,"rt":-0.003,"ft60":2.044,"ft330":5.707,"ft660":8.711,"mph660":82.2,"ft1000":11.313,"ft1320":13.52,"mph1320":102.28,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1054,"date":"2025-10-29","time":"6:03 PM","track":"Sonoma","distance":"quarter","da":1168.3,"temp":71.6,"humidity":56.7,"windSpeed":6.9,"windDegrees":220,"sun":"partial","dialin":null,"rt":0.055,"ft60":2.021,"ft330":5.637,"ft660":8.621,"mph660":82.58,"ft1000":11.214,"ft1320":13.415,"mph1320":102.42,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1055,"date":"2025-10-19","time":"9:11 AM","track":"Redding","distance":"quarter","da":705.9,"temp":57.2,"humidity":76.9,"windSpeed":4.6,"windDegrees":130,"sun":"partial","dialin":null,"rt":0.081,"ft60":2.008,"ft330":5.633,"ft660":8.616,"mph660":82.68,"ft1000":11.202,"ft1320":13.393,"mph1320":102.91,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1056,"date":"2025-10-18","time":"9:17 AM","track":"Redding","distance":"quarter","da":536.2,"temp":55.4,"humidity":76.7,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.033,"ft60":2.022,"ft330":5.659,"ft660":8.641,"mph660":82.74,"ft1000":11.222,"ft1320":13.408,"mph1320":103.21,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1057,"date":"2025-10-03","time":"2:03 PM","track":"Firebird AZ","distance":"quarter","da":4443.7,"temp":100.4,"humidity":16.2,"windSpeed":3.5,"windDegrees":160,"sun":"partial","dialin":null,"rt":0.031,"ft60":2.137,"ft330":5.895,"ft660":8.969,"mph660":80.64,"ft1000":11.616,"ft1320":13.877,"mph1320":99.83,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1058,"date":"2025-10-05","time":"9:48 AM","track":"Firebird AZ","distance":"quarter","da":2880.1,"temp":77,"humidity":22.3,"windSpeed":6.9,"windDegrees":110,"sun":"partial","dialin":13.6,"rt":0.023,"ft60":2.066,"ft330":5.753,"ft660":8.775,"mph660":81.95,"ft1000":11.387,"ft1320":13.61,"mph1320":102.05,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1059,"date":"2025-10-02","time":"10:19 AM","track":"Firebird AZ","distance":"quarter","da":3544.8,"temp":87.8,"humidity":29.3,"windSpeed":4.6,"windDegrees":140,"sun":"partial","dialin":null,"rt":0.007,"ft60":2.101,"ft330":5.836,"ft660":8.886,"mph660":81.56,"ft1000":11.516,"ft1320":13.757,"mph1320":100.94,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1060,"date":"2025-10-29","time":"4:52 PM","track":"Sonoma","distance":"quarter","da":1788.3,"temp":82.4,"humidity":34.8,"windSpeed":5.8,"windDegrees":200,"sun":"partial","dialin":null,"rt":0.002,"ft60":2.035,"ft330":5.652,"ft660":8.629,"mph660":82.83,"ft1000":11.212,"ft1320":13.403,"mph1320":103.03,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1061,"date":"2025-10-29","time":"7:09 PM","track":"Sonoma","distance":"quarter","da":788.5,"temp":66.2,"humidity":63.9,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":13.46,"rt":0.041,"ft60":2.048,"ft330":5.678,"ft660":8.677,"mph660":82.26,"ft1000":11.284,"ft1320":13.502,"mph1320":101.62,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1062,"date":"2025-10-02","time":"5:31 PM","track":"Firebird AZ","distance":"quarter","da":4256.5,"temp":98.6,"humidity":16,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":13.86,"rt":-0.022,"ft60":2.137,"ft330":5.861,"ft660":8.903,"mph660":81.55,"ft1000":11.527,"ft1320":13.759,"mph1320":101.45,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1063,"date":"2025-10-29","time":"4:25 PM","track":"Sonoma","distance":"quarter","da":1664.4,"temp":80.6,"humidity":36.9,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":null,"rt":0.043,"ft60":2.043,"ft330":5.672,"ft660":8.654,"mph660":82.78,"ft1000":11.236,"ft1320":13.425,"mph1320":103.14,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1064,"date":"2025-10-18","time":"6:34 PM","track":"Redding","distance":"quarter","da":1791.5,"temp":73.4,"humidity":38.2,"windSpeed":5.8,"windDegrees":120,"sun":"partial","dialin":8.69,"rt":0.051,"ft60":2.042,"ft330":5.701,"ft660":8.698,"mph660":82.47,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1065,"date":"2025-10-04","time":"8:27 AM","track":"Firebird AZ","distance":"quarter","da":2814.6,"temp":75.2,"humidity":29.3,"windSpeed":4.6,"windDegrees":220,"sun":"partial","dialin":13.6,"rt":0.023,"ft60":2.095,"ft330":5.795,"ft660":8.823,"mph660":81.79,"ft1000":11.442,"ft1320":13.672,"mph1320":101.55,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1066,"date":"2025-09-01","time":"2:17 PM","track":"Sonoma","distance":"quarter","da":2253.9,"temp":84.2,"humidity":45.4,"windSpeed":6.9,"windDegrees":200,"sun":"partial","dialin":13.76,"rt":0.005,"ft60":2.147,"ft330":5.889,"ft660":8.939,"mph660":81.18,"ft1000":11.572,"ft1320":13.823,"mph1320":100.46,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1067,"date":"2025-09-06","time":"12:25 PM","track":"Redding","distance":"quarter","da":2571.4,"temp":82.4,"humidity":39.7,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.76,"rt":0.105,"ft60":2.053,"ft330":5.734,"ft660":8.774,"mph660":81.7,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1068,"date":"2025-09-01","time":"11:23 AM","track":"Sonoma","distance":"quarter","da":1421.3,"temp":73.4,"humidity":57,"windSpeed":5.8,"windDegrees":270,"sun":"partial","dialin":null,"rt":0.009,"ft60":2.122,"ft330":5.884,"ft660":8.882,"mph660":81.42,"ft1000":11.508,"ft1320":13.755,"mph1320":100.76,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1069,"date":"2025-09-06","time":"1:20 PM","track":"Redding","distance":"quarter","da":2693.4,"temp":84.2,"humidity":37.4,"windSpeed":9.2,"windDegrees":0,"sun":"partial","dialin":13.61,"rt":0.048,"ft60":2.08,"ft330":5.78,"ft660":8.833,"mph660":81.19,"ft1000":11.466,"ft1320":13.718,"mph1320":100.52,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1070,"date":"2025-09-07","time":"9:39 AM","track":"Redding","distance":"quarter","da":1445.7,"temp":68,"humidity":60,"windSpeed":4.6,"windDegrees":280,"sun":"partial","dialin":null,"rt":0.047,"ft60":2.025,"ft330":5.672,"ft660":8.677,"mph660":82.45,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1071,"date":"2025-09-01","time":"8:30 AM","track":"Sonoma","distance":"quarter","da":796,"temp":64.4,"humidity":72.6,"windSpeed":6.9,"windDegrees":230,"sun":"partial","dialin":null,"rt":0.012,"ft60":2.05,"ft330":5.695,"ft660":8.694,"mph660":82.09,"ft1000":11.3,"ft1320":13.53,"mph1320":101.43,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1072,"date":"2025-09-07","time":"11:43 AM","track":"Redding","distance":"quarter","da":1916.7,"temp":75.2,"humidity":47.1,"windSpeed":4.6,"windDegrees":160,"sun":"partial","dialin":13.59,"rt":0.026,"ft60":2.074,"ft330":5.757,"ft660":8.789,"mph660":81.7,"ft1000":11.4,"ft1320":13.625,"mph1320":102.1,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1073,"date":"2025-09-05","time":"8:30 PM","track":"Redding","distance":"quarter","da":2631.3,"temp":80.6,"humidity":42.1,"windSpeed":10.4,"windDegrees":150,"sun":"partial","dialin":null,"rt":0.011,"ft60":2.055,"ft330":5.741,"ft660":8.784,"mph660":81.47,"ft1000":11.405,"ft1320":13.64,"mph1320":102.42,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1074,"date":"2025-09-06","time":"2:26 PM","track":"Redding","distance":"quarter","da":2834.9,"temp":87.8,"humidity":27.4,"windSpeed":13.8,"windDegrees":200,"sun":"partial","dialin":13.69,"rt":0.005,"ft60":2.051,"ft330":5.732,"ft660":8.772,"mph660":81.57,"ft1000":11.39,"ft1320":13.646,"mph1320":98.03,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1075,"date":"2025-09-06","time":"2:33 PM","track":"Redding","distance":"quarter","da":2945.2,"temp":89.6,"humidity":25.9,"windSpeed":10.4,"windDegrees":180,"sun":"partial","dialin":8.76,"rt":0.07,"ft60":2.065,"ft330":7.757,"ft660":8.803,"mph660":81.42,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1076,"date":"2025-09-06","time":"9:27 AM","track":"Redding","distance":"quarter","da":1892.2,"temp":71.6,"humidity":56.7,"windSpeed":5.8,"windDegrees":170,"sun":"partial","dialin":null,"rt":-0.009,"ft60":2.041,"ft330":5.695,"ft660":8.714,"mph660":80.98,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1077,"date":"2025-09-07","time":"10:37 AM","track":"Redding","distance":"quarter","da":1676.4,"temp":71.6,"humidity":53.1,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":13.49,"rt":0.036,"ft60":2.056,"ft330":5.722,"ft660":8.737,"mph660":80.77,"ft1000":11.328,"ft1320":13.541,"mph1320":102.22,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1078,"date":"2025-09-06","time":"10:31 AM","track":"Redding","distance":"quarter","da":2143.4,"temp":75.2,"humidity":53.6,"windSpeed":3.5,"windDegrees":150,"sun":"partial","dialin":null,"rt":0.07,"ft60":2.049,"ft330":5.724,"ft660":8.761,"mph660":81.78,"ft1000":11.382,"ft1320":13.608,"mph1320":101.31,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1079,"date":"2025-09-05","time":"9:03 PM","track":"Redding","distance":"quarter","da":2506.9,"temp":78.8,"humidity":44.6,"windSpeed":8.1,"windDegrees":150,"sun":"partial","dialin":null,"rt":0.033,"ft60":2.06,"ft330":5.745,"ft660":8.781,"mph660":81.6,"ft1000":11.396,"ft1320":13.622,"mph1320":102.91,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1080,"date":"2025-09-07","time":"11:01 AM","track":"Redding","distance":"quarter","da":1760.3,"temp":73.4,"humidity":46.8,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.73,"rt":0.027,"ft60":2.067,"ft330":5.745,"ft660":8.76,"mph660":81.19,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1081,"date":"2025-09-06","time":"1:32 PM","track":"Redding","distance":"quarter","da":2772.3,"temp":86,"humidity":33.1,"windSpeed":6.9,"windDegrees":190,"sun":"partial","dialin":8.85,"rt":0.047,"ft60":2.073,"ft330":5.764,"ft660":8.8,"mph660":81.15,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1082,"date":"2025-09-06","time":"12:11 PM","track":"Redding","distance":"quarter","da":2605.1,"temp":82.4,"humidity":42.3,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":13.64,"rt":-0.005,"ft60":2.05,"ft330":5.728,"ft660":8.759,"mph660":81.79,"ft1000":11.37,"ft1320":13.602,"mph1320":101.31,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1083,"date":"2025-09-07","time":"12:04 PM","track":"Redding","distance":"quarter","da":2143.1,"temp":78.8,"humidity":41.8,"windSpeed":4.6,"windDegrees":240,"sun":"partial","dialin":8.79,"rt":0.011,"ft60":2.056,"ft330":5.729,"ft660":8.757,"mph660":81.93,"ft1000":null,"ft1320":null,"mph1320":null,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1084,"date":"2025-09-01","time":"12:11 PM","track":"Sonoma","distance":"quarter","da":1785.2,"temp":78.8,"humidity":47.6,"windSpeed":5.8,"windDegrees":220,"sun":"partial","dialin":null,"rt":0.011,"ft60":2.115,"ft330":5.83,"ft660":8.867,"mph660":81.3,"ft1000":11.502,"ft1320":13.74,"mph1320":100.77,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1085,"date":"2025-09-07","time":"12:56 PM","track":"Redding","distance":"quarter","da":2130.5,"temp":80.6,"humidity":28.2,"windSpeed":0,"windDegrees":0,"sun":"partial","dialin":8.78,"rt":0.1,"ft60":2.061,"ft330":5.742,"ft660":8.771,"mph660":80.49,"ft1000":null,"ft1320":null,"mph1320":null,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1086,"date":"2025-09-06","time":"10:47 AM","track":"Redding","distance":"quarter","da":2268.3,"temp":77,"humidity":50.5,"windSpeed":3.5,"windDegrees":110,"sun":"partial","dialin":null,"rt":0.067,"ft60":2.073,"ft330":5.756,"ft660":8.794,"mph660":81.59,"ft1000":null,"ft1320":null,"mph1320":null,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1087,"date":"2025-09-07","time":"9:16 AM","track":"Redding","distance":"quarter","da":1330.2,"temp":66.2,"humidity":63.9,"windSpeed":3.5,"windDegrees":120,"sun":"partial","dialin":null,"rt":0.035,"ft60":2.036,"ft330":5.68,"ft660":8.681,"mph660":81.3,"ft1000":11.266,"ft1320":13.469,"mph1320":102.72,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1088,"date":"2025-09-01","time":"9:31 AM","track":"Sonoma","distance":"quarter","da":947.3,"temp":66.2,"humidity":72.8,"windSpeed":4.6,"windDegrees":240,"sun":"partial","dialin":null,"rt":0.042,"ft60":2.066,"ft330":5.734,"ft660":8.747,"mph660":81.84,"ft1000":11.359,"ft1320":13.598,"mph1320":100.98,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1089,"date":"2025-09-05","time":"7:37 PM","track":"Redding","distance":"quarter","da":2660.7,"temp":82.4,"humidity":32.5,"windSpeed":10.4,"windDegrees":140,"sun":"partial","dialin":null,"rt":0.024,"ft60":2.044,"ft330":5.72,"ft660":8.75,"mph660":81.9,"ft1000":11.363,"ft1320":13.578,"mph1320":101.82,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1090,"date":"2025-09-06","time":"9:12 AM","track":"Redding","distance":"quarter","da":1892.2,"temp":71.6,"humidity":56.7,"windSpeed":5.8,"windDegrees":190,"sun":"partial","dialin":null,"rt":0.046,"ft60":2.056,"ft330":5.711,"ft660":8.732,"mph660":81.9,"ft1000":11.336,"ft1320":13.553,"mph1320":103.26,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1091,"date":"2025-08-27","time":"6:21 PM","track":"Sonoma","distance":"quarter","da":1236.9,"temp":71.6,"humidity":60.5,"windSpeed":16.1,"windDegrees":190,"sun":"partial","dialin":null,"rt":-0.007,"ft60":2.041,"ft330":5.69,"ft660":8.703,"mph660":81.74,"ft1000":11.32,"ft1320":13.564,"mph1320":100.73,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1092,"date":"2025-08-27","time":"5:22 PM","track":"Sonoma","distance":"quarter","da":1363.8,"temp":73.4,"humidity":57,"windSpeed":18.4,"windDegrees":200,"sun":"partial","dialin":null,"rt":0.001,"ft60":2.066,"ft330":5.735,"ft660":8.759,"mph660":81.6,"ft1000":11.383,"ft1320":13.632,"mph1320":100.55,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1093,"date":"2025-08-27","time":"8:22 PM","track":"Sonoma","distance":"quarter","da":902.5,"temp":66.2,"humidity":77.6,"windSpeed":13.8,"windDegrees":210,"sun":"partial","dialin":13.47,"rt":0.096,"ft60":2.044,"ft330":5.676,"ft660":8.669,"mph660":82.39,"ft1000":11.273,"ft1320":13.49,"mph1320":101.64,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1094,"date":"2025-08-27","time":"4:41 PM","track":"Sonoma","distance":"quarter","da":1352.3,"temp":73.4,"humidity":57,"windSpeed":18.4,"windDegrees":190,"sun":"partial","dialin":null,"rt":0.021,"ft60":2.072,"ft330":5.744,"ft660":8.764,"mph660":81.69,"ft1000":11.382,"ft1320":13.628,"mph1320":100.68,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1095,"date":"2025-08-27","time":"7:19 PM","track":"Sonoma","distance":"quarter","da":1109.9,"temp":69.8,"humidity":64.3,"windSpeed":10.4,"windDegrees":200,"sun":"partial","dialin":13.54,"rt":0.068,"ft60":2.034,"ft330":5.672,"ft660":8.671,"mph660":82.06,"ft1000":11.279,"ft1320":13.514,"mph1320":101.13,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1096,"date":"2025-05-26","time":"3:33 PM","track":"Sonoma","distance":"quarter","da":1147.4,"temp":71.6,"humidity":53.1,"windSpeed":15,"windDegrees":230,"sun":"partial","dialin":13.58,"rt":0.014,"ft60":2.057,"ft330":5.709,"ft660":8.733,"mph660":81.63,"ft1000":11.354,"ft1320":13.608,"mph1320":100.05,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1097,"date":"2025-05-28","time":"4:40 PM","track":"Sonoma","distance":"quarter","da":1227.9,"temp":71.6,"humidity":53.1,"windSpeed":19.6,"windDegrees":210,"sun":"partial","dialin":null,"rt":0.002,"ft60":2.035,"ft330":5.681,"ft660":8.704,"mph660":82.95,"ft1000":11.34,"ft1320":13.592,"mph1320":101.74,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1098,"date":"2025-05-26","time":"3:53 PM","track":"Sonoma","distance":"quarter","da":1117,"temp":71.6,"humidity":49.7,"windSpeed":12.7,"windDegrees":250,"sun":"partial","dialin":13.58,"rt":0.098,"ft60":2.048,"ft330":5.688,"ft660":8.699,"mph660":83.37,"ft1000":11.32,"ft1320":13.556,"mph1320":102.49,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1099,"date":"2025-05-26","time":"4:05 PM","track":"Sonoma","distance":"quarter","da":1117,"temp":71.6,"humidity":49.7,"windSpeed":13.8,"windDegrees":250,"sun":"partial","dialin":13.54,"rt":0.116,"ft60":2.023,"ft330":5.665,"ft660":8.683,"mph660":81.79,"ft1000":11.296,"ft1320":13.539,"mph1320":100.73,"result":"loss","notes":"Imported from Dr. Dial-In"},{"id":1100,"date":"2025-05-25","time":"2:40 PM","track":"Sonoma","distance":"quarter","da":1050,"temp":71.6,"humidity":43.5,"windSpeed":19.6,"windDegrees":260,"sun":"partial","dialin":13.54,"rt":0.038,"ft60":2.043,"ft330":5.68,"ft660":8.684,"mph660":83.64,"ft1000":11.298,"ft1320":13.528,"mph1320":102.88,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1101,"date":"2025-05-28","time":"3:22 PM","track":"Sonoma","distance":"quarter","da":1174.3,"temp":71.6,"humidity":49.7,"windSpeed":17.3,"windDegrees":210,"sun":"partial","dialin":null,"rt":-0.036,"ft60":2.057,"ft330":5.71,"ft660":8.725,"mph660":83.47,"ft1000":11.342,"ft1320":13.571,"mph1320":102.87,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1102,"date":"2025-06-11","time":"6:12 PM","track":"Sonoma","distance":"quarter","da":805.4,"temp":66.2,"humidity":52.3,"windSpeed":17.3,"windDegrees":250,"sun":"partial","dialin":null,"rt":-0.034,"ft60":2.026,"ft330":5.637,"ft660":8.623,"mph660":84.05,"ft1000":11.219,"ft1320":13.428,"mph1320":103.78,"result":"","notes":"Imported from Dr. Dial-In"},{"id":1103,"date":"2025-06-11","time":"7:22 PM","track":"Sonoma","distance":"quarter","da":571.2,"temp":62.6,"humidity":59.3,"windSpeed":13.8,"windDegrees":250,"sun":"partial","dialin":13.44,"rt":0.066,"ft60":2.033,"ft330":5.643,"ft660":8.626,"mph660":83.95,"ft1000":11.228,"ft1320":13.445,"mph1320":103.35,"result":"win","notes":"Imported from Dr. Dial-In"},{"id":1104,"date":"2025-06-11","time":"5:14 PM","track":"Sonoma","distance":"quarter","da":1026,"temp":69.8,"humidity":46.2,"windSpeed":15,"windDegrees":250,"sun":"partial","dialin":null,"rt":-0.007,"ft60":2.025,"ft330":5.652,"ft660":8.646,"mph660":80.98,"ft1000":11.253,"ft1320":13.49,"mph1320":101.04,"result":"","notes":"Imported from Dr. Dial-In"}]
+;
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'dialinpro_runs_v2';
+const TRACKS_KEY  = 'dialinpro_tracks_v1';
+const SETTINGS_KEY = 'dialinpro_settings_v1';
+
+function loadRuns() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (stored) return stored;
+    // First launch: seed with Dr. Dial-In data
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_RUNS));
+    return SEED_RUNS;
+  } catch { return SEED_RUNS; }
+}
+function saveRuns(r) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch {} }
+
+function loadTracks() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(TRACKS_KEY) || 'null');
+    if (stored) return stored;
+    // Default tracks — headings = direction cars travel (degrees)
+    const defaults = [
+      { id:'redding', name:'Redding Motorsports Park', city:'Redding, CA', heading:180, lat:40.5480, lng:-122.3820 },
+      { id:'sonoma',  name:'Sonoma Raceway Dragstrip', city:'Sonoma, CA',  heading:315, lat:38.1609, lng:-122.4535 },
+      { id:'samoa',   name:'Samoa Dragstrip',          city:'Samoa, CA',   heading:135, lat:40.8100, lng:-124.1850 },
+      { id:'lvms',    name:'The Strip at Las Vegas',   city:'Las Vegas, NV', heading:200, lat:36.2721, lng:-115.0100 },
+      { id:'firebird',name:'Firebird Raceway (AZ)',    city:'Chandler, AZ', heading:135, lat:33.2100, lng:-112.0500 },
+    ];
+    localStorage.setItem(TRACKS_KEY, JSON.stringify(defaults));
+    return defaults;
+  } catch { return []; }
+}
+function saveTracks(t) { try { localStorage.setItem(TRACKS_KEY, JSON.stringify(t)); } catch {} }
+
+function loadSettings() {
+  try {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  } catch { return {}; }
+}
+function saveSettings() {
+  const s = {
+    wxInterval: parseInt(document.getElementById('wx-interval').value),
+    vehicleName: document.getElementById('s-vehicle-name').value,
+    vehicleInfo: document.getElementById('s-vehicle-info').value,
+    vehicleNotes: document.getElementById('s-vehicle-notes').value,
+  };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
+  document.getElementById('hdr-vehicle').textContent = '// ' + (s.vehicleName || '2007 MUSTANG GT').toUpperCase();
+  scheduleWeatherRefresh();
+}
+
+let runs   = loadRuns();
+let tracks = loadTracks();
+let settings = loadSettings();
+let wxTimer = null;
+let lastWxFetch = null;
+let currentWx = null;
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(id, tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (tab) tab.classList.add('active');
+  if (id === 'runs')     { renderRunsTable(); renderStats(); }
+  if (id === 'log')      { renderQuickStats(); }
+  if (id === 'tracks')   { renderTracks(); }
+  if (id === 'predict')  { populateTrackSelects(); }
+  if (id === 'settings') { loadSettingsUI(); }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── TRACK SELECTS ─────────────────────────────────────────────────────────────
+function populateTrackSelects() {
+  ['p-track','l-track','filter-track'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isFilter = id === 'filter-track';
+    const isPredictTrack = id === 'p-track';
+    const current = el.value;
+    el.innerHTML = '';
+    if (isFilter) el.innerHTML = '<option value="all">All Tracks</option>';
+    if (isPredictTrack) el.innerHTML = '<option value="all">All Tracks (combined)</option>';
+    tracks.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name;
+      el.appendChild(opt);
+    });
+    // Restore selection if still valid
+    if ([...el.options].some(o => o.value === current)) el.value = current;
+  });
+}
+
+// ── WIND MATH ─────────────────────────────────────────────────────────────────
+// Returns effective headwind component (positive = headwind, negative = tailwind)
+function calcWindComponent(windDegrees, trackHeading, windSpeed) {
+  if (windDegrees === 'calm' || windDegrees === '' || windDegrees == null || !windSpeed) return 0;
+  const angle = (parseFloat(windDegrees) - parseFloat(trackHeading)) * Math.PI / 180;
+  return Math.cos(angle) * parseFloat(windSpeed);  // positive = headwind, negative = tailwind
+}
+
+function windEffectET(windDegrees, trackHeading, windSpeed) {
+  const comp = calcWindComponent(windDegrees, trackHeading, windSpeed);
+  // ~0.005s per mph of headwind component for a NA V8
+  return comp * 0.005;
+}
+
+function getTrackHeading(trackId) {
+  if (trackId === 'all') return null;
+  const t = tracks.find(t => t.id === trackId);
+  return t ? t.heading : null;
+}
+
+function updateWindEffect() {
+  const trackId = document.getElementById('p-track').value;
+  const windDeg = document.getElementById('p-wind-compass').value;
+  const windSpeed = parseFloat(document.getElementById('p-wind-speed').value) || 0;
+  const el = document.getElementById('p-wind-effect');
+  
+  if (!windDeg || windDeg === 'calm') { el.textContent = 'Calm / No wind effect'; return; }
+  
+  const heading = getTrackHeading(trackId);
+  if (!heading && trackId !== 'all') { el.textContent = 'Select a specific track for wind math'; return; }
+  if (trackId === 'all') { el.textContent = 'Select a track to compute headwind/tailwind'; return; }
+  
+  const comp = calcWindComponent(windDeg, heading, windSpeed);
+  const absMph = Math.abs(comp).toFixed(1);
+  if (Math.abs(comp) < 0.5) {
+    el.textContent = 'Effective crosswind — minimal ET impact';
+  } else if (comp > 0) {
+    el.textContent = `↑ ${absMph} mph headwind component → slower ET`;
+    el.style.color = 'var(--danger)';
+  } else {
+    el.textContent = `↓ ${absMph} mph tailwind component → faster ET`;
+    el.style.color = 'var(--success)';
+  }
+}
+
+document.getElementById('p-wind-compass').addEventListener('change', updateWindEffect);
+document.getElementById('p-wind-speed').addEventListener('input', updateWindEffect);
+
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+async function fetchWeather(manual=false) {
+  if (!navigator.geolocation) {
+    if (manual) showToast('Geolocation not supported.', true);
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const {latitude: lat, longitude: lng} = pos.coords;
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const c = data.current;
+      
+      // Compute DA from pressure & temp
+      const tempF = c.temperature_2m;
+      const tempC = (tempF - 32) * 5/9;
+      const pressHpa = c.surface_pressure;
+      const pressInHg = pressHpa * 0.02953;
+      const humidity = c.relative_humidity_2m;
+      
+      // Standard DA formula
+      const stdPressure = 29.92126;
+      const stdTemp = 15; // C
+      const da = Math.round(
+        145442.16 * (1 - Math.pow((17.326 * pressHpa) / (459.67 + tempF*1.0), 0.235))
+      );
+      // Simpler approximation used by drag racers:
+      const daSimple = Math.round(((stdPressure - pressInHg) * 1000) + ((tempF - 59) * 120) + ((humidity - 0) * 10));
+      
+      currentWx = {
+        da: da,
+        temp: Math.round(tempF * 10) / 10,
+        humidity: humidity,
+        windSpeed: Math.round(c.wind_speed_10m * 10) / 10,
+        windDegrees: c.wind_direction_10m,
+        pressInHg: Math.round(pressInHg * 100) / 100
+      };
+      lastWxFetch = new Date();
+      
+      updateWeatherBar();
+      applyWeatherToForms();
+      if (manual) showToast('Weather updated.');
+    } catch(e) {
+      if (manual) showToast('Weather fetch failed.', true);
+    }
+  }, err => {
+    if (manual) showToast('Location access denied.', true);
+  });
+}
+
+function updateWeatherBar() {
+  if (!currentWx) return;
+  document.getElementById('wx-da').textContent = currentWx.da.toLocaleString();
+  document.getElementById('wx-temp').textContent = currentWx.temp;
+  document.getElementById('wx-hum').textContent = currentWx.humidity;
+  
+  const windLabels = {0:'N',45:'NE',90:'E',135:'SE',180:'S',225:'SW',270:'W',315:'NW'};
+  const nearest = Object.keys(windLabels).reduce((a,b) => 
+    Math.abs(b - currentWx.windDegrees) < Math.abs(a - currentWx.windDegrees) ? b : a
+  );
+  document.getElementById('wx-wind').textContent = `${currentWx.windSpeed} mph ${windLabels[nearest]}`;
+  
+  const dot = document.getElementById('wx-dot');
+  const ageMin = (new Date() - lastWxFetch) / 60000;
+  if (ageMin < 2) { dot.className = 'wx-dot live'; document.getElementById('wx-age').textContent = 'Live'; }
+  else if (ageMin < 20) { dot.className = 'wx-dot live'; document.getElementById('wx-age').textContent = `${Math.round(ageMin)}m ago`; }
+  else { dot.className = 'wx-dot stale'; document.getElementById('wx-age').textContent = `${Math.round(ageMin)}m ago`; }
+}
+
+function applyWeatherToForms() {
+  if (!currentWx) return;
+  // Apply to predict form
+  document.getElementById('p-da').value = currentWx.da;
+  document.getElementById('p-temp').value = currentWx.temp;
+  document.getElementById('p-humidity').value = currentWx.humidity;
+  document.getElementById('p-wind-speed').value = currentWx.windSpeed;
+  
+  // Snap wind degrees to nearest compass option
+  const options = [0, 45, 90, 135, 180, 225, 270, 315];
+  const nearest = options.reduce((a,b) => 
+    Math.abs(b - currentWx.windDegrees) < Math.abs(a - currentWx.windDegrees) ? b : a
+  );
+  document.getElementById('p-wind-compass').value = nearest.toString();
+  updateWindEffect();
+  
+  // Apply to log form too
+  document.getElementById('l-da').value = currentWx.da;
+  document.getElementById('l-temp').value = currentWx.temp;
+  document.getElementById('l-humidity').value = currentWx.humidity;
+  document.getElementById('l-wind-speed').value = currentWx.windSpeed;
+  document.getElementById('l-wind-compass').value = nearest.toString();
+}
+
+function scheduleWeatherRefresh() {
+  clearInterval(wxTimer);
+  const intervalMin = settings.wxInterval ?? 15;
+  if (intervalMin > 0) {
+    wxTimer = setInterval(() => fetchWeather(false), intervalMin * 60000);
+  }
+}
+
+// ── SAVE RUN ──────────────────────────────────────────────────────────────────
+function saveRun() {
+  const dist = document.getElementById('l-distance').value;
+  const da   = parseFloat(document.getElementById('l-da').value);
+  const et660  = parseFloat(document.getElementById('l-660ft').value);
+  const et1320 = parseFloat(document.getElementById('l-1320ft').value);
+
+  if (isNaN(da)) { showToast('Density Altitude is required.', true); return; }
+  if (dist === 'eighth'  && isNaN(et660))  { showToast("660' ET required for 1/8 mile.", true); return; }
+  if (dist === 'quarter' && isNaN(et1320)) { showToast("1320' ET required for 1/4 mile.", true); return; }
+
+  const trackId = document.getElementById('l-track').value;
+  const windDeg = document.getElementById('l-wind-compass').value;
+  
+  const run = {
+    id: Date.now(),
+    date: document.getElementById('l-date').value || new Date().toISOString().split('T')[0],
+    time: document.getElementById('l-time').value || '',
+    track: trackId,
+    distance: dist,
+    da,
+    temp:     parseFloat(document.getElementById('l-temp').value) || null,
+    humidity: parseFloat(document.getElementById('l-humidity').value) || null,
+    windSpeed: parseFloat(document.getElementById('l-wind-speed').value) || null,
+    windDegrees: windDeg === 'calm' ? null : parseFloat(windDeg),
+    sun: document.getElementById('l-sun').value,
+    dialin:  parseFloat(document.getElementById('l-dialin').value) || null,
+    rt:      parseFloat(document.getElementById('l-rt').value) || null,
+    ft60:    parseFloat(document.getElementById('l-60ft').value) || null,
+    ft330:   parseFloat(document.getElementById('l-330ft').value) || null,
+    ft660:   et660 || null,
+    mph660:  parseFloat(document.getElementById('l-660mph').value) || null,
+    ft1000:  parseFloat(document.getElementById('l-1000ft').value) || null,
+    ft1320:  et1320 || null,
+    mph1320: parseFloat(document.getElementById('l-1320mph').value) || null,
+    result:  document.getElementById('l-result').value,
+    notes:   document.getElementById('l-notes').value,
+  };
+
+  runs.push(run);
+  saveRuns(runs);
+  clearLogForm();
+  showToast('Run saved! (' + runs.length + ' total)');
+  renderQuickStats();
+}
+
+function clearLogForm() {
+  ['l-da','l-temp','l-humidity','l-wind-speed','l-60ft','l-330ft',
+   'l-660ft','l-660mph','l-1000ft','l-1320ft','l-1320mph','l-rt','l-dialin','l-notes','l-time']
+  .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+// ── PREDICTION ENGINE ─────────────────────────────────────────────────────────
+function predict() {
+  fetchWeather(false); // silent refresh
+  
+  const distance  = document.getElementById('p-distance').value;
+  const trackId   = document.getElementById('p-track').value;
+  const da        = parseFloat(document.getElementById('p-da').value);
+  const temp      = parseFloat(document.getElementById('p-temp').value);
+  const humidity  = parseFloat(document.getElementById('p-humidity').value);
+  const windSpeed = parseFloat(document.getElementById('p-wind-speed').value);
+  const windDeg   = document.getElementById('p-wind-compass').value;
+  const sun       = document.getElementById('p-sun').value;
+
+  if (isNaN(da)) { showToast('Enter Density Altitude to predict.', true); return; }
+
+  // Primary ET field to predict
+  const primaryField = distance === 'eighth' ? 'ft660' : 'ft1320';
+
+  // Build pool: for 1/8 mile predictions, use ALL runs that have ft660 (including quarter-mile runs)
+  let pool;
+  if (distance === 'eighth') {
+    pool = runs.filter(r => r.ft660 != null);
+  } else {
+    pool = runs.filter(r => r.ft1320 != null);
+  }
+  
+  if (trackId !== 'all') {
+    pool = pool.filter(r => r.track === trackId);
+    // If not enough track-specific data, fall back to all tracks
+    if (pool.length < 5) {
+      const allPool = distance === 'eighth'
+        ? runs.filter(r => r.ft660 != null)
+        : runs.filter(r => r.ft1320 != null);
+      if (allPool.length >= 5) {
+        pool = allPool;
+        showToast('Using all tracks — not enough data for ' + trackId + ' alone.');
+      }
+    }
+  }
+
+  document.getElementById('result-box').style.display = 'none';
+  document.getElementById('no-data-msg').style.display = 'none';
+
+  if (pool.length < 5) {
+    document.getElementById('no-data-msg').style.display = 'block';
+    return;
+  }
+
+  // IDW on DA
+  const weights = pool.map(r => {
+    const diff = Math.abs((r.da || 0) - da);
+    return diff < 1 ? 1000 : 1 / (diff * diff);
+  });
+  const totalW = weights.reduce((a,b) => a + b, 0);
+  const baseET = pool.reduce((sum, r, i) => sum + r[primaryField] * weights[i], 0) / totalW;
+
+  // Temp correction
+  let tempCorr = 0;
+  if (!isNaN(temp)) {
+    const avgTemp = pool.reduce((s,r,i) => s + (r.temp || temp) * weights[i], 0) / totalW;
+    tempCorr = (temp - avgTemp) * 0.001;
+  }
+
+  // Humidity correction
+  let humCorr = 0;
+  if (!isNaN(humidity)) {
+    const avgHum = pool.reduce((s,r,i) => s + (r.humidity || humidity) * weights[i], 0) / totalW;
+    humCorr = (humidity - avgHum) * 0.0008;
+  }
+
+  // Wind correction using track heading
+  let wCorr = 0;
+  if (windDeg && windDeg !== 'calm' && windDeg !== '' && !isNaN(windSpeed)) {
+    const heading = getTrackHeading(trackId);
+    if (heading !== null) {
+      wCorr = windEffectET(windDeg, heading, windSpeed);
+    } else {
+      // Fallback legacy for "all tracks"
+      wCorr = windSpeed * 0.003;
+    }
+    
+    // Also correct against pool average wind component
+    const avgWindComp = pool.reduce((s,r,i) => {
+      const wc = calcWindComponent(r.windDegrees, heading || 180, r.windSpeed || 0);
+      return s + wc * weights[i];
+    }, 0) / totalW;
+    const currentComp = calcWindComponent(windDeg, heading || 180, windSpeed || 0);
+    wCorr = (currentComp - avgWindComp) * 0.005;
+  }
+
+  // Sun correction
+  const sunFactor = {'full': 0.008, 'partial': 0, 'shade': -0.005};
+  const poolAvgSun = pool.reduce((s,r,i) => s + (sunFactor[r.sun] || 0) * weights[i], 0) / totalW;
+  const sCorr = (sunFactor[sun] || 0) - poolAvgSun;
+
+  const finalET = baseET + tempCorr + humCorr + wCorr + sCorr;
+
+  // Splits
+  const splitFields = ['ft60','ft330','ft660','ft1000'];
+  const splitLabels = ["60'","330'","660'","1000'"];
+  const splitsEl = document.getElementById('result-splits');
+  splitsEl.innerHTML = '';
+
+  splitFields.forEach((f, idx) => {
+    if (distance === 'eighth' && f === 'ft1000') return;
+    if (distance === 'eighth' && f === 'ft660') return; // ft660 IS the final ET for 1/8
+    const validRuns = pool.filter(r => r[f] && r[primaryField]);
+    if (validRuns.length >= 3) {
+      const ratio = validRuns.reduce((s,r) => s + r[f]/r[primaryField], 0) / validRuns.length;
+      splitsEl.innerHTML += `<div class="split-item"><div class="split-val">${(finalET*ratio).toFixed(3)}</div><div class="split-lbl">${splitLabels[idx]}</div></div>`;
+    }
+  });
+
+  // MPH
+  const mphField = distance === 'eighth' ? 'mph660' : 'mph1320';
+  const mphLabel = distance === 'eighth' ? "660' MPH" : "1320' MPH";
+  const validMph = pool.filter(r => r[mphField] && r[primaryField]);
+  if (validMph.length >= 3) {
+    const mphRatio = validMph.reduce((s,r) => s + r[mphField]/r[primaryField], 0) / validMph.length;
+    splitsEl.innerHTML += `<div class="split-item"><div class="split-val">${(finalET*mphRatio).toFixed(1)}</div><div class="split-lbl">${mphLabel}</div></div>`;
+  }
+
+  const trackName = trackId === 'all' ? 'All Tracks' : (tracks.find(t=>t.id===trackId)?.name || trackId);
+  document.getElementById('result-et').textContent = finalET.toFixed(3);
+  document.getElementById('result-distance').textContent = distance === 'eighth' ? '1/8 MILE — 660 FT' : '1/4 MILE — 1,320 FT';
+  document.getElementById('result-sub').textContent = `Based on ${pool.length} runs  •  ${trackName}  •  DA ${da.toLocaleString()} ft`;
+  document.getElementById('result-box').style.display = 'block';
+}
+
+// ── RUNS TABLE ────────────────────────────────────────────────────────────────
+function renderRunsTable() {
+  populateTrackSelects();
+  const filterDist  = document.getElementById('filter-distance')?.value || 'all';
+  const filterTrack = document.getElementById('filter-track')?.value || 'all';
+  let filtered = filterDist === 'all' ? runs : runs.filter(r => r.distance === filterDist);
+  if (filterTrack !== 'all') filtered = filtered.filter(r => r.track === filterTrack);
+  const tbody = document.getElementById('runs-tbody');
+  const empty = document.getElementById('empty-state');
+
+  document.getElementById('runs-count').textContent = `${filtered.length} run${filtered.length !== 1 ? 's' : ''} shown`;
+
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const windLabel = (deg) => {
+    if (deg == null) return 'Calm';
+    const labels = {0:'N',45:'NE',90:'E',135:'SE',180:'S',225:'SW',270:'W',315:'NW'};
+    const nearest = Object.keys(labels).reduce((a,b) => Math.abs(b-deg) < Math.abs(a-deg) ? b : a);
+    return labels[nearest];
+  };
+  const n = v => (v != null && v !== '') ? v : '—';
+  const trackName = id => tracks.find(t=>t.id===id)?.name?.split(' ').slice(0,2).join(' ') || id;
+
+  tbody.innerHTML = [...filtered].reverse().map((r, i) => {
+    const rb = r.result === 'win'  ? `<span class="badge badge-win">WIN</span>`
+             : r.result === 'loss' ? `<span class="badge badge-loss">LOSS</span>`
+             : r.result === 'bye'  ? `<span class="badge" style="color:var(--muted)">BYE</span>` : '';
+    const db = r.distance === 'eighth'
+      ? `<span class="badge badge-eighth">1/8</span>`
+      : `<span class="badge badge-quarter">1/4</span>`;
+    const wStr = r.windSpeed ? `${r.windSpeed} ${windLabel(r.windDegrees)}` : '—';
+    return `<tr>
+      <td style="color:var(--muted)">${filtered.length-i}</td>
+      <td>${r.date||'—'}</td>
+      <td style="color:var(--muted);font-size:.65rem">${r.time||'—'}</td>
+      <td style="color:var(--text)">${trackName(r.track)}</td>
+      <td>${db}</td>
+      <td>${n(r.da)}</td><td>${n(r.temp)}</td><td>${n(r.humidity)}</td>
+      <td>${wStr}</td>
+      <td>${n(r.sun)}</td>
+      <td>${n(r.dialin)}</td><td>${n(r.rt)}</td><td>${n(r.ft60)}</td><td>${n(r.ft330)}</td>
+      <td style="color:var(--accent)">${n(r.ft660)}</td><td>${n(r.mph660)}</td><td>${n(r.ft1000)}</td>
+      <td style="color:var(--accent2)">${n(r.ft1320)}</td><td>${n(r.mph1320)}</td>
+      <td>${rb}</td>
+      <td><button class="btn btn-danger" onclick="deleteRun(${r.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function deleteRun(id) {
+  if (!confirm('Delete this run?')) return;
+  runs = runs.filter(r => r.id !== id);
+  saveRuns(runs);
+  renderRunsTable();
+  renderStats();
+  showToast('Run deleted.');
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const strip  = document.getElementById('stat-strip');
+  const eighth = runs.filter(r => r.ft660);
+  const quarter = runs.filter(r => r.ft1320);
+  const wins   = runs.filter(r => r.result === 'win').length;
+  const losses = runs.filter(r => r.result === 'loss').length;
+  const best8  = eighth.length  ? Math.min(...eighth.map(r=>r.ft660)).toFixed(3) : '—';
+  const best4  = quarter.length ? Math.min(...quarter.map(r=>r.ft1320)).toFixed(3) : '—';
+  strip.innerHTML = `
+    <div class="stat-cell"><div class="stat-val">${runs.length}</div><div class="stat-lbl">Total Runs</div></div>
+    <div class="stat-cell"><div class="stat-val">${best8}</div><div class="stat-lbl">Best 660'</div></div>
+    <div class="stat-cell"><div class="stat-val">${best4}</div><div class="stat-lbl">Best 1320'</div></div>
+    <div class="stat-cell"><div class="stat-val">${wins}-${losses}</div><div class="stat-lbl">W-L Record</div></div>`;
+}
+
+function renderQuickStats() {
+  const el = document.getElementById('quick-stats-log');
+  const eighth = runs.filter(r => r.ft660);
+  const quarter = runs.filter(r => r.ft1320);
+  el.innerHTML = `<div class="stat-strip" style="margin-bottom:0">
+    <div class="stat-cell"><div class="stat-val">${runs.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-cell"><div class="stat-val">${eighth.length}</div><div class="stat-lbl">With 660'</div></div>
+    <div class="stat-cell"><div class="stat-val">${quarter.length}</div><div class="stat-lbl">With 1320'</div></div>
+  </div>`;
+}
+
+// ── TRACKS MANAGEMENT ─────────────────────────────────────────────────────────
+function renderTracks() {
+  const container = document.getElementById('tracks-list');
+  container.innerHTML = tracks.map((t,i) => `
+    <div class="track-card">
+      <div class="track-card-header">
+        <div>
+          <div class="track-name">${t.name}</div>
+          <div class="track-meta">${t.city} &nbsp;|&nbsp; Heading: ${t.heading}° &nbsp;|&nbsp; ${compassFromHeading(t.heading)}</div>
+        </div>
+        <button class="btn btn-danger" onclick="deleteTrack('${t.id}')">✕</button>
+      </div>
+      <div class="track-form">
+        <div class="field">
+          <label>Track Name</label>
+          <input type="text" value="${t.name}" onchange="updateTrack('${t.id}','name',this.value)">
+        </div>
+        <div class="field">
+          <label>City, State</label>
+          <input type="text" value="${t.city}" onchange="updateTrack('${t.id}','city',this.value)">
+        </div>
+        <div class="field">
+          <label>Track Heading (°)</label>
+          <input type="number" value="${t.heading}" min="0" max="359" placeholder="0-359" onchange="updateTrack('${t.id}','heading',parseFloat(this.value))">
+        </div>
+        <div class="field">
+          <label>Lat (optional)</label>
+          <input type="number" step="0.0001" value="${t.lat||''}" placeholder="e.g. 40.548" onchange="updateTrack('${t.id}','lat',parseFloat(this.value))">
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function compassFromHeading(h) {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(h/22.5) % 16] + ' direction';
+}
+
+function updateTrack(id, key, val) {
+  const t = tracks.find(t=>t.id===id);
+  if (t) { t[key] = val; saveTracks(tracks); populateTrackSelects(); }
+}
+
+function deleteTrack(id) {
+  if (!confirm('Remove this track?')) return;
+  tracks = tracks.filter(t=>t.id!==id);
+  saveTracks(tracks);
+  renderTracks();
+  populateTrackSelects();
+}
+
+function addTrack() {
+  const newTrack = {
+    id: 'track_' + Date.now(),
+    name: 'New Track',
+    city: 'City, ST',
+    heading: 180,
+    lat: null, lng: null
+  };
+  tracks.push(newTrack);
+  saveTracks(tracks);
+  renderTracks();
+  populateTrackSelects();
+}
+
+// ── IMPORT ────────────────────────────────────────────────────────────────────
+function handleDragOver(e) { e.preventDefault(); document.getElementById('import-zone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('import-zone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('import-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file.name.endsWith('.json')) parseJsonImport(file);
+  else parseCSV(file);
+}
+function handleFileSelect(e)  { parseCSV(e.target.files[0]); }
+function handleJsonSelect(e)  { parseJsonImport(e.target.files[0]); }
+
+function parseJsonImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const arr = Array.isArray(data) ? data : [data];
+      
+      const trackMap = {
+        'Sonoma Raceway Drag Strip': 'sonoma',
+        'Redding Dragstrip': 'redding',
+        'Firebird Motorsports Park Drag Strip': 'firebird',
+      };
+      const resultMap = {'Win':'win','Loss':'loss','Time Only':'','Bye':'bye','Red Light':'loss'};
+      const options = [0,45,90,135,180,225,270,315];
+      
+      let imported = 0, skipped = 0;
+      const newRuns = [];
+      
+      arr.forEach((entry, i) => {
+        const ts  = entry.timeslip || {};
+        const loc = entry.location || {};
+        const obs = (entry.weather || {}).observation || {};
+        const der = (entry.weather || {}).derived || {};
+        
+        const da = der.density_altitude;
+        if (da == null) { skipped++; return; }
+        
+        // Parse date
+        const dtStr = ts.datetime || '';
+        const datePart = dtStr.split(' ')[0] || '';
+        const timePart = dtStr.split(' ').slice(1,3).join(' ') || '';
+        let dateFormatted = datePart;
+        const dParts = datePart.split('/');
+        if (dParts.length === 3) dateFormatted = `${dParts[2]}-${dParts[0].padStart(2,'0')}-${dParts[1].padStart(2,'0')}`;
+        
+        const windDeg = (obs.wind_direction || {}).degrees;
+        const windSnapped = windDeg != null ? options.reduce((a,b) => Math.abs(b-windDeg)<Math.abs(a-windDeg)?b:a) : null;
+        const trackId = trackMap[loc.title] || 'redding';
+        
+        // Avoid duplicate imports by checking date + ft660 combo
+        const isDup = runs.some(r => r.date === dateFormatted && r.ft660 === ts.et_660);
+        if (isDup) { skipped++; return; }
+        
+        newRuns.push({
+          id: Date.now() + i,
+          date: dateFormatted,
+          time: timePart,
+          track: trackId,
+          distance: (loc.track_length||'').includes('1/4') ? 'quarter' : 'eighth',
+          da, temp: obs.air_temp, humidity: obs.humidity,
+          windSpeed: obs.wind_speed, windDegrees: windSnapped,
+          sun: 'partial',
+          dialin: ts.dialin_et, rt: ts.reaction_time,
+          ft60: ts.et_60, ft330: ts.et_330, ft660: ts.et_660, mph660: ts.mph_660,
+          ft1000: ts.et_1000, ft1320: ts.et_1320, mph1320: ts.mph_1320,
+          result: resultMap[ts.result] || '',
+          notes: 'Imported from Dr. Dial-In'
+        });
+        imported++;
+      });
+      
+      runs = [...runs, ...newRuns];
+      saveRuns(runs);
+      document.getElementById('import-preview').innerHTML = `
+        <div class="no-data-msg" style="border-color:var(--success);color:var(--success);margin-top:10px">
+          ✓ Imported ${imported} runs${skipped ? ` (${skipped} skipped — duplicates or missing DA)` : ''}. Total: ${runs.length} runs.
+        </div>`;
+      showToast(`Imported ${imported} runs!`);
+    } catch(err) {
+      showToast('Failed to parse JSON: ' + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split('\n').filter(l=>l.trim());
+    if (lines.length < 2) { showToast('CSV appears empty.', true); return; }
+    const headers = lines[0].split(',').map(h=>h.trim());
+    const newRuns = [];
+    let skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const vals = lines[i].split(',');
+      const row = {};
+      headers.forEach((h,idx) => row[h] = vals[idx]?.trim() || '');
+      const da = parseFloat(row.da);
+      if (isNaN(da)) { skipped++; continue; }
+      newRuns.push({
+        id: Date.now()+i,
+        date: row.date||'', time: row.time||'',
+        track: row.track||'redding',
+        distance: row.distance==='quarter' ? 'quarter' : 'eighth',
+        da, temp: parseFloat(row.temp)||null, humidity: parseFloat(row.humidity)||null,
+        windSpeed: parseFloat(row.windSpeed)||null,
+        windDegrees: row.windDegrees ? parseFloat(row.windDegrees) : null,
+        sun: row.sun||'partial',
+        dialin: parseFloat(row.dialin)||null, rt: parseFloat(row.rt)||null,
+        ft60: parseFloat(row.ft60)||null, ft330: parseFloat(row.ft330)||null,
+        ft660: parseFloat(row.ft660)||null, mph660: parseFloat(row.mph660)||null,
+        ft1000: parseFloat(row.ft1000)||null, ft1320: parseFloat(row.ft1320)||null,
+        mph1320: parseFloat(row.mph1320)||null,
+        result: row.result||'', notes: row.notes||''
+      });
+    }
+    runs = [...runs, ...newRuns];
+    saveRuns(runs);
+    document.getElementById('import-preview').innerHTML = `
+      <div class="no-data-msg" style="border-color:var(--success);color:var(--success);margin-top:10px">
+        ✓ Imported ${newRuns.length} runs${skipped ? ` (${skipped} skipped)` : ''}. Total: ${runs.length} runs.
+      </div>`;
+    showToast(`Imported ${newRuns.length} runs!`);
+  };
+  reader.readAsText(file);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportCSV() {
+  if (!runs.length) { showToast('No runs to export.', true); return; }
+  const headers = ['date','time','track','distance','da','temp','humidity','windSpeed','windDegrees','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','result','notes'];
+  const rows = runs.map(r => headers.map(h => r[h]??'').join(','));
+  downloadFile('dialin-pro-runs.csv', [headers.join(','),...rows].join('\n'), 'text/csv');
+  showToast('Exported ' + runs.length + ' runs.');
+}
+
+function exportJSON() {
+  if (!runs.length) { showToast('No runs to export.', true); return; }
+  downloadFile('dialin-pro-runs.json', JSON.stringify(runs, null, 2), 'application/json');
+  showToast('Exported ' + runs.length + ' runs.');
+}
+
+function downloadTemplate() {
+  const h = 'date,time,track,distance,da,temp,humidity,windSpeed,windDegrees,sun,dialin,rt,ft60,ft330,ft660,mph660,ft1000,ft1320,mph1320,result,notes';
+  const ex = '2026-04-05,2:30 PM,redding,eighth,1850,78,45,8,180,partial,8.420,0.012,1.890,4.821,8.412,79.4,,,,win,Good run';
+  downloadFile('dialin-pro-template.csv', [h,ex].join('\n'), 'text/csv');
+}
+
+function downloadFile(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type}));
+  a.download = name;
+  a.click();
+}
+
+// ── DATA MANAGEMENT ───────────────────────────────────────────────────────────
+function clearAllRuns() {
+  if (!confirm('DELETE ALL run data? This cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure? All ' + runs.length + ' runs will be lost.')) return;
+  runs = [];
+  saveRuns(runs);
+  showToast('All run data cleared.');
+}
+
+// ── SETTINGS UI ───────────────────────────────────────────────────────────────
+function loadSettingsUI() {
+  const s = loadSettings();
+  document.getElementById('wx-interval').value = s.wxInterval ?? 15;
+  document.getElementById('s-vehicle-name').value = s.vehicleName || '2007 Mustang GT';
+  document.getElementById('s-vehicle-info').value = s.vehicleInfo || '2007 Ford Mustang GT 4.6 3V';
+  document.getElementById('s-vehicle-notes').value = s.vehicleNotes || 'Stock 4.6 3V, 305/45/17 rear';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+populateTrackSelects();
+renderStats();
+renderQuickStats();
+loadSettingsUI();
+settings = loadSettings();
+
+// Apply saved vehicle name to header
+const savedSettings = loadSettings();
+if (savedSettings.vehicleName) {
+  document.getElementById('hdr-vehicle').textContent = '// ' + savedSettings.vehicleName.toUpperCase();
+}
+
+// Initial weather fetch
+fetchWeather(false);
+scheduleWeatherRefresh();
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
