@@ -128,8 +128,8 @@ tr:hover td{background:var(--sf2)}
       <button class="wxr" onclick="doFetch(true)">&#8635; Refresh</button>
     </div>
     <div class="f">
-      <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED</span></label>
-      <input type="number" id="p-da" placeholder="Fetching…" readonly>
+      <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED — or enter manually</span></label>
+      <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')">
       <div class="ovn" id="da-ov" style="display:none">&#9888; Manually overridden — auto-refresh will not replace this value</div>
     </div>
     <div class="fr">
@@ -346,7 +346,7 @@ const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa C
 async function doFetch(msg){
   const tid=document.getElementById('p-track').value;
   if(tid==='all'){setWxSt('Select a specific track to fetch live weather','');return;}
-  const t=tracks.find(x=>x.id===tid);
+  const t=tracks.find(x=>x.name===tid||x.id===tid);
   if(!t||!t.lat){setWxSt('Track has no coordinates — add a Plus Code in Tracks tab','err');return;}
   setWxSt('Fetching weather…','busy');
   const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
