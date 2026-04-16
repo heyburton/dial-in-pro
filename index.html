@@ -169,14 +169,22 @@ tr:hover td{background:var(--sf2)}
 <div id="pg-log" class="page">
 <div class="g2">
 <div class="card">
-  <div class="ct">// Log a Run</div>
-  <div class="sl">Conditions</div>
+  <div class="ct" id="log-title">// Log a Run</div>
+  <input type="hidden" id="l-edit-id">
+  <div class="sl">Setup</div>
   <div class="g3">
     <div class="f"><label>Date</label><input type="date" id="l-date"></div>
-    <div class="f"><label>Track</label><select id="l-track"></select></div>
+    <div class="f"><label>Time</label><input type="time" id="l-time"></div>
+    <div class="f"><label>Track</label><select id="l-track" onchange="logFetchWeather()"></select></div>
     <div class="f"><label>Distance</label>
       <select id="l-dist"><option value="eighth">1/8 Mile</option><option value="quarter" selected>1/4 Mile</option></select>
     </div>
+  </div>
+  <div class="sl">Conditions <button class="wxr" style="margin-left:8px;font-size:.6rem" onclick="logFetchWeather()">&#8635; Fetch Weather</button></div>
+  <div class="wxb" style="margin-bottom:10px">
+    <span class="wxs" id="l-wxs">Select a track and date/time to auto-fetch historical weather</span>
+  </div>
+  <div class="g3">
     <div class="f"><label>DA (ft)</label><input type="number" id="l-da"></div>
     <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp"></div>
     <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum"></div>
@@ -204,7 +212,42 @@ tr:hover td{background:var(--sf2)}
     </div>
   </div>
   <div class="f" style="margin-top:6px"><label>Notes</label><input type="text" id="l-notes" placeholder="e.g. Soft launch, track sprayed"></div>
-  <button class="btn btn-p" onclick="saveRun()" style="margin-top:8px">Save Run</button>
+
+  <!-- PEDAL-OFF ESTIMATOR -->
+  <div style="margin-top:14px;border:1px solid var(--bd);padding:13px;background:var(--sf2)">
+    <div style="font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac2);margin-bottom:8px">// Pedal-Off ET Estimator</div>
+    <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:10px;line-height:1.6">
+      If you lifted before the finish line, enter your accurate splits below to calculate your true all-out ET. Uses your car's historical run data to project the finish.
+    </div>
+    <div id="poe-fields-quarter">
+      <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/4 Mile — enter accurate 60', 330', 660', and 1000' splits:</div>
+      <div class="g3">
+        <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60"></div>
+        <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330"></div>
+        <div class="f"><label>660' (accurate)</label><input type="number" step=".001" id="poe-660"></div>
+        <div class="f"><label>1000' (accurate)</label><input type="number" step=".001" id="poe-1k"></div>
+      </div>
+    </div>
+    <div id="poe-fields-eighth" style="display:none">
+      <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/8 Mile — enter accurate 60' and 330' splits:</div>
+      <div class="g3">
+        <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60e"></div>
+        <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330e"></div>
+      </div>
+    </div>
+    <button class="btn btn-p" style="margin-top:4px;background:var(--ac2);color:#000" onclick="calcPedalOff()">Calculate My ET</button>
+    <div id="poe-result" style="display:none;margin-top:10px;font-family:var(--mo);font-size:.8rem;padding:10px;border:1px solid var(--ac2);background:rgba(255,107,0,.07)">
+      <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mu);margin-bottom:3px">ESTIMATED ALL-OUT ET</div>
+      <div id="poe-et" style="font-size:2rem;color:var(--ac2)">-.---</div>
+      <div id="poe-note" style="font-size:.65rem;color:var(--mu);margin-top:4px;line-height:1.5"></div>
+      <button class="bsm bsec" style="margin-top:8px" onclick="usePoeET()">Use This ET When Saving Run</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button class="btn btn-p" style="margin-top:0;flex:1" onclick="saveRun()">Save Run</button>
+    <button class="bsm bgho" id="log-cancel-btn" style="display:none" onclick="cancelEdit()">Cancel Edit</button>
+  </div>
 </div>
 <div class="card"><div class="ct">// Quick Stats</div><div id="qs-log"></div></div>
 </div>
@@ -223,9 +266,9 @@ tr:hover td{background:var(--sf2)}
   </div>
   <div class="tw">
     <table><thead><tr>
-      <th>#</th><th>Date</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
+      <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>1320MPH</th><th>Result</th><th></th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet.</p></div>
@@ -361,11 +404,11 @@ async function doFetch(msg){
       const c=data.current;
       const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
       const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
-      if(!ovSet.has('p-da')){const el=document.getElementById('p-da');el.value=Math.round(da);}
-      if(!ovSet.has('p-temp'))  document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
-      if(!ovSet.has('p-hum'))   document.getElementById('p-hum').value=c.relative_humidity_2m;
-      if(!ovSet.has('p-ws'))    document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
-      if(!ovSet.has('p-wd'))    document.getElementById('p-wd').value=wl;
+      document.getElementById('p-da').value=Math.round(da);
+      document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
+      document.getElementById('p-hum').value=c.relative_humidity_2m;
+      document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
+      document.getElementById('p-wd').value=wl;
       const si=ST[t.id]||{};
       const nm=si.n||(i===0?`Grid @ track coords`:`Grid offset ${i}`);
       const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
@@ -381,10 +424,18 @@ async function doFetch(msg){
 
 function calcDA(tf,rh,phpa,elft){
   const tc=(tf-32)*5/9;
+  // Saturation vapor pressure (hPa)
   const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  // Actual vapor pressure
   const e=(rh/100)*es;
-  const pa=145366.45*(1-Math.pow(phpa/1013.25,.190284));
-  return Math.round(pa+120*(tc-(15-.00198*pa)));
+  // Virtual temperature correction — accounts for humidity making air less dense
+  const tv=tc+273.15;
+  const tvv=tv/(1-0.379*(e/phpa));
+  // Pressure altitude in feet
+  const pa=145366.45*(1-Math.pow(phpa/1013.25,0.190284));
+  // Density altitude = pressure altitude adjusted for non-standard temperature and humidity
+  const da=pa+120*((tvv-273.15)-(15-0.00198*pa));
+  return Math.round(da);
 }
 function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
@@ -392,12 +443,11 @@ function bearingToWind(wd,th){
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
-function ov(id){ovSet.add(id);if(id==='p-da')document.getElementById('da-ov').style.display='block';}
+function ov(id){if(id==='p-da')document.getElementById('da-ov').style.display='block';}
 function onTrackChange(){
-  ovSet.clear();
-  document.getElementById('da-ov').style.display='none';
   ['p-da','p-temp','p-hum','p-ws'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('p-wd').value='';
+  document.getElementById('da-ov').style.display='none';
   doFetch(false);
   renderPredictStats();
   updatePoolNote();
@@ -573,7 +623,7 @@ function updatePoolNote(){
 }
 
 // ════════════════════════════════════════════════════════════════
-// SAVE RUN
+// SAVE RUN / EDIT RUN
 // ════════════════════════════════════════════════════════════════
 function saveRun(){
   const dist=document.getElementById('l-dist').value;
@@ -583,9 +633,11 @@ function saveRun(){
   if(isNaN(da)){toast('DA is required.',true);return;}
   if(dist==='eighth'&&isNaN(e6)){toast("660' ET required for 1/8 mile.",true);return;}
   if(dist==='quarter'&&isNaN(e13)){toast("1320' ET required for 1/4 mile.",true);return;}
+  const eid=document.getElementById('l-edit-id').value;
   const run={
-    id:Date.now(),
+    id:eid?parseInt(eid):Date.now(),
     date:document.getElementById('l-date').value||new Date().toISOString().slice(0,10),
+    time:document.getElementById('l-time').value||'',
     track:document.getElementById('l-track').value,
     distance:dist,
     da,
@@ -596,19 +648,234 @@ function saveRun(){
     ft60:pf('l-60'),ft330:pf('l-330'),
     ft660:e6||null,mph660:pf('l-660m'),
     ft1000:pf('l-1k'),ft1320:e13||null,mph1320:pf('l-1320m'),
+    calcET:pf('l-calc-et'),
     result:document.getElementById('l-res').value,
     notes:document.getElementById('l-notes').value
   };
-  runs.push(run);sRuns(runs);
-  ['l-da','l-temp','l-hum','l-ws','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  toast(`Run saved! (${runs.length} total)`);
+  if(eid){
+    const idx=runs.findIndex(r=>r.id===parseInt(eid));
+    if(idx>=0)runs[idx]=run;
+  }else{
+    runs.push(run);
+  }
+  sRuns(runs);
+  clearLogForm();
+  toast(eid?'Run updated!':'Run saved! ('+runs.length+' total)');
   renderQS('qs-log');
 }
+
+function editRun(id){
+  const r=runs.find(x=>x.id===id);if(!r)return;
+  document.getElementById('log-title').textContent='// Edit Run';
+  document.getElementById('l-edit-id').value=r.id;
+  document.getElementById('l-date').value=r.date||'';
+  document.getElementById('l-time').value=r.time||'';
+  document.getElementById('l-dist').value=r.distance||'quarter';
+  document.getElementById('l-da').value=r.da||'';
+  document.getElementById('l-temp').value=r.temp||'';
+  document.getElementById('l-hum').value=r.humidity||'';
+  document.getElementById('l-ws').value=r.windSpeed||'';
+  document.getElementById('l-wd').value=r.windDir||'calm';
+  document.getElementById('l-sun').value=r.sun||'full';
+  document.getElementById('l-di').value=r.dialin||'';
+  document.getElementById('l-rt').value=r.rt||'';
+  document.getElementById('l-60').value=r.ft60||'';
+  document.getElementById('l-330').value=r.ft330||'';
+  document.getElementById('l-660').value=r.ft660||'';
+  document.getElementById('l-660m').value=r.mph660||'';
+  document.getElementById('l-1k').value=r.ft1000||'';
+  document.getElementById('l-1320').value=r.ft1320||'';
+  document.getElementById('l-1320m').value=r.mph1320||'';
+  document.getElementById('l-res').value=r.result||'';
+  document.getElementById('l-notes').value=r.notes||'';
+  // Set track dropdown
+  const lt=document.getElementById('l-track');
+  if([...lt.options].some(o=>o.value===r.track))lt.value=r.track;
+  document.getElementById('log-cancel-btn').style.display='';
+  // Navigate to log tab
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pg-log').classList.add('active');
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function cancelEdit(){
+  clearLogForm();
+}
+
+function clearLogForm(){
+  document.getElementById('log-title').textContent='// Log a Run';
+  document.getElementById('l-edit-id').value='';
+  document.getElementById('log-cancel-btn').style.display='none';
+  ['l-da','l-temp','l-hum','l-ws','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('l-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('poe-result').style.display='none';
+  document.getElementById('l-wxs').textContent='Select a track and date/time to auto-fetch historical weather';
+  document.getElementById('l-wxs').className='wxs';
+}
+
 function pf(id){const v=parseFloat(document.getElementById(id)?.value);return isNaN(v)?null:v;}
 
 // ════════════════════════════════════════════════════════════════
-// RUN HISTORY TABLE
+// HISTORICAL WEATHER FETCH FOR LOG RUN
 // ════════════════════════════════════════════════════════════════
+async function logFetchWeather(){
+  const tid=document.getElementById('l-track').value;
+  const date=document.getElementById('l-date').value;
+  const time=document.getElementById('l-time').value;
+  const wxs=document.getElementById('l-wxs');
+  if(!tid){wxs.textContent='Select a track first';wxs.className='wxs err';return;}
+  if(!date){wxs.textContent='Enter a date first';wxs.className='wxs err';return;}
+  const t=tracks.find(x=>x.name===tid||x.id===tid);
+  if(!t||!t.lat){wxs.textContent='Track has no GPS coordinates';wxs.className='wxs err';return;}
+  wxs.textContent='Fetching historical weather…';wxs.className='wxs busy';
+  // Build datetime string — use time if provided, else noon
+  const hr=time?time.slice(0,2):'12';
+  const mn=time?time.slice(3,5):'00';
+  const dtStr=`${date}T${hr}:${mn}`;
+  try{
+    const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${t.lat}&longitude=${t.lng}&start_date=${date}&end_date=${date}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+    const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+    if(!res.ok)throw new Error('API error');
+    const data=await res.json();
+    const hourIdx=parseInt(hr);
+    const c={
+      temperature_2m:data.hourly.temperature_2m[hourIdx],
+      relative_humidity_2m:data.hourly.relative_humidity_2m[hourIdx],
+      surface_pressure:data.hourly.surface_pressure[hourIdx],
+      wind_speed_10m:data.hourly.wind_speed_10m[hourIdx],
+      wind_direction_10m:data.hourly.wind_direction_10m[hourIdx]
+    };
+    if(c.temperature_2m==null)throw new Error('No data for this hour');
+    const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
+    const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
+    document.getElementById('l-da').value=Math.round(da);
+    document.getElementById('l-temp').value=c.temperature_2m.toFixed(1);
+    document.getElementById('l-hum').value=c.relative_humidity_2m;
+    document.getElementById('l-ws').value=c.wind_speed_10m.toFixed(1);
+    document.getElementById('l-wd').value=wl;
+    wxs.textContent=`Historical weather loaded for ${date} at ${hr}:${mn} ✓`;
+    wxs.className='wxs ok';
+  }catch(e){
+    wxs.textContent='Could not fetch historical weather — enter conditions manually';
+    wxs.className='wxs err';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// PEDAL-OFF ET ESTIMATOR
+// ════════════════════════════════════════════════════════════════
+function calcPedalOff(){
+  const dist=document.getElementById('l-dist').value;
+  const track=document.getElementById('l-track').value;
+  const isQ=dist==='quarter';
+
+  // Get the accurate splits entered
+  let s60,s330,s660,s1k;
+  if(isQ){
+    s60=pf('poe-60');s330=pf('poe-330');s660=pf('poe-660');s1k=pf('poe-1k');
+    if(!s60||!s330||!s660||!s1k){toast("Enter all accurate splits: 60', 330', 660', and 1000'",true);return;}
+  }else{
+    s60=pf('poe-60e');s330=pf('poe-330e');
+    if(!s60||!s330){toast("Enter accurate 60' and 330' splits",true);return;}
+  }
+
+  // Get pool of all-out runs from same track (or all tracks if not enough)
+  let pool=runs.filter(r=>r.distance===dist&&r.ft60&&r.ft330);
+  if(isQ)pool=pool.filter(r=>r.ft660&&r.ft1000&&r.ft1320);
+  else pool=pool.filter(r=>r.ft660);
+
+  let trackPool=pool.filter(r=>r.track===track);
+  const usePool=trackPool.length>=3?trackPool:pool;
+
+  if(usePool.length<3){
+    toast('Need at least 3 comparable all-out runs to estimate ET',true);
+    return;
+  }
+
+  // For each reference run, calculate what our splits would predict for the finish
+  // Method: use the ratio of (our splits / ref splits) at each checkpoint,
+  // look at the trend, and project forward
+  const estimates=usePool.map(ref=>{
+    if(isQ){
+      const r60=s60/ref.ft60;
+      const r330=s330/ref.ft330;
+      const r660=s660/ref.ft660;
+      const r1k=s1k/ref.ft1000;
+      // Fit a trend to see if ratio is growing, shrinking, or stable
+      // Use weighted projection: more weight to later splits (closer to finish)
+      const trend=(r1k-r60)/3; // slope across 3 intervals
+      const projRatio=r1k+trend*0.5; // project half an interval beyond 1000'
+      // Clamp projection — don't extrapolate too wildly
+      const clampedRatio=Math.max(r60*0.98,Math.min(r1k*1.05,projRatio));
+      return ref.ft1320*clampedRatio;
+    }else{
+      const r60=s60/ref.ft60;
+      const r330=s330/ref.ft330;
+      const trend=r330-r60;
+      const projRatio=r330+trend*0.5;
+      const clampedRatio=Math.max(r60*0.98,Math.min(r330*1.05,projRatio));
+      return ref.ft660*clampedRatio;
+    }
+  });
+
+  // Weight estimates by how similar this run's early splits are to the reference
+  const final=estimates.reduce((s,v)=>s+v,0)/estimates.length;
+  const poolNote=usePool===trackPool?`${trackPool.length} ${track} runs`:`${pool.length} all-track runs (not enough ${track} data)`;
+
+  document.getElementById('poe-et').textContent=final.toFixed(3);
+  document.getElementById('poe-note').textContent=`Based on ${poolNote}. This ET will be saved as "Calc ET" alongside your actual timing slip ET.`;
+  document.getElementById('poe-result').style.display='block';
+}
+
+function usePoeET(){
+  const et=document.getElementById('poe-et').textContent;
+  // Store in hidden field — saved with run
+  let el=document.getElementById('l-calc-et');
+  if(!el){el=document.createElement('input');el.type='hidden';el.id='l-calc-et';document.getElementById('pg-log').appendChild(el);}
+  el.value=et;
+  toast('Calculated ET will be saved with this run ✓');
+}
+
+// ════════════════════════════════════════════════════════════════
+// PREDICTED ET FOR A LOGGED RUN
+// ════════════════════════════════════════════════════════════════
+function getPredictedETForRun(r){
+  // Run the prediction engine using this run's conditions,
+  // but exclude the run itself from the pool to avoid self-referencing
+  const dist=r.distance;
+  const pf2=dist==='eighth'?'ft660':'ft1320';
+  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&(dist==='all'||x.distance===dist||dist==='eighth'));
+  const tPool=pool.filter(x=>x.track===r.track);
+  const usePool=tPool.length>=5?tPool:pool.filter(x=>x[pf2]!=null);
+  if(usePool.length<5)return null;
+
+  const DA_SCALE=800,TEMP_SCALE=25,HUM_SCALE=30,WS_SCALE=15,WD_SCALE=1.5,SUN_SCALE=1.5;
+  const poolAvgTemp=usePool.reduce((s,x)=>s+(x.temp||0),0)/usePool.length;
+  const poolAvgHum=usePool.reduce((s,x)=>s+(x.humidity||0),0)/usePool.length;
+  const poolAvgWS=usePool.reduce((s,x)=>s+(x.windSpeed||0),0)/usePool.length;
+  const poolAvgWDN=usePool.reduce((s,x)=>s+windDirNum(x.windDir||''),0)/usePool.length;
+  const sunRuns=usePool.filter(x=>sunNum(x.sun)!==null);
+  const poolAvgSun=sunRuns.length>0?sunRuns.reduce((s,x)=>s+sunNum(x.sun),0)/sunRuns.length:0;
+
+  const qDA=r.da,qTemp=r.temp||poolAvgTemp,qHum=r.humidity||poolAvgHum;
+  const qWS=r.windSpeed||0,qWDN=windDirNum(r.windDir||''),qSun=sunNum(r.sun)!==null?sunNum(r.sun):poolAvgSun;
+
+  const wts=usePool.map(x=>{
+    const rSunVal=sunNum(x.sun)!==null?sunNum(x.sun):poolAvgSun;
+    const dDA=(x.da-qDA)/DA_SCALE;
+    const dT=((x.temp||poolAvgTemp)-qTemp)/TEMP_SCALE;
+    const dH=((x.humidity||poolAvgHum)-qHum)/HUM_SCALE;
+    const dWS=((x.windSpeed||poolAvgWS)-qWS)/WS_SCALE;
+    const dWD=(windDirNum(x.windDir||'')-qWDN)/WD_SCALE;
+    const dSun=(rSunVal-qSun)/SUN_SCALE;
+    const d2=dDA*dDA+dT*dT+dH*dH+dWS*dWS+dWD*dWD+dSun*dSun;
+    return d2<1e-10?1e10:1/d2;
+  });
+  const tw=wts.reduce((a,b)=>a+b,0);
+  return(usePool.reduce((s,x,i)=>s+x[pf2]*wts[i],0)/tw).toFixed(3);
+}
 function renderTable(){
   const ft=document.getElementById('ft')?.value||'all';
   const fd=document.getElementById('fd')?.value||'all';
@@ -623,7 +890,27 @@ function renderTable(){
   tb.innerHTML=[...rows].reverse().map((r,i)=>{
     const rb=r.result==='win'?`<span class="bw">WIN</span>`:r.result==='loss'?`<span class="bl">LOSS</span>`:r.result==='bye'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">BYE</span>`:'';
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
-    return`<tr><td style="color:var(--mu)">${rows.length-i}</td><td>${r.date||'—'}</td><td>${r.track||'—'}</td><td>${db}</td><td>${n(r.da)}</td><td>${n(r.temp)}</td><td>${n(r.humidity)}</td><td>${r.windSpeed?r.windSpeed+' '+r.windDir:'—'}</td><td>${n(r.dialin)}</td><td>${n(r.rt)}</td><td>${n(r.ft60)}</td><td>${n(r.ft330)}</td><td style="color:var(--ac)">${n(r.ft660)}</td><td>${n(r.mph660)}</td><td>${n(r.ft1000)}</td><td style="color:var(--ac2)">${n(r.ft1320)}</td><td>${n(r.mph1320)}</td><td>${rb}</td><td><button class="bsm bdng" onclick="delRun(${r.id})">✕</button></td></tr>`;
+    const predET=getPredictedETForRun(r);
+    const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
+    const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
+    return`<tr>
+      <td style="color:var(--mu)">${rows.length-i}</td>
+      <td>${r.date||'—'}</td>
+      <td style="color:var(--mu)">${r.time||'—'}</td>
+      <td>${r.track||'—'}</td><td>${db}</td>
+      <td>${n(r.da)}</td><td>${n(r.temp)}</td><td>${n(r.humidity)}</td>
+      <td>${r.windSpeed?r.windSpeed+' '+r.windDir:'—'}</td>
+      <td>${n(r.dialin)}</td><td>${n(r.rt)}</td><td>${n(r.ft60)}</td><td>${n(r.ft330)}</td>
+      <td style="color:var(--ac)">${n(r.ft660)}</td><td>${n(r.mph660)}</td>
+      <td>${n(r.ft1000)}</td>
+      <td style="color:var(--ac2)">${n(r.ft1320)}</td>
+      <td>${calcETVal}</td><td>${predETVal}</td>
+      <td>${n(r.mph1320)}</td><td>${rb}</td>
+      <td style="display:flex;gap:4px">
+        <button class="bsm bgho" onclick="editRun(${r.id})">Edit</button>
+        <button class="bsm bdng" onclick="delRun(${r.id})">✕</button>
+      </td>
+    </tr>`;
   }).join('');
 }
 function delRun(id){
@@ -819,6 +1106,15 @@ function toast(m,e=false){const t=document.getElementById('toast');t.textContent
 // INIT
 // ════════════════════════════════════════════════════════════════
 document.getElementById('l-date').value=new Date().toISOString().slice(0,10);
+// Set default time to current time
+const now=new Date();
+document.getElementById('l-time').value=now.toTimeString().slice(0,5);
+// Toggle pedal-off fields based on distance
+document.getElementById('l-dist').addEventListener('change',function(){
+  const isQ=this.value==='quarter';
+  document.getElementById('poe-fields-quarter').style.display=isQ?'':'none';
+  document.getElementById('poe-fields-eighth').style.display=isQ?'none':'';
+});
 refreshDrops();renderSS();renderQS('qs-log');renderPredictStats();updatePoolNote();
 </script>
 </body>
