@@ -1,11 +1,13 @@
 // Dial-In Pro Service Worker
 // Increment version when you update the app
-const VERSION = 'dialinpro-v2.2';
+const VERSION = 'dialinpro-v2.3';
 const CACHE = VERSION;
 
 const ASSETS = [
   'index.html',
-  'manifest.json'
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png'
 ];
 
 self.addEventListener('install', e => {
