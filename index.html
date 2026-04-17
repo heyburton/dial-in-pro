@@ -100,11 +100,10 @@ tr:hover td{background:var(--sf2)}
   <span>// 2007 MUSTANG GT 4.6 3V &nbsp;|&nbsp; ET PREDICTION SYSTEM</span>
 </header>
 <div class="tabs">
-  <button class="tab active" onclick="nav('predict',this)">Predict</button>
-  <button class="tab" onclick="nav('log',this)">Log Run</button>
-  <button class="tab" onclick="nav('runs',this)">Run History</button>
+  <button class="tab active" onclick="nav('predict',this)">ET Predict</button>
+  <button class="tab" onclick="nav('runs',this)">Log Book</button>
   <button class="tab" onclick="nav('tracks',this)">Tracks</button>
-  <button class="tab" onclick="nav('import',this)">Import</button>
+  <button class="tab" onclick="nav('import',this)">Upload</button>
 </div>
 
 <!-- PREDICT -->
@@ -168,103 +167,103 @@ tr:hover td{background:var(--sf2)}
 </div>
 </div>
 
-<!-- LOG RUN -->
-<div id="pg-log" class="page">
-<div class="g2">
-<div class="card">
-  <div class="ct" id="log-title">// Log a Run</div>
-  <input type="hidden" id="l-edit-id">
-  <input type="hidden" id="l-calc-et">
-  <div class="sl">Setup</div>
-  <div class="g3">
-    <div class="f"><label>Date</label><input type="date" id="l-date"></div>
-    <div class="f"><label>Time</label><input type="time" id="l-time"></div>
-    <div class="f"><label>Track</label><select id="l-track" onchange="logFetchWeather()"></select></div>
-    <div class="f"><label>Distance</label>
-      <select id="l-dist"><option value="eighth">1/8 Mile</option><option value="quarter" selected>1/4 Mile</option></select>
-    </div>
-  </div>
-  <div class="sl">Conditions <button class="wxr" style="margin-left:8px;font-size:.6rem" onclick="logFetchWeather()">&#8635; Fetch Weather</button></div>
-  <div class="wxb" style="margin-bottom:10px">
-    <span class="wxs" id="l-wxs">Select a track and date/time to auto-fetch historical weather</span>
-  </div>
-  <div class="g3">
-    <div class="f"><label>DA (ft)</label><input type="number" id="l-da"></div>
-    <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp"></div>
-    <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum"></div>
-    <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
-    <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
-    <div class="f"><label>Wind Direction</label>
-      <select id="l-wd"><option value="calm">Calm</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option></select>
-    </div>
-    <div class="f"><label>Sun</label>
-      <select id="l-sun"><option value="full">Full Sun</option><option value="partial">Partial</option><option value="shade">Shade/Night</option></select>
-    </div>
-  </div>
-  <div class="sl">Performance</div>
-  <div class="g3">
-    <div class="f"><label>Dial-In</label><input type="number" step=".001" id="l-di"></div>
-    <div class="f"><label>Reaction Time</label><input type="number" step=".001" id="l-rt"></div>
-    <div class="f"><label>60' Time</label><input type="number" step=".001" id="l-60"></div>
-    <div class="f"><label>330' Time</label><input type="number" step=".001" id="l-330"></div>
-    <div class="f"><label>660' ET</label><input type="number" step=".001" id="l-660"></div>
-    <div class="f"><label>660' MPH</label><input type="number" step=".01" id="l-660m"></div>
-    <div class="f"><label>1000' Time</label><input type="number" step=".001" id="l-1k"></div>
-    <div class="f"><label>1320' ET</label><input type="number" step=".001" id="l-1320"></div>
-    <div class="f"><label>1320' MPH</label><input type="number" step=".01" id="l-1320m"></div>
-    <div class="f"><label>Result</label>
-      <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option></select>
-    </div>
-  </div>
-  <div class="f" style="margin-top:6px"><label>Notes</label><input type="text" id="l-notes" placeholder="e.g. Soft launch, track sprayed"></div>
-
-  <!-- PEDAL-OFF ESTIMATOR -->
-  <div style="margin-top:14px;border:1px solid var(--bd);padding:13px;background:var(--sf2)">
-    <div style="font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac2);margin-bottom:8px">// Pedal-Off ET Estimator</div>
-    <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:10px;line-height:1.6">
-      If you lifted before the finish line, enter your accurate splits below to calculate your true all-out ET. Uses your car's historical run data to project the finish.
-    </div>
-    <div id="poe-fields-quarter">
-      <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/4 Mile — enter accurate 60', 330', 660', and 1000' splits:</div>
-      <div class="g3">
-        <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60"></div>
-        <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330"></div>
-        <div class="f"><label>660' (accurate)</label><input type="number" step=".001" id="poe-660"></div>
-        <div class="f"><label>1000' (accurate)</label><input type="number" step=".001" id="poe-1k"></div>
-      </div>
-    </div>
-    <div id="poe-fields-eighth" style="display:none">
-      <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/8 Mile — enter accurate 60' and 330' splits:</div>
-      <div class="g3">
-        <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60e"></div>
-        <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330e"></div>
-      </div>
-    </div>
-    <button class="btn btn-p" style="margin-top:4px;background:var(--ac2);color:#000" onclick="calcPedalOff()">Calculate My ET</button>
-    <div id="poe-result" style="display:none;margin-top:10px;font-family:var(--mo);font-size:.8rem;padding:10px;border:1px solid var(--ac2);background:rgba(255,107,0,.07)">
-      <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mu);margin-bottom:3px">ESTIMATED ALL-OUT ET</div>
-      <div id="poe-et" style="font-size:2rem;color:var(--ac2)">-.---</div>
-      <div id="poe-note" style="font-size:.65rem;color:var(--mu);margin-top:4px;line-height:1.5"></div>
-    </div>
-  </div>
-
-  <div style="display:flex;gap:8px;margin-top:10px">
-    <button class="btn btn-p" style="margin-top:0;flex:1" onclick="saveRun()">Save Run</button>
-    <button class="bsm bgho" id="log-cancel-btn" style="display:none" onclick="cancelEdit()">Cancel Edit</button>
-  </div>
-</div>
-<div class="card"><div class="ct">// Quick Stats</div><div id="qs-log"></div></div>
-</div>
-</div>
-
-<!-- RUN HISTORY -->
+<!-- LOG BOOK (combined log entry + run history) -->
 <div id="pg-runs" class="page">
+
+  <!-- Log entry form (hidden by default, shown when + Log New Run is clicked) -->
+  <div id="log-form-wrap" style="display:none;margin-bottom:16px">
+  <div class="card">
+    <div class="ct" id="log-title">// Log a Run</div>
+    <input type="hidden" id="l-edit-id">
+    <input type="hidden" id="l-calc-et">
+    <div class="sl">Setup</div>
+    <div class="g3">
+      <div class="f"><label>Date</label><input type="date" id="l-date"></div>
+      <div class="f"><label>Time</label><input type="time" id="l-time"></div>
+      <div class="f"><label>Track</label><select id="l-track" onchange="logFetchWeather()"></select></div>
+      <div class="f"><label>Distance</label>
+        <select id="l-dist"><option value="eighth">1/8 Mile</option><option value="quarter" selected>1/4 Mile</option></select>
+      </div>
+    </div>
+    <div class="sl">Conditions <button class="wxr" style="margin-left:8px;font-size:.6rem" onclick="logFetchWeather()">&#8635; Fetch Weather</button></div>
+    <div class="wxb" style="margin-bottom:10px">
+      <span class="wxs" id="l-wxs">Select a track and date/time to auto-fetch historical weather</span>
+    </div>
+    <div class="g3">
+      <div class="f"><label>DA (ft)</label><input type="number" id="l-da"></div>
+      <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp"></div>
+      <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum"></div>
+      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
+      <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
+      <div class="f"><label>Wind Direction</label>
+        <select id="l-wd"><option value="calm">Calm</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option></select>
+      </div>
+      <div class="f"><label>Sun</label>
+        <select id="l-sun"><option value="full">Full Sun</option><option value="partial">Partial</option><option value="shade">Shade/Night</option></select>
+      </div>
+    </div>
+    <div class="sl">Performance</div>
+    <div class="g3">
+      <div class="f"><label>Dial-In</label><input type="number" step=".001" id="l-di"></div>
+      <div class="f"><label>Reaction Time</label><input type="number" step=".001" id="l-rt"></div>
+      <div class="f"><label>60' Time</label><input type="number" step=".001" id="l-60"></div>
+      <div class="f"><label>330' Time</label><input type="number" step=".001" id="l-330"></div>
+      <div class="f"><label>660' ET</label><input type="number" step=".001" id="l-660"></div>
+      <div class="f"><label>660' MPH</label><input type="number" step=".01" id="l-660m"></div>
+      <div class="f"><label>1000' Time</label><input type="number" step=".001" id="l-1k"></div>
+      <div class="f"><label>1320' ET</label><input type="number" step=".001" id="l-1320"></div>
+      <div class="f"><label>1320' MPH</label><input type="number" step=".01" id="l-1320m"></div>
+      <div class="f"><label>Result</label>
+        <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option></select>
+      </div>
+    </div>
+    <div class="f" style="margin-top:6px"><label>Notes</label><input type="text" id="l-notes" placeholder="e.g. Soft launch, track sprayed"></div>
+
+    <!-- PEDAL-OFF ESTIMATOR -->
+    <div style="margin-top:14px;border:1px solid var(--bd);padding:13px;background:var(--sf2)">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac2);margin-bottom:8px">// Pedal-Off ET Estimator</div>
+      <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:10px;line-height:1.6">
+        If you lifted before the finish line, enter your accurate splits below to calculate your true all-out ET.
+      </div>
+      <div id="poe-fields-quarter">
+        <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/4 Mile — enter accurate 60', 330', 660', and 1000' splits:</div>
+        <div class="g3">
+          <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60"></div>
+          <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330"></div>
+          <div class="f"><label>660' (accurate)</label><input type="number" step=".001" id="poe-660"></div>
+          <div class="f"><label>1000' (accurate)</label><input type="number" step=".001" id="poe-1k"></div>
+        </div>
+      </div>
+      <div id="poe-fields-eighth" style="display:none">
+        <div style="font-size:.63rem;color:var(--mu);font-family:var(--mo);margin-bottom:6px">1/8 Mile — enter accurate 60' and 330' splits:</div>
+        <div class="g3">
+          <div class="f"><label>60' (accurate)</label><input type="number" step=".001" id="poe-60e"></div>
+          <div class="f"><label>330' (accurate)</label><input type="number" step=".001" id="poe-330e"></div>
+        </div>
+      </div>
+      <button class="btn btn-p" style="margin-top:4px;background:var(--ac2);color:#000" onclick="calcPedalOff()">Calculate My ET</button>
+      <div id="poe-result" style="display:none;margin-top:10px;font-family:var(--mo);font-size:.8rem;padding:10px;border:1px solid var(--ac2);background:rgba(255,107,0,.07)">
+        <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mu);margin-bottom:3px">ESTIMATED ALL-OUT ET</div>
+        <div id="poe-et" style="font-size:2rem;color:var(--ac2)">-.---</div>
+        <div id="poe-note" style="font-size:.65rem;color:var(--mu);margin-top:4px;line-height:1.5"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-p" style="margin-top:0;flex:1" onclick="saveRun()">Save Run</button>
+      <button class="bsm bgho" id="log-cancel-btn" onclick="cancelEdit()">Cancel</button>
+    </div>
+  </div>
+  </div>
+
+  <!-- Log Book header -->
   <div class="ss" id="ss"></div>
   <div class="rh">
     <span class="rc" id="rc">—</span>
     <div class="frow">
       <select id="ft" onchange="renderTable()"><option value="all">All Tracks</option></select>
       <select id="fd" onchange="renderTable()"><option value="all">All Distances</option><option value="eighth">1/8 Mile</option><option value="quarter">1/4 Mile</option></select>
+      <button class="bsm btn-p" onclick="showLogForm()">+ Log New Run</button>
       <button class="bsm bsec" onclick="expCSV()">Export CSV</button>
     </div>
   </div>
@@ -275,7 +274,7 @@ tr:hover td{background:var(--sf2)}
       <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
-  <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet.</p></div>
+  <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
 </div>
 
 <!-- TRACKS -->
@@ -667,8 +666,8 @@ function saveRun(){
   }
   sRuns(runs);
   clearLogForm();
+  renderTable();renderSS();
   toast(eid?'Run updated!':'Run saved! ('+runs.length+' total)');
-  renderQS('qs-log');
 }
 
 function editRun(id){
@@ -699,12 +698,21 @@ function editRun(id){
   // Set track dropdown
   const lt=document.getElementById('l-track');
   if([...lt.options].some(o=>o.value===r.track))lt.value=r.track;
+  document.getElementById('log-form-wrap').style.display='block';
   document.getElementById('log-cancel-btn').style.display='';
-  // Navigate to log tab
+  // Navigate to Log Book tab
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('pg-log').classList.add('active');
+  document.getElementById('pg-runs').classList.add('active');
   document.querySelectorAll('.tab')[1].classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function showLogForm(){
+  document.getElementById('log-title').textContent='// Log a Run';
+  document.getElementById('l-edit-id').value='';
+  document.getElementById('log-cancel-btn').style.display='';
+  document.getElementById('log-form-wrap').style.display='block';
   window.scrollTo(0,0);
 }
 
@@ -715,7 +723,7 @@ function cancelEdit(){
 function clearLogForm(){
   document.getElementById('log-title').textContent='// Log a Run';
   document.getElementById('l-edit-id').value='';
-  document.getElementById('log-cancel-btn').style.display='none';
+  document.getElementById('log-form-wrap').style.display='none';
   ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et',
    'poe-60','poe-330','poe-660','poe-1k','poe-60e','poe-330e'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('l-date').value=localDateStr();
@@ -866,7 +874,9 @@ function calcPedalOff(){
 function getPredictedETForRun(r){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.distance===dist);
+  // Must have DA and the relevant ET to be predictable
+  if(!r.da||!r[pf2]===undefined){}
+  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.distance===dist&&x.da);
   const tPool=pool.filter(x=>x.track===r.track);
   const usePool=tPool.length>=5?tPool:pool;
   if(usePool.length<5)return null;
@@ -1121,8 +1131,7 @@ function nav(id,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
   btn.classList.add('active');
-  if(id==='runs'){renderTable();renderSS();}
-  if(id==='log')renderQS('qs-log');
+  if(id==='runs'){renderTable();renderSS();renderQS('qs-log');}
   if(id==='tracks')renderTracks();
   if(id==='predict'){renderPredictStats();updatePoolNote();}
 }
