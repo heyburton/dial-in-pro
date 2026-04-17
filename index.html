@@ -139,11 +139,13 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Humidity (%)</label><input type="number" id="p-hum" placeholder="—" oninput="ov('p-hum')"></div>
     </div>
     <div class="fr">
+      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="p-baro" placeholder="—"></div>
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')"></div>
+    </div>
+    <div class="fr">
       <div class="f"><label>Wind Direction</label>
         <select id="p-wd"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
       </div>
-    </div>
     <div class="f"><label>Sun on Track</label>
       <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
     </div>
@@ -188,8 +190,9 @@ tr:hover td{background:var(--sf2)}
     <div class="f"><label>DA (ft)</label><input type="number" id="l-da"></div>
     <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp"></div>
     <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum"></div>
+    <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
     <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
-    <div class="f" style="grid-column:span 2"><label>Wind Direction</label>
+    <div class="f"><label>Wind Direction</label>
       <select id="l-wd"><option value="calm">Calm</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option></select>
     </div>
     <div class="f"><label>Sun</label>
@@ -397,18 +400,20 @@ async function doFetch(msg){
   const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
   for(const {la,ln,i} of tries){
     try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
       const res=await fetch(url,{signal:AbortSignal.timeout(7000)});
       if(!res.ok)continue;
       const data=await res.json();
       const c=data.current;
-      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
+      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.pressure_msl,t.elevation||0);
       const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
+      const inHg=hpaToInHg(c.pressure_msl);
       document.getElementById('p-da').value=Math.round(da);
       document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
       document.getElementById('p-hum').value=c.relative_humidity_2m;
       document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
       document.getElementById('p-wd').value=wl;
+      document.getElementById('p-baro').value=inHg;
       const si=ST[t.id]||{};
       const nm=si.n||(i===0?`Grid @ track coords`:`Grid offset ${i}`);
       const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
@@ -424,19 +429,12 @@ async function doFetch(msg){
 
 function calcDA(tf,rh,phpa,elft){
   const tc=(tf-32)*5/9;
-  // Saturation vapor pressure (hPa)
-  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
-  // Actual vapor pressure
-  const e=(rh/100)*es;
-  // Virtual temperature correction — accounts for humidity making air less dense
-  const tv=tc+273.15;
-  const tvv=tv/(1-0.379*(e/phpa));
-  // Pressure altitude in feet
+  // Standard DA formula: pressure altitude + temperature correction
   const pa=145366.45*(1-Math.pow(phpa/1013.25,0.190284));
-  // Density altitude = pressure altitude adjusted for non-standard temperature and humidity
-  const da=pa+120*((tvv-273.15)-(15-0.00198*pa));
-  return Math.round(da);
+  const isaTemp=15-(0.00198*pa);
+  return Math.round(pa+120*(tc-isaTemp));
 }
+function hpaToInHg(hpa){return Math.round(hpa*0.02953*100)/100;}
 function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
   if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
@@ -445,7 +443,7 @@ function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
 function ov(id){if(id==='p-da')document.getElementById('da-ov').style.display='block';}
 function onTrackChange(){
-  ['p-da','p-temp','p-hum','p-ws'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['p-da','p-temp','p-hum','p-ws','p-baro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('p-wd').value='';
   document.getElementById('da-ov').style.display='none';
   doFetch(false);
@@ -642,6 +640,7 @@ function saveRun(){
     distance:dist,
     da,
     temp:pf('l-temp'),humidity:pf('l-hum'),windSpeed:pf('l-ws'),
+    pressure:pf('l-baro'),
     windDir:document.getElementById('l-wd').value,
     sun:document.getElementById('l-sun').value,
     dialin:pf('l-di'),rt:pf('l-rt'),
@@ -675,6 +674,7 @@ function editRun(id){
   document.getElementById('l-temp').value=r.temp||'';
   document.getElementById('l-hum').value=r.humidity||'';
   document.getElementById('l-ws').value=r.windSpeed||'';
+  document.getElementById('l-baro').value=r.pressure||'';
   document.getElementById('l-wd').value=r.windDir||'calm';
   document.getElementById('l-sun').value=r.sun||'full';
   document.getElementById('l-di').value=r.dialin||'';
@@ -708,7 +708,7 @@ function clearLogForm(){
   document.getElementById('log-title').textContent='// Log a Run';
   document.getElementById('l-edit-id').value='';
   document.getElementById('log-cancel-btn').style.display='none';
-  ['l-da','l-temp','l-hum','l-ws','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('l-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('poe-result').style.display='none';
   document.getElementById('l-wxs').textContent='Select a track and date/time to auto-fetch historical weather';
@@ -735,7 +735,7 @@ async function logFetchWeather(){
   const mn=time?time.slice(3,5):'00';
   const dtStr=`${date}T${hr}:${mn}`;
   try{
-    const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${t.lat}&longitude=${t.lng}&start_date=${date}&end_date=${date}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+    const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${t.lat}&longitude=${t.lng}&start_date=${date}&end_date=${date}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
     const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
     if(!res.ok)throw new Error('API error');
     const data=await res.json();
@@ -744,17 +744,19 @@ async function logFetchWeather(){
       temperature_2m:data.hourly.temperature_2m[hourIdx],
       relative_humidity_2m:data.hourly.relative_humidity_2m[hourIdx],
       surface_pressure:data.hourly.surface_pressure[hourIdx],
+      pressure_msl:data.hourly.pressure_msl[hourIdx],
       wind_speed_10m:data.hourly.wind_speed_10m[hourIdx],
       wind_direction_10m:data.hourly.wind_direction_10m[hourIdx]
     };
     if(c.temperature_2m==null)throw new Error('No data for this hour');
-    const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
+    const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.pressure_msl||c.surface_pressure,t.elevation||0);
     const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
     document.getElementById('l-da').value=Math.round(da);
     document.getElementById('l-temp').value=c.temperature_2m.toFixed(1);
     document.getElementById('l-hum').value=c.relative_humidity_2m;
     document.getElementById('l-ws').value=c.wind_speed_10m.toFixed(1);
     document.getElementById('l-wd').value=wl;
+    document.getElementById('l-baro').value=hpaToInHg(c.pressure_msl||c.surface_pressure);
     wxs.textContent=`Historical weather loaded for ${date} at ${hr}:${mn} ✓`;
     wxs.className='wxs ok';
   }catch(e){
@@ -842,13 +844,11 @@ function usePoeET(){
 // PREDICTED ET FOR A LOGGED RUN
 // ════════════════════════════════════════════════════════════════
 function getPredictedETForRun(r){
-  // Run the prediction engine using this run's conditions,
-  // but exclude the run itself from the pool to avoid self-referencing
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&(dist==='all'||x.distance===dist||dist==='eighth'));
+  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.distance===dist);
   const tPool=pool.filter(x=>x.track===r.track);
-  const usePool=tPool.length>=5?tPool:pool.filter(x=>x[pf2]!=null);
+  const usePool=tPool.length>=5?tPool:pool;
   if(usePool.length<5)return null;
 
   const DA_SCALE=800,TEMP_SCALE=25,HUM_SCALE=30,WS_SCALE=15,WD_SCALE=1.5,SUN_SCALE=1.5;
