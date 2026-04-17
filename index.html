@@ -718,9 +718,11 @@ function clearLogForm(){
   document.getElementById('log-title').textContent='// Log a Run';
   document.getElementById('l-edit-id').value='';
   document.getElementById('log-cancel-btn').style.display='none';
-  ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et',
+   'poe-60','poe-330','poe-660','poe-1k','poe-60e','poe-330e'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('l-date').value=localDateStr();
   document.getElementById('poe-result').style.display='none';
+  document.getElementById('poe-et').textContent='-.---';
   document.getElementById('l-wxs').textContent='Select a track and date/time to auto-fetch historical weather';
   document.getElementById('l-wxs').className='wxs';
 }
@@ -858,12 +860,6 @@ function calcPedalOff(){
   document.getElementById('poe-result').style.display='block';
   // Auto-save to the hidden field immediately
   document.getElementById('l-calc-et').value=final.toFixed(3);
-}
-
-function usePoeET(){
-  const et=document.getElementById('poe-et').textContent;
-  document.getElementById('l-calc-et').value=et;
-  toast('Calculated ET will be saved with this run ✓');
 }
 
 // ════════════════════════════════════════════════════════════════
