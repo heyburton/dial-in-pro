@@ -132,7 +132,6 @@ tr:hover td{background:var(--sf2)}
     <div class="f">
       <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED — or enter manually</span></label>
       <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')">
-      <div class="ovn" id="da-ov" style="display:none">&#9888; Manually overridden — auto-refresh will not replace this value</div>
     </div>
     <div class="fr">
       <div class="f"><label>Temp (°F)</label><input type="number" id="p-temp" placeholder="—" oninput="ov('p-temp')"></div>
@@ -451,11 +450,10 @@ function bearingToWind(wd,th){
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
-function ov(id){if(id==='p-da')document.getElementById('da-ov').style.display='block';}
+function ov(id){}
 function onTrackChange(){
   ['p-da','p-temp','p-hum','p-ws','p-baro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('p-wd').value='';
-  document.getElementById('da-ov').style.display='none';
   doFetch(false);
   renderPredictStats();
   updatePoolNote();
@@ -904,19 +902,25 @@ function renderTable(){
   let rows=runs;
   if(ft!=='all')rows=rows.filter(r=>r.track===ft);
   if(fd!=='all')rows=rows.filter(r=>r.distance===fd);
+  // Sort by date+time descending (most recent at top)
+  rows=[...rows].sort((a,b)=>{
+    const da=a.date||'';const db=b.date||'';
+    const ta=a.time||'00:00';const tb=b.time||'00:00';
+    return (db+tb).localeCompare(da+ta);
+  });
   document.getElementById('rc').textContent=`${rows.length} run${rows.length!==1?'s':''} shown`;
   const es=document.getElementById('es'),tb=document.getElementById('tbody');
   if(!rows.length){tb.innerHTML='';es.style.display='block';return;}
   es.style.display='none';
   const n=v=>v!=null?v:'—';
-  tb.innerHTML=[...rows].reverse().map((r,i)=>{
+  tb.innerHTML=rows.map((r,i)=>{
     const rb=r.result==='win'?`<span class="bw">WIN</span>`:r.result==='loss'?`<span class="bl">LOSS</span>`:r.result==='bye'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">BYE</span>`:'';
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const predET=getPredictedETForRun(r);
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
     const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
     return`<tr>
-      <td style="color:var(--mu)">${rows.length-i}</td>
+      <td style="color:var(--mu)">${i+1}</td>
       <td>${r.date||'—'}</td>
       <td style="color:var(--mu)">${r.time||'—'}</td>
       <td>${r.track||'—'}</td><td>${db}</td>
