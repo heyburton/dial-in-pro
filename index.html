@@ -407,9 +407,9 @@ async function doFetch(msg){
       if(!res.ok)continue;
       const data=await res.json();
       const c=data.current;
-      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.pressure_msl,t.elevation||0);
+      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
       const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
-      const inHg=hpaToInHg(c.pressure_msl);
+      const inHg=hpaToInHg(c.surface_pressure);
       document.getElementById('p-da').value=Math.round(da);
       document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
       document.getElementById('p-hum').value=c.relative_humidity_2m;
@@ -431,13 +431,20 @@ async function doFetch(msg){
 
 function calcDA(tf,rh,phpa,elft){
   const tc=(tf-32)*5/9;
-  // Standard DA formula: pressure altitude + temperature correction
-  const pa=145366.45*(1-Math.pow(phpa/1013.25,0.190284));
+  // Saturation vapor pressure (hPa)
+  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  // Actual vapor pressure (hPa)
+  const e=(rh/100)*es;
+  // Dry pressure = total pressure minus vapor component
+  const pd=phpa-e;
+  // Pressure altitude from dry pressure
+  const pa=145366.45*(1-Math.pow(pd/1013.25,0.190284));
+  // ISA standard temp at this pressure altitude
   const isaTemp=15-(0.00198*pa);
+  // Density altitude
   return Math.round(pa+120*(tc-isaTemp));
 }
 function hpaToInHg(hpa){return Math.round(hpa*0.02953*100)/100;}
-function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
   if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
 }
@@ -751,14 +758,14 @@ async function logFetchWeather(){
       wind_direction_10m:data.hourly.wind_direction_10m[hourIdx]
     };
     if(c.temperature_2m==null)throw new Error('No data for this hour');
-    const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.pressure_msl||c.surface_pressure,t.elevation||0);
+    const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
     const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
     document.getElementById('l-da').value=Math.round(da);
     document.getElementById('l-temp').value=c.temperature_2m.toFixed(1);
     document.getElementById('l-hum').value=c.relative_humidity_2m;
     document.getElementById('l-ws').value=c.wind_speed_10m.toFixed(1);
     document.getElementById('l-wd').value=wl;
-    document.getElementById('l-baro').value=hpaToInHg(c.pressure_msl||c.surface_pressure);
+    document.getElementById('l-baro').value=hpaToInHg(c.surface_pressure);
     wxs.textContent=`Historical weather loaded for ${date} at ${hr}:${mn} ✓`;
     wxs.className='wxs ok';
   }catch(e){
