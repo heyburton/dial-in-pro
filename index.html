@@ -175,6 +175,7 @@ tr:hover td{background:var(--sf2)}
 <div class="card">
   <div class="ct" id="log-title">// Log a Run</div>
   <input type="hidden" id="l-edit-id">
+  <input type="hidden" id="l-calc-et">
   <div class="sl">Setup</div>
   <div class="g3">
     <div class="f"><label>Date</label><input type="date" id="l-date"></div>
@@ -245,7 +246,6 @@ tr:hover td{background:var(--sf2)}
       <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mu);margin-bottom:3px">ESTIMATED ALL-OUT ET</div>
       <div id="poe-et" style="font-size:2rem;color:var(--ac2)">-.---</div>
       <div id="poe-note" style="font-size:.65rem;color:var(--mu);margin-top:4px;line-height:1.5"></div>
-      <button class="bsm bsec" style="margin-top:8px" onclick="usePoeET()">Use This ET When Saving Run</button>
     </div>
   </div>
 
@@ -854,16 +854,15 @@ function calcPedalOff(){
   const poolNote=usePool===trackPool?`${trackPool.length} ${track} runs`:`${pool.length} all-track runs (not enough ${track} data)`;
 
   document.getElementById('poe-et').textContent=final.toFixed(3);
-  document.getElementById('poe-note').textContent=`Based on ${poolNote}. This ET will be saved as "Calc ET" alongside your actual timing slip ET.`;
+  document.getElementById('poe-note').textContent=`Based on ${poolNote}. Saved as Calc ET with this run.`;
   document.getElementById('poe-result').style.display='block';
+  // Auto-save to the hidden field immediately
+  document.getElementById('l-calc-et').value=final.toFixed(3);
 }
 
 function usePoeET(){
   const et=document.getElementById('poe-et').textContent;
-  // Store in hidden field — saved with run
-  let el=document.getElementById('l-calc-et');
-  if(!el){el=document.createElement('input');el.type='hidden';el.id='l-calc-et';document.getElementById('pg-log').appendChild(el);}
-  el.value=et;
+  document.getElementById('l-calc-et').value=et;
   toast('Calculated ET will be saved with this run ✓');
 }
 
