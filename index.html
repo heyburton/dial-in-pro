@@ -445,6 +445,7 @@ function calcDA(tf,rh,phpa,elft){
   return Math.round(pa+120*(tc-isaTemp));
 }
 function hpaToInHg(hpa){return Math.round(hpa*0.02953*100)/100;}
+function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
   if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
 }
