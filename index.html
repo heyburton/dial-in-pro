@@ -179,7 +179,7 @@ tr:hover td{background:var(--sf2)}
     <div class="sl">Setup</div>
     <div class="g3">
       <div class="f"><label>Date</label><input type="date" id="l-date"></div>
-      <div class="f"><label>Time</label><input type="time" id="l-time"></div>
+      <div class="f"><label>Time <span style="color:var(--mu);font-size:.6rem;font-weight:400;letter-spacing:0;text-transform:none">e.g. 03:47 PM</span></label><input type="time" id="l-time"></div>
       <div class="f"><label>Track</label><select id="l-track" onchange="logFetchWeather()"></select></div>
       <div class="f"><label>Distance</label>
         <select id="l-dist"><option value="eighth">1/8 Mile</option><option value="quarter" selected>1/4 Mile</option></select>
@@ -713,6 +713,10 @@ function showLogForm(){
   document.getElementById('l-edit-id').value='';
   document.getElementById('log-cancel-btn').style.display='';
   document.getElementById('log-form-wrap').style.display='block';
+  // Set current local time fresh each time form opens
+  const n=new Date();
+  document.getElementById('l-time').value=n.toTimeString().slice(0,5);
+  document.getElementById('l-date').value=localDateStr();
   window.scrollTo(0,0);
 }
 
@@ -874,9 +878,9 @@ function calcPedalOff(){
 function getPredictedETForRun(r){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  // Must have DA and the relevant ET to be predictable
-  if(!r.da||!r[pf2]===undefined){}
-  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.distance===dist&&x.da);
+  // For 1/8 mile, use all runs that have ft660 data (including quarter mile runs)
+  // For 1/4 mile, only use runs with ft1320 data
+  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.da&&(dist==='eighth'||x.distance===dist));
   const tPool=pool.filter(x=>x.track===r.track);
   const usePool=tPool.length>=5?tPool:pool;
   if(usePool.length<5)return null;
