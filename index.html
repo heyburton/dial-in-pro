@@ -744,10 +744,11 @@ async function logFetchWeather(){
   const mn=time?time.slice(3,5):'00';
 
   // If date/time is within 3 hours of now, use live forecast API for accuracy
-  const runTime=new Date(`${date}T${hr}:${mn}`);
   const now=new Date();
-  const diffHours=Math.abs(now-runTime)/3600000;
-  const useLive=diffHours<3;
+  const todayStr=now.toISOString().slice(0,10);
+  const currentHr=now.getHours();
+  const runHr=parseInt(hr);
+  const useLive=date===todayStr&&Math.abs(currentHr-runHr)<=2;
 
   try{
     let c;
