@@ -739,26 +739,43 @@ async function logFetchWeather(){
   if(!date){wxs.textContent='Enter a date first';wxs.className='wxs err';return;}
   const t=tracks.find(x=>x.name===tid||x.id===tid);
   if(!t||!t.lat){wxs.textContent='Track has no GPS coordinates';wxs.className='wxs err';return;}
-  wxs.textContent='Fetching historical weather…';wxs.className='wxs busy';
-  // Build datetime string — use time if provided, else noon
+  wxs.textContent='Fetching weather…';wxs.className='wxs busy';
   const hr=time?time.slice(0,2):'12';
   const mn=time?time.slice(3,5):'00';
-  const dtStr=`${date}T${hr}:${mn}`;
+
+  // If date/time is within 3 hours of now, use live forecast API for accuracy
+  const runTime=new Date(`${date}T${hr}:${mn}`);
+  const now=new Date();
+  const diffHours=Math.abs(now-runTime)/3600000;
+  const useLive=diffHours<3;
+
   try{
-    const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${t.lat}&longitude=${t.lng}&start_date=${date}&end_date=${date}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
-    const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!res.ok)throw new Error('API error');
-    const data=await res.json();
-    const hourIdx=parseInt(hr);
-    const c={
-      temperature_2m:data.hourly.temperature_2m[hourIdx],
-      relative_humidity_2m:data.hourly.relative_humidity_2m[hourIdx],
-      surface_pressure:data.hourly.surface_pressure[hourIdx],
-      pressure_msl:data.hourly.pressure_msl[hourIdx],
-      wind_speed_10m:data.hourly.wind_speed_10m[hourIdx],
-      wind_direction_10m:data.hourly.wind_direction_10m[hourIdx]
-    };
-    if(c.temperature_2m==null)throw new Error('No data for this hour');
+    let c;
+    if(useLive){
+      // Use same live forecast API as predict tab
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${t.lat}&longitude=${t.lng}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+      const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      if(!res.ok)throw new Error('API error');
+      const data=await res.json();
+      c=data.current;
+      wxs.textContent=`Live weather loaded for ${date} at ${hr}:${mn} ✓`;
+    }else{
+      // Use archive API for past runs
+      const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${t.lat}&longitude=${t.lng}&start_date=${date}&end_date=${date}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+      const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      if(!res.ok)throw new Error('API error');
+      const data=await res.json();
+      const hourIdx=parseInt(hr);
+      c={
+        temperature_2m:data.hourly.temperature_2m[hourIdx],
+        relative_humidity_2m:data.hourly.relative_humidity_2m[hourIdx],
+        surface_pressure:data.hourly.surface_pressure[hourIdx],
+        wind_speed_10m:data.hourly.wind_speed_10m[hourIdx],
+        wind_direction_10m:data.hourly.wind_direction_10m[hourIdx]
+      };
+      if(c.temperature_2m==null)throw new Error('No data for this hour');
+      wxs.textContent=`Historical weather loaded for ${date} at ${hr}:${mn} ✓`;
+    }
     const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
     const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
     document.getElementById('l-da').value=Math.round(da);
@@ -767,10 +784,9 @@ async function logFetchWeather(){
     document.getElementById('l-ws').value=c.wind_speed_10m.toFixed(1);
     document.getElementById('l-wd').value=wl;
     document.getElementById('l-baro').value=hpaToInHg(c.surface_pressure);
-    wxs.textContent=`Historical weather loaded for ${date} at ${hr}:${mn} ✓`;
     wxs.className='wxs ok';
   }catch(e){
-    wxs.textContent='Could not fetch historical weather — enter conditions manually';
+    wxs.textContent='Could not fetch weather — enter conditions manually';
     wxs.className='wxs err';
   }
 }
