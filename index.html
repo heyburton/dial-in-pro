@@ -644,7 +644,7 @@ function saveRun(){
   const eid=document.getElementById('l-edit-id').value;
   const run={
     id:eid?parseInt(eid):Date.now(),
-    date:document.getElementById('l-date').value||new Date().toISOString().slice(0,10),
+    date:document.getElementById('l-date').value||localDateStr(),
     time:document.getElementById('l-time').value||'',
     track:document.getElementById('l-track').value,
     distance:dist,
@@ -719,7 +719,7 @@ function clearLogForm(){
   document.getElementById('l-edit-id').value='';
   document.getElementById('log-cancel-btn').style.display='none';
   ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('l-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('l-date').value=localDateStr();
   document.getElementById('poe-result').style.display='none';
   document.getElementById('l-wxs').textContent='Select a track and date/time to auto-fetch historical weather';
   document.getElementById('l-wxs').className='wxs';
@@ -745,7 +745,7 @@ async function logFetchWeather(){
 
   // If date/time is within 3 hours of now, use live forecast API for accuracy
   const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
+  const todayStr=localDateStr();
   const currentHr=now.getHours();
   const runHr=parseInt(hr);
   const useLive=date===todayStr&&Math.abs(currentHr-runHr)<=2;
@@ -1129,10 +1129,11 @@ function nav(id,btn){
 }
 function toast(m,e=false){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',3000);}
 
+function localDateStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 // ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
-document.getElementById('l-date').value=new Date().toISOString().slice(0,10);
+document.getElementById('l-date').value=localDateStr();
 // Set default time to current time
 const now=new Date();
 document.getElementById('l-time').value=now.toTimeString().slice(0,5);
