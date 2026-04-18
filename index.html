@@ -109,14 +109,13 @@ tr:hover td{background:var(--sf2)}
 <body>
 <header>
   <h1>Dial-In Pro</h1>
-  <span>// 2007 MUSTANG GT 4.6 3V &nbsp;|&nbsp; ET PREDICTION SYSTEM</span>
+  <span>// ET PREDICTION SYSTEM</span>
 </header>
 <div class="tabs">
   <button class="tab active" onclick="nav('predict',this)">ET Predict</button>
   <button class="tab" onclick="nav('runs',this)">Log Book</button>
   <button class="tab" onclick="nav('tracks',this)">Tracks</button>
-  <button class="tab" onclick="nav('import',this)">Upload</button>
-  <button class="tab" onclick="nav('algo',this)">Algorithm</button>
+  <button class="tab" onclick="nav('settings',this)">⚙ Settings</button>
 </div>
 
 <!-- PREDICT -->
@@ -324,68 +323,32 @@ tr:hover td{background:var(--sf2)}
 </div>
 </div>
 
-<!-- IMPORT -->
-<div id="pg-import" class="page">
-<div class="g2">
-<div class="card">
-  <div class="ct">// CSV Import</div>
-  <div class="ib">Import runs from a CSV file. Download the template to see the required column format.</div>
-  <button class="tl" onclick="dlTpl()">&#8595; Download CSV Template</button>
-  <div style="height:12px"></div>
-  <div class="iz" id="iz" onclick="document.getElementById('cfi').click()" ondrop="doDrop(event)" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)">
-    <p><strong>Click to browse</strong> or drag &amp; drop CSV here</p>
-    <p style="margin-top:4px;font-size:.7rem">Accepted: .csv only</p>
-  </div>
-  <input type="file" id="cfi" accept=".csv" onchange="doFileSel(event)">
-  <div id="imp-out"></div>
-</div>
-<div class="card">
-  <div class="ct">// Notes</div>
-  <div style="font-family:var(--mo);font-size:.7rem;color:var(--mu);line-height:1.9">
-    <div>&#x25CF; <span style="color:var(--ac)">105 Dr. Dial-In runs pre-loaded</span> (51 Redding, 34 Sonoma, 20 Firebird)</div>
-    <div>&#x25CF; 1/8 mi predictions use 660' ET from ALL runs (1/4 and 1/8)</div>
-    <div>&#x25CF; 1/4 mi predictions use only runs with a 1320' ET</div>
-    <div>&#x25CF; Minimum 5 runs per track to generate a prediction</div>
-    <div>&#x25CF; "All Tracks" mode is useful at new venues</div>
-    <div style="margin-top:10px;color:var(--ac)">Track names in CSV must match exactly:</div>
-    <div id="tn-list" style="color:var(--tx);margin-top:4px"></div>
-  </div>
-</div>
-</div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- ALGORITHM -->
-<div id="pg-algo" class="page">
+<!-- SETTINGS -->
+<div id="pg-settings" class="page">
 <div style="max-width:680px;margin:0 auto">
-
-  <!-- TUNING MODE -->
-  <div class="card">
-    <div class="ct">// Tuning Mode</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Auto-Tune</div>
-        <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-top:3px">Automatically adjusts values after each All Out run</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="algo-auto" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Show Suggestions</div>
-        <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-top:3px">Displays recommended changes based on your run data</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="algo-suggest" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
-    </div>
-  </div>
 
   <!-- PREDICTION ALGORITHM -->
   <div class="card">
     <div class="ct">// Prediction Algorithm</div>
-    <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:14px;line-height:1.7">
-      Each value below represents how much that weather variable must change to affect ET by .01 seconds. Smaller number = more sensitive.
+
+    <!-- Tuning Mode toggles -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Auto-Tune</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Automatically adjusts values after each All Out run</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="algo-auto" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Show Suggestions</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Displays recommended changes based on your run data</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="algo-suggest" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
     </div>
 
+    <!-- Algorithm values -->
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Each value represents how much that variable must change to affect ET by .01 seconds:</div>
     <div class="algo-row">
       <span class="algo-lbl">Every</span>
       <input type="number" class="algo-inp" id="algo-temp" step="0.1" min="0.1">
@@ -410,7 +373,6 @@ tr:hover td{background:var(--sf2)}
       <span class="algo-unit">% humidity change</span>
       <span class="algo-eq">= .01 ET</span>
     </div>
-
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="btn btn-p" style="margin-top:0;flex:1" onclick="saveAlgo()">Save</button>
       <button class="bsm bgho" style="padding:10px 16px" onclick="resetAlgo()">Reset to Defaults</button>
@@ -423,7 +385,7 @@ tr:hover td{background:var(--sf2)}
     <div class="ct">// Tuning Insights</div>
     <div id="algo-insights">
       <div style="font-family:var(--mo);font-size:.7rem;color:var(--mu);line-height:1.7">
-        Insights will appear here after enough All Out runs have been logged. Need at least 10 All Out runs to generate suggestions.
+        Insights appear here after 10+ All Out runs are logged.
       </div>
     </div>
   </div>
@@ -438,12 +400,41 @@ tr:hover td{background:var(--sf2)}
       <div><span style="color:var(--ac)">Humidity ↑</span> → more water vapor → air less dense → ET <span style="color:var(--er)">↑ increases</span></div>
     </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);font-family:var(--mo);font-size:.65rem;color:var(--mu);line-height:1.7">
-      Default values are based on empirical data from bracket racing at Northern California tracks. Your car may respond differently — use Auto-Tune or adjust manually based on your results.
+      Default values are based on empirical data from bracket racing at Northern California tracks. Your car may respond differently — use Auto-Tune or adjust manually.
+    </div>
+  </div>
+
+  <!-- UPLOAD / IMPORT -->
+  <div class="card">
+    <div class="ct">// Upload Run Data</div>
+    <div class="ib">Import runs from a CSV file. Download the template to see the required column format.</div>
+    <button class="tl" onclick="dlTpl()">&#8595; Download CSV Template</button>
+    <div style="height:12px"></div>
+    <div class="iz" id="iz" onclick="document.getElementById('cfi').click()" ondrop="doDrop(event)" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)">
+      <p><strong>Click to browse</strong> or drag &amp; drop CSV here</p>
+      <p style="margin-top:4px;font-size:.7rem">Accepted: .csv only</p>
+    </div>
+    <input type="file" id="cfi" accept=".csv" onchange="doFileSel(event)">
+    <div id="imp-out"></div>
+  </div>
+
+  <!-- APP NOTES -->
+  <div class="card">
+    <div class="ct">// Notes</div>
+    <div style="font-family:var(--mo);font-size:.7rem;color:var(--mu);line-height:1.9">
+      <div>&#x25CF; 1/8 mi predictions use 660' ET from ALL runs (1/4 and 1/8)</div>
+      <div>&#x25CF; 1/4 mi predictions use only runs with a 1320' ET</div>
+      <div>&#x25CF; Minimum 5 runs per track to generate a prediction</div>
+      <div>&#x25CF; "All Tracks" mode is useful at new venues</div>
+      <div style="margin-top:10px;color:var(--ac)">Track names in CSV must match exactly:</div>
+      <div id="tn-list" style="color:var(--tx);margin-top:4px"></div>
     </div>
   </div>
 
 </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 // ════════════════════════════════════════════════════════════════
@@ -1432,7 +1423,7 @@ function nav(id,btn){
   }
   if(id==='tracks')renderTracks();
   if(id==='predict'){renderPredictStats();updatePoolNote();}
-  if(id==='algo')renderAlgoTab();
+  if(id==='settings')renderAlgoTab();
 }
 function toast(m,e=false){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',3000);}
 
