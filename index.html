@@ -216,6 +216,9 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Result</label>
         <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option></select>
       </div>
+      <div class="f"><label>Lane</label>
+        <select id="l-lane"><option value="">— Optional —</option><option value="left">Left</option><option value="right">Right</option></select>
+      </div>
       <div class="f"><label>Run Quality</label>
         <select id="l-quality"><option value="allout">All Out</option><option value="lifted">Lifted</option><option value="spun">Spun Tires</option><option value="issue">Other Issue</option></select>
       </div>
@@ -274,7 +277,7 @@ tr:hover td{background:var(--sf2)}
     <table><thead><tr>
       <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Quality</th><th></th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -664,6 +667,7 @@ function saveRun(){
     ft1000:pf('l-1k'),ft1320:e13||null,mph1320:pf('l-1320m'),
     calcET:pf('l-calc-et'),
     quality:document.getElementById('l-quality').value||'allout',
+    lane:document.getElementById('l-lane').value||'',
     result:document.getElementById('l-res').value,
     notes:document.getElementById('l-notes').value
   };
@@ -703,6 +707,7 @@ function editRun(id){
   document.getElementById('l-1320').value=r.ft1320||'';
   document.getElementById('l-1320m').value=r.mph1320||'';
   document.getElementById('l-res').value=r.result||'';
+  document.getElementById('l-lane').value=r.lane||'';
   document.getElementById('l-quality').value=r.quality||'allout';
   document.getElementById('l-notes').value=r.notes||'';
   // Set track dropdown
@@ -740,6 +745,9 @@ function clearLogForm(){
   document.getElementById('log-form-wrap').style.display='none';
   ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et',
    'poe-60','poe-330','poe-660','poe-1k','poe-60e','poe-330e'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('l-res').value='';
+  document.getElementById('l-lane').value='';
+  document.getElementById('l-quality').value='allout';
   document.getElementById('l-date').value=localDateStr();
   document.getElementById('poe-result').style.display='none';
   document.getElementById('poe-et').textContent='-.---';
@@ -953,6 +961,7 @@ function renderTable(){
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
+    const predET=getPredictedETForRun(r);
     const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
     return`<tr>
       <td style="color:var(--mu)">${i+1}</td>
@@ -967,6 +976,7 @@ function renderTable(){
       <td style="color:var(--ac2)">${n(r.ft1320)}</td>
       <td>${calcETVal}</td><td>${predETVal}</td>
       <td>${n(r.mph1320)}</td><td>${rb}</td>
+      <td style="color:var(--mu);font-size:.65rem">${r.lane?r.lane.charAt(0).toUpperCase()+r.lane.slice(1):'—'}</td>
       <td>${qLabel}</td>
       <td style="display:flex;gap:4px">
         <button class="bsm bgho" onclick="editRun(${r.id})">Edit</button>
@@ -1157,7 +1167,10 @@ function nav(id,btn){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-'+id).classList.add('active');
   btn.classList.add('active');
-  if(id==='runs'){renderTable();renderSS();renderQS('qs-log');}
+  if(id==='runs'){
+    document.getElementById('log-form-wrap').style.display='none';
+    renderTable();renderSS();
+  }
   if(id==='tracks')renderTracks();
   if(id==='predict'){renderPredictStats();updatePoolNote();}
 }
@@ -1177,7 +1190,7 @@ document.getElementById('l-dist').addEventListener('change',function(){
   document.getElementById('poe-fields-quarter').style.display=isQ?'':'none';
   document.getElementById('poe-fields-eighth').style.display=isQ?'none':'';
 });
-refreshDrops();renderSS();renderQS('qs-log');renderPredictStats();updatePoolNote();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();
 </script>
 </body>
 </html>
