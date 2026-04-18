@@ -216,6 +216,9 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Result</label>
         <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option></select>
       </div>
+      <div class="f"><label>Run Quality</label>
+        <select id="l-quality"><option value="allout">All Out</option><option value="lifted">Lifted</option><option value="spun">Spun Tires</option><option value="issue">Other Issue</option></select>
+      </div>
     </div>
     <div class="f" style="margin-top:6px"><label>Notes</label><input type="text" id="l-notes" placeholder="e.g. Soft launch, track sprayed"></div>
 
@@ -271,7 +274,7 @@ tr:hover td{background:var(--sf2)}
     <table><thead><tr>
       <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th></th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Quality</th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -479,13 +482,18 @@ function onTrackChange(){
 // Minimum 5 runs required
 // ════════════════════════════════════════════════════════════════
 function getPool(trackFilter,distance){
+  // Use All Out runs + runs with calcET as valid reference data
+  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
   let pool;
   if(distance==='eighth'){
-    pool=runs.filter(r=>r.ft660!=null);
+    pool=runs.filter(r=>r.ft660!=null&&validRun(r));
   }else{
-    pool=runs.filter(r=>r.ft1320!=null);
+    pool=runs.filter(r=>r.ft1320!=null&&validRun(r));
   }
   if(trackFilter!=='all') pool=pool.filter(r=>r.track===trackFilter);
+  // Attach effective ET for use in prediction
+  pool=pool.map(r=>({...r,_et:getET(r)||r.ft1320||r.ft660}));
   return pool;
 }
 
@@ -577,7 +585,7 @@ function predict(){
   });
 
   const tw=wts.reduce((a,b)=>a+b,0);
-  const final=pool.reduce((s,r,i)=>s+r[pf]*wts[i],0)/tw;
+  const final=pool.reduce((s,r,i)=>s+r._et*wts[i],0)/tw;
 
   // Predicted splits — ratio method from pool (also purely data-driven)
   const sFields=dist==='eighth'?['ft60','ft330']:['ft60','ft330','ft660','ft1000'];
@@ -655,6 +663,7 @@ function saveRun(){
     ft660:e6||null,mph660:pf('l-660m'),
     ft1000:pf('l-1k'),ft1320:e13||null,mph1320:pf('l-1320m'),
     calcET:pf('l-calc-et'),
+    quality:document.getElementById('l-quality').value||'allout',
     result:document.getElementById('l-res').value,
     notes:document.getElementById('l-notes').value
   };
@@ -694,6 +703,7 @@ function editRun(id){
   document.getElementById('l-1320').value=r.ft1320||'';
   document.getElementById('l-1320m').value=r.mph1320||'';
   document.getElementById('l-res').value=r.result||'';
+  document.getElementById('l-quality').value=r.quality||'allout';
   document.getElementById('l-notes').value=r.notes||'';
   // Set track dropdown
   const lt=document.getElementById('l-track');
@@ -878,9 +888,20 @@ function calcPedalOff(){
 function getPredictedETForRun(r){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  // For 1/8 mile, use all runs that have ft660 data (including quarter mile runs)
-  // For 1/4 mile, only use runs with ft1320 data
-  const pool=runs.filter(x=>x.id!==r.id&&x[pf2]!=null&&x.da&&(dist==='eighth'||x.distance===dist));
+  // Get the best ET for this run - prefer calcET for lifted runs
+  const getET=x=>{
+    if(x.calcET!=null)return x.calcET;
+    return x[pf2];
+  };
+  // Use All Out runs + runs with calcET as reference pool
+  // For 1/8 mile use all runs with ft660 data
+  const pool=runs.filter(x=>
+    x.id!==r.id &&
+    x.da &&
+    getET(x)!=null &&
+    (x.quality==='allout'||x.quality===undefined||x.calcET!=null) &&
+    (dist==='eighth'?x.ft660!=null:x.ft1320!=null)
+  );
   const tPool=pool.filter(x=>x.track===r.track);
   const usePool=tPool.length>=5?tPool:pool;
   if(usePool.length<5)return null;
@@ -908,7 +929,7 @@ function getPredictedETForRun(r){
     return d2<1e-10?1e10:1/d2;
   });
   const tw=wts.reduce((a,b)=>a+b,0);
-  return(usePool.reduce((s,x,i)=>s+x[pf2]*wts[i],0)/tw).toFixed(3);
+  return(usePool.reduce((s,x,i)=>s+getET(x)*wts[i],0)/tw).toFixed(3);
 }
 function renderTable(){
   const ft=document.getElementById('ft')?.value||'all';
@@ -930,7 +951,7 @@ function renderTable(){
   tb.innerHTML=rows.map((r,i)=>{
     const rb=r.result==='win'?`<span class="bw">WIN</span>`:r.result==='loss'?`<span class="bl">LOSS</span>`:r.result==='bye'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">BYE</span>`:'';
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
-    const predET=getPredictedETForRun(r);
+    const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
     const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
     return`<tr>
@@ -946,6 +967,7 @@ function renderTable(){
       <td style="color:var(--ac2)">${n(r.ft1320)}</td>
       <td>${calcETVal}</td><td>${predETVal}</td>
       <td>${n(r.mph1320)}</td><td>${rb}</td>
+      <td>${qLabel}</td>
       <td style="display:flex;gap:4px">
         <button class="bsm bgho" onclick="editRun(${r.id})">Edit</button>
         <button class="bsm bdng" onclick="delRun(${r.id})">✕</button>
