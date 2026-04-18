@@ -1379,15 +1379,15 @@ function refreshDrops(){
 // ════════════════════════════════════════════════════════════════
 function expCSV(){
   if(!runs.length){toast('No runs to export.',true);return;}
-  const H=['date','track','distance','da','temp','humidity','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','result','notes'];
+  const H=['date','time','track','distance','da','temp','humidity','pressure','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','calcET','result','quality','lane','notes'];
   const rows=runs.map(r=>H.map(h=>r[h]??'').join(','));
   dlFile('dialin-pro-runs.csv',[H.join(','),...rows].join('\n'),'text/csv');
   toast(`Exported ${runs.length} runs.`);
 }
 function dlTpl(){
-  const H='date,track,distance,da,temp,humidity,windSpeed,windDir,sun,dialin,rt,ft60,ft330,ft660,mph660,ft1000,ft1320,mph1320,result,notes';
-  const e1='2025-04-05,Redding,eighth,1850,78,45,8,tailwind,full,8.420,0.012,1.890,4.821,8.412,79.4,,,,,win,Track sprayed R2';
-  const e2='2025-04-05,Sonoma,quarter,1850,78,45,8,calm,partial,13.21,0.015,1.895,4.830,8.418,79.5,11.02,13.21,101.2,loss,';
+  const H='date,time,track,distance,da,temp,humidity,pressure,windSpeed,windDir,sun,dialin,rt,ft60,ft330,ft660,mph660,ft1000,ft1320,mph1320,calcET,result,quality,lane,notes';
+  const e1='2025-04-05,21:30,Redding,eighth,1850,78,45,29.92,8,tailwind,full,8.420,0.012,1.890,4.821,8.412,79.4,,,,,,win,allout,left,Track sprayed R2';
+  const e2='2025-04-05,21:47,Sonoma,quarter,1850,78,45,30.01,8,calm,partial,13.21,0.015,1.895,4.830,8.418,79.5,11.02,13.21,101.2,,loss,allout,right,';
   dlFile('dialin-pro-template.csv',[H,e1,e2].join('\n'),'text/csv');
 }
 function dlFile(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
@@ -1408,7 +1408,32 @@ function parseCSV(file){
       const row={};hdr.forEach((h,j)=>row[h]=vals[j]?.trim()||'');
       const da=parseFloat(row.da);
       if(isNaN(da)){sk.push(i);continue;}
-      nr.push({id:Date.now()+i,date:row.date||'',track:row.track||'',distance:row.distance==='quarter'?'quarter':'eighth',da,temp:parseFloat(row.temp)||null,humidity:parseFloat(row.humidity)||null,windSpeed:parseFloat(row.windSpeed)||null,windDir:row.windDir||'calm',sun:row.sun||'full',dialin:parseFloat(row.dialin)||null,rt:parseFloat(row.rt)||null,ft60:parseFloat(row.ft60)||null,ft330:parseFloat(row.ft330)||null,ft660:parseFloat(row.ft660)||null,mph660:parseFloat(row.mph660)||null,ft1000:parseFloat(row.ft1000)||null,ft1320:parseFloat(row.ft1320)||null,mph1320:parseFloat(row.mph1320)||null,result:row.result||'',notes:row.notes||''});
+      nr.push({id:Date.now()+i,
+        date:row.date||'',time:row.time||'',
+        track:row.track||'',
+        distance:row.distance==='quarter'?'quarter':'eighth',
+        da,
+        temp:parseFloat(row.temp)||null,
+        humidity:parseFloat(row.humidity)||null,
+        pressure:parseFloat(row.pressure)||null,
+        windSpeed:parseFloat(row.windSpeed)||null,
+        windDir:row.windDir||'calm',
+        sun:row.sun||'full',
+        dialin:parseFloat(row.dialin)||null,
+        rt:parseFloat(row.rt)||null,
+        ft60:parseFloat(row.ft60)||null,
+        ft330:parseFloat(row.ft330)||null,
+        ft660:parseFloat(row.ft660)||null,
+        mph660:parseFloat(row.mph660)||null,
+        ft1000:parseFloat(row.ft1000)||null,
+        ft1320:parseFloat(row.ft1320)||null,
+        mph1320:parseFloat(row.mph1320)||null,
+        calcET:parseFloat(row.calcET)||null,
+        result:row.result||'',
+        quality:row.quality||'allout',
+        lane:row.lane||'',
+        notes:row.notes||''
+      });
     }
     runs=[...runs,...nr];sRuns(runs);
     document.getElementById('imp-out').innerHTML=`<div style="font-family:var(--mo);font-size:.78rem;color:var(--ok);padding:12px;border:1px solid var(--ok);background:rgba(0,255,136,.05);margin-top:12px">✓ Imported ${nr.length} runs${sk.length?` (${sk.length} skipped — missing DA)`:''}. Total: ${runs.length}</div>`;

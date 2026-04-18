@@ -1,6 +1,6 @@
 // Dial-In Pro Service Worker
 // Increment version when you update the app
-const VERSION = 'dialinpro-v4.9';
+const VERSION = 'dialinpro-v5.1';
 const CACHE = VERSION;
 
 const ASSETS = [
