@@ -38,7 +38,19 @@ select option{background:var(--bg)}
 .bsec{background:var(--sf2);color:var(--tx);border:1px solid var(--bd)}.bsec:hover{border-color:var(--ac);color:var(--ac)}
 .bdng{background:transparent;color:var(--er);border:1px solid var(--er)}.bdng:hover{background:rgba(255,51,51,.1)}
 .bgho{background:transparent;color:var(--mu);border:1px solid var(--bd)}.bgho:hover{color:var(--ac);border-color:var(--ac)}
-/* weather bar */
+/* algorithm tab */
+.algo-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.algo-lbl{font-family:var(--mo);font-size:.78rem;color:var(--mu);white-space:nowrap}
+.algo-inp{width:80px;background:var(--bg);border:1px solid var(--ac);color:var(--ac);font-family:var(--mo);font-size:.92rem;padding:6px 8px;outline:none;border-radius:0;text-align:center;-webkit-appearance:none}
+.algo-unit{font-family:var(--mo);font-size:.78rem;color:var(--tx);white-space:nowrap}
+.algo-eq{font-family:var(--mo);font-size:.78rem;color:var(--ok);white-space:nowrap;margin-left:auto}
+/* toggle switch */
+.tgl{position:relative;display:inline-block;width:48px;height:26px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-s{position:absolute;cursor:pointer;inset:0;background:var(--bd);border-radius:26px;transition:.2s}
+.tgl-s:before{content:'';position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:var(--mu);border-radius:50%;transition:.2s}
+.tgl input:checked+.tgl-s{background:var(--ac)}
+.tgl input:checked+.tgl-s:before{transform:translateX(22px);background:#000}
 .wxb{display:flex;align-items:center;gap:10px;background:var(--sf2);border:1px solid var(--bd);padding:8px 12px;margin-bottom:12px;flex-wrap:wrap}
 .wxs{font-family:var(--mo);font-size:.7rem;color:var(--mu);flex:1;min-width:140px;line-height:1.4}
 .wxs.ok{color:var(--ok)}.wxs.err{color:var(--er)}.wxs.busy{color:var(--ac2)}
@@ -104,6 +116,7 @@ tr:hover td{background:var(--sf2)}
   <button class="tab" onclick="nav('runs',this)">Log Book</button>
   <button class="tab" onclick="nav('tracks',this)">Tracks</button>
   <button class="tab" onclick="nav('import',this)">Upload</button>
+  <button class="tab" onclick="nav('algo',this)">Algorithm</button>
 </div>
 
 <!-- PREDICT -->
@@ -343,6 +356,95 @@ tr:hover td{background:var(--sf2)}
 
 <div class="toast" id="toast"></div>
 
+<!-- ALGORITHM -->
+<div id="pg-algo" class="page">
+<div style="max-width:680px;margin:0 auto">
+
+  <!-- TUNING MODE -->
+  <div class="card">
+    <div class="ct">// Tuning Mode</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Auto-Tune</div>
+        <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-top:3px">Automatically adjusts values after each All Out run</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="algo-auto" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Show Suggestions</div>
+        <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-top:3px">Displays recommended changes based on your run data</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="algo-suggest" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
+    </div>
+  </div>
+
+  <!-- PREDICTION ALGORITHM -->
+  <div class="card">
+    <div class="ct">// Prediction Algorithm</div>
+    <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:14px;line-height:1.7">
+      Each value below represents how much that weather variable must change to affect ET by .01 seconds. Smaller number = more sensitive.
+    </div>
+
+    <div class="algo-row">
+      <span class="algo-lbl">Every</span>
+      <input type="number" class="algo-inp" id="algo-temp" step="0.1" min="0.1">
+      <span class="algo-unit">°F change</span>
+      <span class="algo-eq">= .01 ET</span>
+    </div>
+    <div class="algo-row">
+      <span class="algo-lbl">Every</span>
+      <input type="number" class="algo-inp" id="algo-baro" step="0.01" min="0.01">
+      <span class="algo-unit">inHg barometer change</span>
+      <span class="algo-eq">= .01 ET</span>
+    </div>
+    <div class="algo-row">
+      <span class="algo-lbl">Every</span>
+      <input type="number" class="algo-inp" id="algo-vp" step="0.001" min="0.001">
+      <span class="algo-unit">inHg vapor pressure change</span>
+      <span class="algo-eq">= .01 ET</span>
+    </div>
+    <div class="algo-row">
+      <span class="algo-lbl">Every</span>
+      <input type="number" class="algo-inp" id="algo-hum" step="0.5" min="0.5">
+      <span class="algo-unit">% humidity change</span>
+      <span class="algo-eq">= .01 ET</span>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-p" style="margin-top:0;flex:1" onclick="saveAlgo()">Save</button>
+      <button class="bsm bgho" style="padding:10px 16px" onclick="resetAlgo()">Reset to Defaults</button>
+    </div>
+    <div id="algo-saved" style="display:none;font-family:var(--mo);font-size:.65rem;color:var(--ok);margin-top:8px;text-align:center">✓ Algorithm settings saved</div>
+  </div>
+
+  <!-- TUNING INSIGHTS -->
+  <div class="card" id="algo-insights-card">
+    <div class="ct">// Tuning Insights</div>
+    <div id="algo-insights">
+      <div style="font-family:var(--mo);font-size:.7rem;color:var(--mu);line-height:1.7">
+        Insights will appear here after enough All Out runs have been logged. Need at least 10 All Out runs to generate suggestions.
+      </div>
+    </div>
+  </div>
+
+  <!-- UNDERSTANDING THE VARIABLES -->
+  <div class="card">
+    <div class="ct">// Understanding the Variables</div>
+    <div style="font-family:var(--mo);font-size:.72rem;line-height:2;color:var(--tx)">
+      <div><span style="color:var(--ac)">Temperature ↑</span> → air less dense → car runs slower → ET <span style="color:var(--er)">↑ increases</span></div>
+      <div><span style="color:var(--ac)">Barometer ↑</span> → air more dense → car runs faster → ET <span style="color:var(--ok)">↓ decreases</span></div>
+      <div><span style="color:var(--ac)">Vapor Pressure ↑</span> → more moisture → air less dense → ET <span style="color:var(--er)">↑ increases</span></div>
+      <div><span style="color:var(--ac)">Humidity ↑</span> → more water vapor → air less dense → ET <span style="color:var(--er)">↑ increases</span></div>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);font-family:var(--mo);font-size:.65rem;color:var(--mu);line-height:1.7">
+      Default values are based on empirical data from bracket racing at Northern California tracks. Your car may respond differently — use Auto-Tune or adjust manually based on your results.
+    </div>
+  </div>
+
+</div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════
 // PLUS CODE DECODER
@@ -383,8 +485,164 @@ const RUNS_DATA=[{"id":1,"date":"2026-03-04","track":"Sonoma","distance":"quarte
 function defRuns(){return JSON.parse(JSON.stringify(RUNS_DATA));}
 
 // ════════════════════════════════════════════════════════════════
-// STORAGE
+// ALGORITHM SETTINGS
 // ════════════════════════════════════════════════════════════════
+const AK='dip_algo';
+const ALGO_DEFAULTS={
+  temp:2.1,    // °F per .01 ET
+  baro:0.10,   // inHg per .01 ET
+  vp:0.010,    // inHg vapor pressure per .01 ET
+  hum:14,      // % humidity per .01 ET
+  autoTune:true,
+  showSuggestions:true
+};
+function lAlgo(){
+  try{const s=localStorage.getItem(AK);return s?{...ALGO_DEFAULTS,...JSON.parse(s)}:({...ALGO_DEFAULTS});}
+  catch{return{...ALGO_DEFAULTS};}
+}
+function sAlgo(a){try{localStorage.setItem(AK,JSON.stringify(a));}catch{}}
+let algoSettings=lAlgo();
+
+function renderAlgoTab(){
+  document.getElementById('algo-temp').value=algoSettings.temp;
+  document.getElementById('algo-baro').value=algoSettings.baro;
+  document.getElementById('algo-vp').value=algoSettings.vp;
+  document.getElementById('algo-hum').value=algoSettings.hum;
+  document.getElementById('algo-auto').checked=algoSettings.autoTune;
+  document.getElementById('algo-suggest').checked=algoSettings.showSuggestions;
+  renderAlgoInsights();
+}
+
+function saveAlgo(){
+  algoSettings.temp=parseFloat(document.getElementById('algo-temp').value)||ALGO_DEFAULTS.temp;
+  algoSettings.baro=parseFloat(document.getElementById('algo-baro').value)||ALGO_DEFAULTS.baro;
+  algoSettings.vp=parseFloat(document.getElementById('algo-vp').value)||ALGO_DEFAULTS.vp;
+  algoSettings.hum=parseFloat(document.getElementById('algo-hum').value)||ALGO_DEFAULTS.hum;
+  sAlgo(algoSettings);
+  const msg=document.getElementById('algo-saved');
+  msg.style.display='block';
+  setTimeout(()=>msg.style.display='none',2500);
+  toast('Algorithm settings saved ✓');
+}
+
+function saveAlgoSettings(){
+  algoSettings.autoTune=document.getElementById('algo-auto').checked;
+  algoSettings.showSuggestions=document.getElementById('algo-suggest').checked;
+  sAlgo(algoSettings);
+}
+
+function resetAlgo(){
+  algoSettings={...ALGO_DEFAULTS};
+  sAlgo(algoSettings);
+  renderAlgoTab();
+  toast('Algorithm reset to defaults ✓');
+}
+
+function renderAlgoInsights(){
+  const el=document.getElementById('algo-insights');
+  const card=document.getElementById('algo-insights-card');
+  // Only show insights card if suggestions are enabled
+  card.style.display=algoSettings.showSuggestions?'block':'none';
+  if(!algoSettings.showSuggestions)return;
+
+  // Get All Out runs with full weather data
+  const goodRuns=runs.filter(r=>
+    (r.quality==='allout'||r.quality===undefined)&&
+    r.da&&r.temp&&r.humidity&&
+    (r.ft1320||r.ft660)
+  );
+
+  if(goodRuns.length<10){
+    el.innerHTML=`<div style="font-family:var(--mo);font-size:.7rem;color:var(--mu);line-height:1.7">
+      Need at least 10 All Out runs to generate insights. You have ${goodRuns.length} qualifying run${goodRuns.length!==1?'s':''} so far.
+    </div>`;
+    return;
+  }
+
+  // Calculate average prediction error
+  const runsWithPred=goodRuns.filter(r=>{
+    const pred=getPredictedETForRun(r);
+    return pred!==null;
+  });
+
+  if(runsWithPred.length<5){
+    el.innerHTML=`<div style="font-family:var(--mo);font-size:.7rem;color:var(--mu)">Not enough runs with predictions yet to generate insights.</div>`;
+    return;
+  }
+
+  const errors=runsWithPred.map(r=>{
+    const pred=parseFloat(getPredictedETForRun(r));
+    const actual=r.calcET||r.ft1320||r.ft660;
+    return pred-actual;
+  });
+  const avgError=errors.reduce((s,e)=>s+e,0)/errors.length;
+  const absAvgError=errors.reduce((s,e)=>s+Math.abs(e),0)/errors.length;
+
+  // Check if predictions are consistently high or low
+  const bias=avgError>0.01?'over-predicting (slower than actual)':avgError<-0.01?'under-predicting (faster than actual)':null;
+
+  let html=`<div style="font-family:var(--mo);font-size:.7rem;line-height:1.9">`;
+  html+=`<div style="margin-bottom:10px">
+    <span style="color:var(--mu)">Based on</span> <span style="color:var(--tx)">${runsWithPred.length} All Out runs</span>
+    <span style="color:var(--mu)"> with predictions:</span><br>
+    Average prediction error: <span style="color:${absAvgError<0.02?'var(--ok)':'var(--ac2)'}">${absAvgError.toFixed(3)} ET</span>
+  </div>`;
+
+  if(bias){
+    html+=`<div style="color:var(--ac2);margin-bottom:8px">⚠ The algorithm is consistently ${bias} by an average of ${Math.abs(avgError).toFixed(3)} ET.</div>`;
+
+    if(algoSettings.showSuggestions){
+      // Suggest adjustments based on bias direction
+      const tempSugg=avgError>0?
+        (algoSettings.temp*0.9).toFixed(1):
+        (algoSettings.temp*1.1).toFixed(1);
+      html+=`<div style="border:1px solid var(--bd);padding:10px;margin-bottom:6px;background:var(--sf2)">
+        <div style="color:var(--tx);margin-bottom:6px">💡 Suggested adjustment:</div>
+        <div style="color:var(--mu)">Temperature: ${algoSettings.temp}°F → <span style="color:var(--ac)">${tempSugg}°F</span></div>
+        <button class="bsm bsec" style="margin-top:8px" onclick="applySuggestion('temp',${tempSugg})">Apply</button>
+        <button class="bsm bgho" style="margin-top:8px;margin-left:6px" onclick="this.parentElement.style.display='none'">Ignore</button>
+      </div>`;
+    }
+  }else{
+    html+=`<div style="color:var(--ok)">✓ Predictions are well calibrated. No adjustments needed.</div>`;
+  }
+
+  // Auto-tune note
+  if(algoSettings.autoTune){
+    html+=`<div style="margin-top:10px;color:var(--mu);font-size:.63rem">Auto-Tune is ON — values will adjust automatically after each new All Out run.</div>`;
+  }
+
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function applySuggestion(field, value){
+  algoSettings[field]=parseFloat(value);
+  sAlgo(algoSettings);
+  renderAlgoTab();
+  toast(`${field} updated to ${value} ✓`);
+}
+
+function runAutoTune(newRun){
+  if(!algoSettings.autoTune)return;
+  if(newRun.quality!=='allout'&&newRun.quality!==undefined)return;
+
+  const pred=getPredictedETForRun(newRun);
+  if(!pred)return;
+
+  const actual=newRun.calcET||newRun.ft1320||newRun.ft660;
+  if(!actual)return;
+
+  const error=parseFloat(pred)-actual;
+  if(Math.abs(error)<0.005)return; // close enough, no adjustment needed
+
+  // Nudge temperature coefficient slightly in the right direction
+  // Small adjustment — 5% nudge toward correcting the bias
+  const direction=error>0?0.95:1.05;
+  algoSettings.temp=Math.round(algoSettings.temp*direction*10)/10;
+  algoSettings.temp=Math.max(0.5,Math.min(10,algoSettings.temp));
+  sAlgo(algoSettings);
+}
 const RK='dip_r4',TK='dip_t4';
 function lRuns(){try{const s=localStorage.getItem(RK);return s?JSON.parse(s):defRuns();}catch{return defRuns();}}
 function lTracks(){try{const s=localStorage.getItem(TK);return s?JSON.parse(s):defTracks();}catch{return defTracks();}}
@@ -678,6 +936,7 @@ function saveRun(){
     runs.push(run);
   }
   sRuns(runs);
+  runAutoTune(run);
   clearLogForm();
   renderTable();renderSS();
   toast(eid?'Run updated!':'Run saved! ('+runs.length+' total)');
@@ -1173,6 +1432,7 @@ function nav(id,btn){
   }
   if(id==='tracks')renderTracks();
   if(id==='predict'){renderPredictStats();updatePoolNote();}
+  if(id==='algo')renderAlgoTab();
 }
 function toast(m,e=false){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',3000);}
 
