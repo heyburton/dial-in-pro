@@ -848,7 +848,36 @@ function predict(){
   });
 
   const tw=wts.reduce((a,b)=>a+b,0);
-  const final=pool.reduce((s,r,i)=>s+r._et*wts[i],0)/tw;
+  const idwBase=pool.reduce((s,r,i)=>s+r._et*wts[i],0)/tw;
+
+  // ── Kyle Algorithm Correction ──────────────────────────────────
+  // Calculate weighted average conditions of the reference pool
+  // then apply Kyle's formula to correct for how today differs
+  const poolAvgDA   = pool.reduce((s,r)=>s+(r.da||0),0)/pool.length;
+  const poolAvgBaro = pool.reduce((s,r)=>s+(r.pressure||30.0),0)/pool.length;
+  // Vapor pressure from humidity and temp (approximate)
+  const calcVP=(tf,rh)=>{
+    const tc=(tf-32)*5/9;
+    const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+    return(rh/100)*es*0.02953; // convert hPa to inHg
+  };
+  const poolAvgVP = pool.reduce((s,r)=>{
+    const t=r.temp||poolAvgTemp;
+    const h=r.humidity||poolAvgHum;
+    return s+calcVP(t,h);
+  },0)/pool.length;
+  const todayVP = !isNaN(temp)&&!isNaN(hum)?calcVP(temp,hum):poolAvgVP;
+  const todayBaro = parseFloat(document.getElementById('p-baro').value)||poolAvgBaro;
+
+  // Apply Kyle's corrections: + = slower, - = faster
+  const a = algoSettings;
+  const tempDelta   = !isNaN(temp) ? (temp - poolAvgTemp) / a.temp * 0.01 : 0;
+  const baroDelta   = (todayBaro - poolAvgBaro) / a.baro * -0.01; // baro↑ = faster
+  const vpDelta     = (todayVP - poolAvgVP) / a.vp * 0.01;
+  const humDelta    = !isNaN(hum) ? (hum - poolAvgHum) / a.hum * 0.01 : 0;
+  const algoCorrection = tempDelta + baroDelta + vpDelta + humDelta;
+
+  const final = idwBase + algoCorrection;
 
   // Predicted splits — ratio method from pool (also purely data-driven)
   const sFields=dist==='eighth'?['ft60','ft330']:['ft60','ft330','ft660','ft1000'];
@@ -877,7 +906,9 @@ function predict(){
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
   document.getElementById('r-et').textContent=final.toFixed(3);
   document.getElementById('r-dist').textContent=dist==='eighth'?'1/8 MILE — 660 FT':'1/4 MILE — 1,320 FT';
-  document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}`;
+  const corrSign=algoCorrection>=0?'+':'';
+  const corrNote=Math.abs(algoCorrection)>0.001?` • Algo correction: ${corrSign}${algoCorrection.toFixed(3)}`:'';
+  document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}${corrNote}`;
   document.getElementById('rbox').style.display='block';
   updatePoolNote();
 }
