@@ -104,6 +104,65 @@ tr:hover td{background:var(--sf2)}
 #cfi{display:none}
 .tl{font-family:var(--mo);font-size:.7rem;color:var(--ac);cursor:pointer;text-decoration:underline;background:none;border:none}
 .min5-note{font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-top:8px;padding:8px;background:var(--sf2);border:1px solid var(--bd);line-height:1.6}
+
+/* ── TUNING BENCH MODAL ── */
+.btn-tb{background:rgba(232,255,0,.08);color:var(--ac);border:1px solid rgba(232,255,0,.3);font-family:var(--di);font-weight:700;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;cursor:pointer;transition:all .15s;border-radius:0;white-space:nowrap}
+.btn-tb:hover{background:rgba(232,255,0,.15)}
+.tb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tb-overlay.open{display:block}
+.tb-modal{background:var(--sf);border:2px solid var(--ac);max-width:900px;margin:20px auto;padding:0}
+.tb-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:2px solid var(--ac);background:var(--sf2)}
+.tb-title{font-size:1.3rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.tb-close{background:none;border:1px solid var(--bd);color:var(--mu);font-size:1.2rem;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-close:hover{border-color:var(--er);color:var(--er)}
+.tb-body{padding:20px}
+.tb-section{font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mu);margin-bottom:10px;margin-top:18px}
+.tb-section:first-child{margin-top:0}
+.algo-pick-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.algo-btn{font-family:var(--di);font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;background:var(--sf2);border:1px solid var(--bd);color:var(--mu);cursor:pointer;transition:all .15s}
+.algo-btn.active{background:rgba(232,255,0,.1);border-color:var(--ac);color:var(--ac)}
+.algo-btn:hover{border-color:var(--ac);color:var(--ac)}
+.slider-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:600px){.slider-grid{grid-template-columns:1fr}}
+.slider-row{background:var(--sf2);border:1px solid var(--bd);padding:11px}
+.slider-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.slider-name{font-size:.63rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.slider-val{font-family:var(--mo);font-size:1rem;color:var(--ac)}
+.slider-hint{font-family:var(--mo);font-size:.57rem;color:var(--mu);margin-top:3px;line-height:1.4}
+.soff-modal{background:rgba(255,107,0,.06);border:1px solid rgba(255,107,0,.3);padding:13px;margin-bottom:16px}
+.soff-title{font-size:.63rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ac2);margin-bottom:8px}
+.soff-inner{display:flex;align-items:center;gap:12px}
+.soff-big{font-family:var(--mo);font-size:1.5rem;color:var(--ac2);min-width:70px;text-align:center}
+.soff-desc{font-family:var(--mo);font-size:.62rem;color:var(--mu);line-height:1.6;margin-top:6px}
+.bench-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.bench-filters select{width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px}
+.bench-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.bsm-card{background:var(--sf2);border:1px solid var(--bd);padding:10px;text-align:center}
+.bsm-val{font-family:var(--mo);font-size:1.05rem;color:var(--ac);line-height:1}
+.bsm-lbl{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-top:3px}
+.bench-table-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+.bench-table{width:100%;border-collapse:collapse;font-family:var(--mo);font-size:.7rem}
+.bench-table th{position:sticky;top:0;background:var(--sf2);font-family:var(--di);font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);text-align:left;padding:6px 7px;border-bottom:1px solid var(--bd);white-space:nowrap;z-index:1}
+.bench-table td{padding:5px 7px;border-bottom:1px solid rgba(42,42,42,.5);white-space:nowrap}
+.bench-table tr:hover td{background:var(--sf2)}
+.dbar-cell{display:flex;align-items:center;gap:5px}
+.dbar{height:8px;min-width:2px;max-width:56px;border-radius:1px}
+.dbar-pos{background:var(--er)}.dbar-neg{background:var(--ok)}
+.bench-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+.pg-row{display:flex;gap:6px;align-items:center;margin-bottom:8px;font-family:var(--mo);font-size:.7rem;color:var(--mu)}
+.pg-btn{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);padding:3px 9px;cursor:pointer;font-family:var(--mo);font-size:.7rem}
+.pg-btn:hover{border-color:var(--ac);color:var(--ac)}
+.pg-btn:disabled{opacity:.3;cursor:default}
+/* Confidence block on predict */
+.conf-block{margin-top:12px;background:var(--sf2);border:1px solid var(--bd);padding:13px}
+.conf-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;flex-wrap:wrap;gap:5px}
+.conf-lbl{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mu)}
+.conf-range{font-family:var(--mo);font-size:1.05rem;color:var(--tx)}
+.conf-dial{font-family:var(--mo);font-size:1.35rem;color:var(--ac2);font-weight:700}
+.conf-bar-wrap{height:5px;background:var(--bd);margin:7px 0;position:relative}
+.conf-bar{height:100%;transition:width .4s}
+.conf-bar.high{background:var(--ok)}.conf-bar.med{background:var(--ac)}.conf-bar.low{background:var(--er)}
+.conf-note{font-family:var(--mo);font-size:.6rem;color:var(--mu);line-height:1.5;margin-top:5px}
 </style>
 </head>
 <body>
@@ -125,7 +184,10 @@ tr:hover td{background:var(--sf2)}
   <div class="card">
     <div class="ct">// Race Setup</div>
     <div class="f"><label>Track</label>
-      <select id="p-track" onchange="onTrackChange()"><option value="all">All Tracks (combined)</option></select>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="p-track" onchange="onTrackChange()" style="flex:1"><option value="all">All Tracks (combined)</option></select>
+        <button class="btn-tb" onclick="openTuningBench()">⚙ Tune</button>
+      </div>
     </div>
     <div class="f"><label>Distance</label>
       <select id="p-dist">
@@ -171,6 +233,18 @@ tr:hover td{background:var(--sf2)}
     <div class="ret" id="r-et">-.---</div>
     <div class="rsu" id="r-sub"></div>
     <div class="rspl" id="r-spl"></div>
+  <div class="conf-block" id="conf-block" style="display:none">
+    <div class="conf-row">
+      <span class="conf-lbl">Confidence Range</span>
+      <span class="conf-range" id="conf-range">— – —</span>
+    </div>
+    <div class="conf-bar-wrap"><div class="conf-bar" id="conf-bar" style="width:0%"></div></div>
+    <div class="conf-row" style="margin-bottom:0">
+      <span class="conf-lbl">Suggested Dial-In</span>
+      <span class="conf-dial" id="conf-dial">—.—</span>
+    </div>
+    <div class="conf-note" id="conf-note"></div>
+  </div>
   </div>
   <div class="ndm" id="ndm" style="display:none">&#9888; Not enough data for this track/distance. See minimum run requirements below.</div>
   <div class="min5-note" id="pool-note"></div>
@@ -1508,6 +1582,434 @@ document.getElementById('l-dist').addEventListener('change',function(){
   document.getElementById('poe-fields-eighth').style.display=isQ?'none':'';
 });
 refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();
+
+// ════════════════════════════════════════════════════════════════
+// NAMED ALGORITHMS (per-track scale constants)
+// ════════════════════════════════════════════════════════════════
+const TB_AK='dip_tbalgos';
+const TB_SOK='dip_soff2';
+
+function defTBAlgos(){return[
+  {id:'all',     name:'All Tracks', trackFilter:'all',     DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
+  {id:'redding', name:'Redding',    trackFilter:'Redding', DA:800,WS:10,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
+  {id:'sonoma',  name:'Sonoma',     trackFilter:'Sonoma',  DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
+  {id:'samoa',   name:'Samoa',      trackFilter:'Samoa',   DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
+  {id:'firebird',name:'Firebird',   trackFilter:'Firebird',DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
+];}
+function lTBAlgos(){try{const s=localStorage.getItem(TB_AK);return s?JSON.parse(s):defTBAlgos();}catch{return defTBAlgos();}}
+function sTBAlgos(a){try{localStorage.setItem(TB_AK,JSON.stringify(a));}catch{}}
+function lTBSoff(){try{const s=localStorage.getItem(TB_SOK);return s?parseFloat(s):0;}catch{return 0;}}
+function sTBSoff(v){try{localStorage.setItem(TB_SOK,v);}catch{}}
+
+let tbAlgos=lTBAlgos();
+let tbActiveId='all';
+let tbScales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
+let sessionOffset=lTBSoff(); // in thousandths (.001 ET steps)
+let benchPage_=0;
+const BENCH_PER=10;
+
+function getTBAlgo(id){return tbAlgos.find(a=>a.id===id)||tbAlgos[0];}
+
+// ── Open / Close ──────────────────────────────────────────────
+function openTuningBench(){
+  document.getElementById('tb-overlay').classList.add('open');
+  // Populate new algo track dropdown
+  const sel=document.getElementById('tb-new-algo-track');
+  sel.innerHTML='<option value="all">All Tracks</option>';
+  tracks.forEach(t=>{const o=document.createElement('option');o.value=t.name;o.textContent=t.name;sel.appendChild(o);});
+  // Populate bench track filter
+  const bsel=document.getElementById('tb-ftrack');
+  const bcur=bsel.value;
+  bsel.innerHTML='<option value="all">All Tracks</option>';
+  tracks.forEach(t=>{const o=document.createElement('option');o.value=t.name;o.textContent=t.name;bsel.appendChild(o);});
+  if([...bsel.options].some(o=>o.value===bcur))bsel.value=bcur;
+  // Sync session offset slider
+  document.getElementById('tb-soff').value=sessionOffset;
+  updateSoffDisplay();
+  renderTBAlgoBtns();
+  loadAlgoToSliders(tbActiveId);
+  renderBenchTable();
+}
+function closeTuningBench(){document.getElementById('tb-overlay').classList.remove('open');}
+
+// ── Algorithm buttons ─────────────────────────────────────────
+function renderTBAlgoBtns(){
+  document.getElementById('tb-algo-btns').innerHTML=
+    tbAlgos.map(a=>`<button class="algo-btn${a.id===tbActiveId?' active':''}" onclick="selectTBAlgo('${a.id}')">${a.name}</button>`).join('');
+}
+function selectTBAlgo(id){
+  tbActiveId=id;
+  renderTBAlgoBtns();
+  loadAlgoToSliders(id);
+  benchPage_=0;
+  renderBenchTable();
+}
+function loadAlgoToSliders(id){
+  const a=getTBAlgo(id);
+  tbScales={DA:a.DA,WS:a.WS,TEMP:a.TEMP,HUM:a.HUM,WD:a.WD,SUN:a.SUN};
+  document.getElementById('sl-da').value=a.DA;    document.getElementById('sv-da').textContent=a.DA;
+  document.getElementById('sl-ws').value=a.WS;    document.getElementById('sv-ws').textContent=a.WS;
+  document.getElementById('sl-temp').value=a.TEMP; document.getElementById('sv-temp').textContent=a.TEMP;
+  document.getElementById('sl-hum').value=a.HUM;  document.getElementById('sv-hum').textContent=a.HUM;
+  document.getElementById('sl-wd').value=a.WD;    document.getElementById('sv-wd').textContent=a.WD;
+  document.getElementById('sl-sun').value=a.SUN;  document.getElementById('sv-sun').textContent=a.SUN;
+  document.getElementById('tb-save-note').style.display='none';
+}
+function onSlider(key){
+  const map={da:'DA',ws:'WS',temp:'TEMP',hum:'HUM',wd:'WD',sun:'SUN'};
+  const K=map[key];
+  const val=parseFloat(document.getElementById('sl-'+key).value);
+  tbScales[K]=val;
+  document.getElementById('sv-'+key).textContent=val;
+  renderBenchTable();
+}
+function resetSliders(){loadAlgoToSliders(tbActiveId);}
+function saveAlgoScales(){
+  const idx=tbAlgos.findIndex(a=>a.id===tbActiveId);
+  if(idx<0)return;
+  tbAlgos[idx]={...tbAlgos[idx],...tbScales};
+  sTBAlgos(tbAlgos);
+  document.getElementById('tb-save-note').style.display='inline';
+  toast(`Algorithm "${tbAlgos[idx].name}" saved.`);
+}
+function createAlgo(){
+  const name=document.getElementById('tb-new-algo-name').value.trim();
+  const track=document.getElementById('tb-new-algo-track').value;
+  if(!name){toast('Enter a name.',true);return;}
+  const id='algo_'+Date.now();
+  tbAlgos.push({id,name,trackFilter:track,DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5});
+  sTBAlgos(tbAlgos);
+  document.getElementById('tb-new-algo-name').value='';
+  renderTBAlgoBtns();
+  selectTBAlgo(id);
+  toast(`"${name}" created.`);
+}
+function deleteAlgo(){
+  const a=getTBAlgo(tbActiveId);
+  const builtIn=['all','redding','sonoma','samoa','firebird'];
+  if(builtIn.includes(tbActiveId)){toast('Cannot delete built-in algorithms.',true);return;}
+  if(!a||!confirm(`Delete "${a.name}"?`))return;
+  tbAlgos=tbAlgos.filter(x=>x.id!==tbActiveId);
+  sTBAlgos(tbAlgos);
+  tbActiveId=tbAlgos[0].id;
+  renderTBAlgoBtns();loadAlgoToSliders(tbActiveId);renderBenchTable();
+  toast('Deleted.');
+}
+
+// ── Session offset ────────────────────────────────────────────
+function updateSoffDisplay(){
+  const v=parseInt(document.getElementById('tb-soff').value);
+  sessionOffset=v;sTBSoff(v);
+  document.getElementById('tb-soff-val').textContent=(v>=0?'+':'')+(v/1000).toFixed(3);
+}
+function resetSoff(){document.getElementById('tb-soff').value=0;updateSoffDisplay();}
+
+// ── Pure IDW calculation (uses existing windDirNum/sunNum) ────
+function calcIDW(pool,distance,da,temp,hum,ws,wdn,sunQ,scales){
+  const {DA,WS,TEMP,HUM,WD,SUN}=scales;
+  const pf=distance==='eighth'?'ft660':'ft1320';
+  const poolAvgTemp=pool.reduce((s,r)=>s+(r.temp||0),0)/pool.length;
+  const poolAvgHum =pool.reduce((s,r)=>s+(r.humidity||0),0)/pool.length;
+  const poolAvgWS  =pool.reduce((s,r)=>s+(r.windSpeed||0),0)/pool.length;
+  const poolAvgWDN =pool.reduce((s,r)=>s+windDirNum(r.windDir||''),0)/pool.length;
+  const sunRuns    =pool.filter(r=>sunNum(r.sun)!==null);
+  const poolAvgSun =sunRuns.length?sunRuns.reduce((s,r)=>s+sunNum(r.sun),0)/sunRuns.length:0;
+  const qTemp=!isNaN(temp)?temp:poolAvgTemp;
+  const qHum =!isNaN(hum)?hum:poolAvgHum;
+  const wts=pool.map(r=>{
+    const rSun=sunNum(r.sun);const rSunVal=rSun!==null?rSun:poolAvgSun;
+    const dDA =((r.da||0)-da)/DA;
+    const dT  =(((r.temp)||poolAvgTemp)-qTemp)/TEMP;
+    const dH  =(((r.humidity)||poolAvgHum)-qHum)/HUM;
+    const dWS =(((r.windSpeed)||poolAvgWS)-ws)/WS;
+    const dWD =(windDirNum(r.windDir||'')-wdn)/WD;
+    const dSun=(rSunVal-(sunQ!==null?sunQ:poolAvgSun))/SUN;
+    const d2=dDA*dDA+dT*dT+dH*dH+dWS*dWS+dWD*dWD+dSun*dSun;
+    return d2<1e-10?1e10:1/d2;
+  });
+  const tw=wts.reduce((a,b)=>a+b,0);
+  // Use _et (effective ET) if present, otherwise use pf field
+  const et=pool.reduce((s,r,i)=>s+(r._et!=null?r._et:r[pf])*wts[i],0)/tw;
+  return{et,weights:wts,tw};
+}
+
+// ── Confidence calculation ────────────────────────────────────
+function computeConfidence(pool,weights,tw,et,distance,ws){
+  const pf=distance==='eighth'?'ft660':'ft1320';
+  const effN=tw*tw/weights.reduce((s,w)=>s+w*w,0);
+  const wVar=pool.reduce((s,r,i)=>s+weights[i]*Math.pow((r._et!=null?r._et:r[pf])-et,2),0)/tw;
+  const wStd=Math.sqrt(wVar);
+  const histMAE=ws<=2?0.043:ws<=8?0.037:0.031;
+  const range=Math.max(wStd*1.5,histMAE*0.8);
+  let level='high',pct=85;
+  if(effN<5||range>.04){level='low';pct=40;}
+  else if(effN<10||range>.025){level='med';pct=65;}
+  return{lo:et-range*0.4,hi:et+range*0.6,range,level,pct,effN:Math.round(effN)};
+}
+
+// ── Hook into existing predict() to add confidence block ─────
+// We patch the end of predict() by overriding the final display step
+const _origPredict=predict;
+function predict(){
+  _origPredict();
+  // After original predict runs, check if rbox is visible and add confidence
+  const rbox=document.getElementById('rbox');
+  if(rbox.style.display==='none')return;
+  const tf=document.getElementById('p-track').value;
+  const dist=document.getElementById('p-dist').value;
+  const da=parseFloat(document.getElementById('p-da').value);
+  const temp=parseFloat(document.getElementById('p-temp').value);
+  const hum=parseFloat(document.getElementById('p-hum').value);
+  const ws=parseFloat(document.getElementById('p-ws').value)||0;
+  const wd=document.getElementById('p-wd').value;
+  const sunRaw=document.getElementById('p-sun').value;
+  if(isNaN(da))return;
+  const pool=getPool(tf,dist);
+  if(pool.length<5)return;
+  const scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
+  // Use active tuning bench algo scales if track matches
+  const matchAlgo=tbAlgos.find(a=>a.trackFilter===tf||a.trackFilter===tf);
+  if(matchAlgo){scales.DA=matchAlgo.DA;scales.WS=matchAlgo.WS;scales.TEMP=matchAlgo.TEMP;scales.HUM=matchAlgo.HUM;scales.WD=matchAlgo.WD;scales.SUN=matchAlgo.SUN;}
+  try{
+    const {et,weights,tw}=calcIDW(pool,dist,da,temp,hum,ws,windDirNum(wd),sunNum(sunRaw),scales);
+    const finalET=et+sessionOffset/1000;
+    const conf=computeConfidence(pool,weights,tw,et,dist,ws);
+    const lo=(conf.lo+sessionOffset/1000).toFixed(3);
+    const hi=(conf.hi+sessionOffset/1000).toFixed(3);
+    const sugDial=(finalET+conf.range*0.6).toFixed(3);
+    document.getElementById('conf-range').textContent=`${lo} – ${hi}`;
+    document.getElementById('conf-dial').textContent=sugDial;
+    const bar=document.getElementById('conf-bar');
+    bar.style.width=conf.pct+'%';bar.className='conf-bar '+conf.level;
+    const lvlTxt={high:'High confidence',med:'Moderate confidence',low:'Low confidence — widen margin'};
+    const calmNote=ws<=2?' Calm wind — variance is higher.':'';
+    const soffNote=sessionOffset!==0?` Session offset: ${sessionOffset>0?'+':''}${(sessionOffset/1000).toFixed(3)}`:'' ;
+    document.getElementById('conf-note').textContent=`${lvlTxt[conf.level]} · ${conf.effN} effective ref runs · ±${conf.range.toFixed(3)}${calmNote}${soffNote}`;
+    document.getElementById('conf-block').style.display='block';
+  }catch(e){document.getElementById('conf-block').style.display='none';}
+}
+
+// ── Bench table ───────────────────────────────────────────────
+function benchPage(dir){
+  benchPage_=Math.max(0,benchPage_+dir);
+  renderBenchTable();
+}
+function renderBenchTable(){
+  const ft=document.getElementById('tb-ftrack')?.value||'all';
+  const fd=document.getElementById('tb-fdist')?.value||'all';
+  const algo=getTBAlgo(tbActiveId);
+  const origScales={DA:algo.DA,WS:algo.WS,TEMP:algo.TEMP,HUM:algo.HUM,WD:algo.WD,SUN:algo.SUN};
+  let pool=runs.filter(r=>r.ft660||r.ft1320);
+  if(ft!=='all')pool=pool.filter(r=>r.track===ft);
+  if(fd==='eighth')pool=pool.filter(r=>r.ft660!=null);
+  else if(fd==='quarter')pool=pool.filter(r=>r.ft1320!=null);
+  pool=[...pool].sort((a,b)=>{const da=a.date||'';const db=b.date||'';const ta=a.time||'';const tb2=b.time||'';return(db+tb2).localeCompare(da+ta);});
+  const total=pool.length;
+  const start=benchPage_*BENCH_PER;
+  const end=Math.min(start+BENCH_PER,total);
+  document.getElementById('tb-showing').textContent=`${total} runs`;
+  document.getElementById('pg-info').textContent=total?`${start+1}–${end} of ${total}`:'0 runs';
+  document.getElementById('pg-prev').disabled=benchPage_===0;
+  document.getElementById('pg-next').disabled=end>=total;
+  // Build ref pools
+  const tF=algo.trackFilter;
+  let rp8=runs.filter(r=>r.ft660!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
+  let rp4=runs.filter(r=>r.ft1320!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
+  if(tF!=='all'){rp8=rp8.filter(r=>r.track===tF);rp4=rp4.filter(r=>r.track===tF);}
+  // Attach _et
+  const att=arr=>arr.map(r=>({...r,_et:r.calcET!=null?r.calcET:(r.ft1320||r.ft660)}));
+  const rp8a=att(rp8),rp4a=att(rp4);
+  // Summary MAE over all filtered runs
+  let origErrs=[],newErrs=[];
+  pool.forEach(r=>{
+    const isE=r.ft660!=null&&fd!=='quarter';
+    const dist=isE?'eighth':'quarter';
+    const rp=isE?rp8a:rp4a;
+    const actual=isE?r.ft660:r.ft1320;
+    if(!actual||rp.length<5)return;
+    const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
+    try{
+      const o=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,origScales);
+      const n=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,tbScales);
+      origErrs.push(Math.abs(actual-o.et));
+      newErrs.push(Math.abs(actual-n.et));
+    }catch{}
+  });
+  const mae=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+  const oMAE=mae(origErrs),nMAE=mae(newErrs);
+  document.getElementById('bs-mae-orig').textContent=oMAE!=null?oMAE.toFixed(4):'—';
+  document.getElementById('bs-mae-new').textContent=nMAE!=null?nMAE.toFixed(4):'—';
+  const imp=oMAE!=null&&nMAE!=null?oMAE-nMAE:null;
+  const impEl=document.getElementById('bs-delta');
+  if(imp!=null){impEl.textContent=(imp>=0?'+':'')+imp.toFixed(4);impEl.style.color=imp>=0?'var(--ok)':'var(--er)';}
+  else{impEl.textContent='—';impEl.style.color='var(--mu)';}
+  // Page rows
+  const page=pool.slice(start,end);
+  const tbody=document.getElementById('bench-tbody');
+  tbody.innerHTML=page.map(r=>{
+    const isE=r.ft660!=null&&fd!=='quarter';
+    const dist=isE?'eighth':'quarter';
+    const rp=isE?rp8a:rp4a;
+    const actual=isE?r.ft660:r.ft1320;
+    if(!actual||rp.length<5)return`<tr><td colspan="10" style="color:var(--mu)">—</td></tr>`;
+    const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
+    let oET='—',nET='—',oDN=null,nDN=null;
+    try{
+      const o=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,origScales);
+      const n=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,tbScales);
+      oET=o.et.toFixed(3);nET=n.et.toFixed(3);
+      oDN=actual-o.et;nDN=actual-n.et;
+    }catch{}
+    const db=dist==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
+    const fd2=(d)=>{
+      if(d===null)return'<td>—</td>';
+      const abs=Math.abs(d),col=abs<.01?'var(--ok)':abs<.025?'var(--ac)':'var(--er)';
+      const bw=Math.min(Math.round(abs*700),56);
+      return`<td><div class="dbar-cell"><div class="dbar ${d>0?'dbar-pos':'dbar-neg'}" style="width:${bw}px"></div><span style="color:${col}">${d>=0?'+':''}${d.toFixed(4)}</span></div></td>`;
+    };
+    const wind=r.windSpeed?`${r.windSpeed} ${r.windDir||''}`.trim():'calm';
+    const newBetter=nDN!==null&&oDN!==null&&Math.abs(nDN)<Math.abs(oDN);
+    return`<tr>
+      <td>${r.date||'—'}</td><td>${r.track||'—'}</td><td>${db}</td>
+      <td>${Math.round(r.da||0)}</td><td>${wind}</td>
+      <td style="color:var(--ac)">${actual.toFixed(3)}</td>
+      <td>${oET}</td>${fd2(oDN)}
+      <td style="color:${newBetter?'var(--ok)':'var(--tx)'}">${nET}</td>${fd2(nDN)}
+    </tr>`;
+  }).join('');
+}
+
+function suggestScales(){
+  const ft=document.getElementById('tb-ftrack')?.value||'all';
+  let pool=runs.filter(r=>r.ft660!=null&&(r.quality==='allout'||!r.quality));
+  if(ft!=='all')pool=pool.filter(r=>r.track===ft);
+  if(pool.length<10){toast('Need 10+ runs to suggest scales.',true);return;}
+  const poolA=pool.map(r=>({...r,_et:r.calcET!=null?r.calcET:r.ft660}));
+  let bestMAE=Infinity,bestDA=tbScales.DA,bestWS=tbScales.WS;
+  [200,400,600,800,1000,1400,1800].forEach(da=>{
+    [4,6,8,10,12,15,20,25].forEach(ws=>{
+      const sc={...tbScales,DA:da,WS:ws};
+      const errs=[];
+      poolA.forEach(r=>{
+        try{const{et}=calcIDW(poolA,'eighth',r.da,r.temp||0,r.humidity||0,r.windSpeed||0,windDirNum(r.windDir||''),sunNum(r.sun),sc);
+          errs.push(Math.abs(r._et-et));}catch{}
+      });
+      const m=errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:Infinity;
+      if(m<bestMAE){bestMAE=m;bestDA=da;bestWS=ws;}
+    });
+  });
+  tbScales.DA=bestDA;tbScales.WS=bestWS;
+  document.getElementById('sl-da').value=bestDA;document.getElementById('sv-da').textContent=bestDA;
+  document.getElementById('sl-ws').value=bestWS;document.getElementById('sv-ws').textContent=bestWS;
+  renderBenchTable();
+  toast(`Suggested: DA=${bestDA}, WS=${bestWS} · MAE ${bestMAE.toFixed(4)}`);
+}
 </script>
+
+<!-- ══════════════════════════════════════════════════════════
+     TUNING BENCH MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="tb-overlay" id="tb-overlay">
+<div class="tb-modal">
+  <div class="tb-header">
+    <span class="tb-title">⚙ Tuning Bench</span>
+    <button class="tb-close" onclick="closeTuningBench()">✕</button>
+  </div>
+  <div class="tb-body">
+
+    <div class="tb-section">Algorithm — Track Filter</div>
+    <div class="algo-pick-row" id="tb-algo-btns"></div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" id="tb-new-algo-name" placeholder="New algorithm name…" style="flex:1;max-width:200px">
+      <select id="tb-new-algo-track" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px">
+        <option value="all">All Tracks</option>
+      </select>
+      <button class="bsm bsec" onclick="createAlgo()">+ Create</button>
+      <button class="bsm bdng" onclick="deleteAlgo()">Delete</button>
+    </div>
+
+    <div class="soff-modal">
+      <div class="soff-title">Session Offset — Today's Bias Correction</div>
+      <div class="soff-inner">
+        <div><div class="soff-big" id="tb-soff-val">+0.000</div></div>
+        <div style="flex:1"><input type="range" id="tb-soff" min="-100" max="100" value="0" step="1" style="width:100%" oninput="updateSoffDisplay()"></div>
+      </div>
+      <div class="soff-desc">Dial in after your first pass. Does NOT change the algorithm — apply per session.<br>Positive = car ran slower than predicted. Negative = car ran faster.</div>
+      <div style="margin-top:8px"><button class="bsm bgho" onclick="resetSoff()">Reset to 0</button></div>
+    </div>
+
+    <div class="tb-section">Scale Constants <span style="color:var(--mu);font-weight:400;letter-spacing:0;text-transform:none;font-size:.58rem"> — smaller value = more influence on prediction</span></div>
+    <div class="slider-grid">
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">DA Scale</span><span class="slider-val" id="sv-da">800</span></div>
+        <input type="range" id="sl-da" min="100" max="2000" step="50" value="800" oninput="onSlider('da')" style="width:100%">
+        <div class="slider-hint">Primary axis. Lower = DA matters more.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">Wind Speed Scale</span><span class="slider-val" id="sv-ws">15</span></div>
+        <input type="range" id="sl-ws" min="2" max="50" step="1" value="15" oninput="onSlider('ws')" style="width:100%">
+        <div class="slider-hint">4.5mph wind ≈ .01 ET. Lower = wind speed matters more.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">Temp Scale</span><span class="slider-val" id="sv-temp">25</span></div>
+        <input type="range" id="sl-temp" min="5" max="60" step="5" value="25" oninput="onSlider('temp')" style="width:100%">
+        <div class="slider-hint">°F difference = distance 1.0. Lower = temp matters more.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">Humidity Scale</span><span class="slider-val" id="sv-hum">30</span></div>
+        <input type="range" id="sl-hum" min="5" max="80" step="5" value="30" oninput="onSlider('hum')" style="width:100%">
+        <div class="slider-hint">% RH difference = distance 1.0.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">Wind Dir Scale</span><span class="slider-val" id="sv-wd">1.5</span></div>
+        <input type="range" id="sl-wd" min="0.2" max="4" step="0.1" value="1.5" oninput="onSlider('wd')" style="width:100%">
+        <div class="slider-hint">Headwind/tailwind discrimination.</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-top"><span class="slider-name">Sun Scale</span><span class="slider-val" id="sv-sun">1.5</span></div>
+        <input type="range" id="sl-sun" min="0.2" max="4" step="0.1" value="1.5" oninput="onSlider('sun')" style="width:100%">
+        <div class="slider-hint">Sun condition discrimination.</div>
+      </div>
+    </div>
+
+    <div class="tb-section">Run Comparison — Live Recalculation</div>
+    <div class="bench-filters">
+      <select id="tb-ftrack" onchange="benchPage_=0;renderBenchTable()" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px"><option value="all">All Tracks</option></select>
+      <select id="tb-fdist" onchange="benchPage_=0;renderBenchTable()" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px">
+        <option value="all">All Distances</option>
+        <option value="eighth">1/8 Mile</option>
+        <option value="quarter">1/4 Mile</option>
+      </select>
+      <span style="font-family:var(--mo);font-size:.65rem;color:var(--mu)" id="tb-showing"></span>
+    </div>
+    <div class="bench-summary">
+      <div class="bsm-card"><div class="bsm-val" id="bs-mae-orig">—</div><div class="bsm-lbl">Orig MAE</div></div>
+      <div class="bsm-card"><div class="bsm-val" id="bs-mae-new">—</div><div class="bsm-lbl">New MAE</div></div>
+      <div class="bsm-card"><div class="bsm-val" id="bs-delta" style="color:var(--mu)">—</div><div class="bsm-lbl">Improvement</div></div>
+    </div>
+    <div class="pg-row">
+      <button class="pg-btn" id="pg-prev" onclick="benchPage(-1)">◀</button>
+      <span id="pg-info">—</span>
+      <button class="pg-btn" id="pg-next" onclick="benchPage(1)">▶</button>
+    </div>
+    <div class="bench-table-wrap">
+      <table class="bench-table">
+        <thead><tr>
+          <th>Date</th><th>Track</th><th>Dist</th><th>DA</th><th>Wind</th><th>Actual ET</th>
+          <th>Orig Pred</th><th>Orig Δ</th><th>New Pred</th><th>New Δ</th>
+        </tr></thead>
+        <tbody id="bench-tbody"></tbody>
+      </table>
+    </div>
+    <div class="bench-actions">
+      <button class="btn btn-p" style="width:auto;margin-top:0" onclick="saveAlgoScales()">Save to Algorithm</button>
+      <button class="bsm bsec" onclick="resetSliders()">Reset Sliders</button>
+      <button class="bsm bgho" onclick="suggestScales()">⚡ Suggest Scales</button>
+      <span id="tb-save-note" style="font-family:var(--mo);font-size:.65rem;color:var(--ok);display:none">✓ Saved.</span>
+    </div>
+
+  </div>
+</div>
+</div>
 </body>
 </html>
