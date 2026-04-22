@@ -983,6 +983,66 @@ function predict(){
   document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}${corrNote}`;
   document.getElementById('rbox').style.display='block';
   updatePoolNote();
+
+
+  // ── Confidence block ──────────────────────────────────────────
+  try{
+    const _pool=getPool(tf,dist);
+    if(_pool.length>=5){
+      const _scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
+      // Apply saved tuning bench scales if available for this track
+      if(typeof tbAlgos!=='undefined'){
+        const _ma=tbAlgos.find(a=>a.trackFilter===tf||a.id===tf);
+        if(_ma){_scales.DA=_ma.DA;_scales.WS=_ma.WS;_scales.TEMP=_ma.TEMP;_scales.HUM=_ma.HUM;_scales.WD=_ma.WD;_scales.SUN=_ma.SUN;}
+      }
+      const _wdn=windDirNum(wd);
+      const _sunQ=sunNum(sunRaw);
+      const _pAvgT=_pool.reduce((s,r)=>s+(r.temp||0),0)/_pool.length;
+      const _pAvgH=_pool.reduce((s,r)=>s+(r.humidity||0),0)/_pool.length;
+      const _pAvgWS=_pool.reduce((s,r)=>s+(r.windSpeed||0),0)/_pool.length;
+      const _pAvgWDN=_pool.reduce((s,r)=>s+windDirNum(r.windDir||''),0)/_pool.length;
+      const _sunR=_pool.filter(r=>sunNum(r.sun)!==null);
+      const _pAvgSun=_sunR.length?_sunR.reduce((s,r)=>s+sunNum(r.sun),0)/_sunR.length:0;
+      const _qT=!isNaN(temp)?temp:_pAvgT;
+      const _qH=!isNaN(hum)?hum:_pAvgH;
+      const _qSun=_sunQ!==null?_sunQ:_pAvgSun;
+      const _wts=_pool.map(r=>{
+        const _rs=sunNum(r.sun);const _rsv=_rs!==null?_rs:_pAvgSun;
+        const _dDA=((r.da||0)-da)/_scales.DA;
+        const _dT=((r.temp||_pAvgT)-_qT)/_scales.TEMP;
+        const _dH=((r.humidity||_pAvgH)-_qH)/_scales.HUM;
+        const _dWS=((r.windSpeed||_pAvgWS)-ws)/_scales.WS;
+        const _dWD=(windDirNum(r.windDir||'')-_wdn)/_scales.WD;
+        const _dS=(_rsv-_qSun)/_scales.SUN;
+        const _d2=_dDA*_dDA+_dT*_dT+_dH*_dH+_dWS*_dWS+_dWD*_dWD+_dS*_dS;
+        return _d2<1e-10?1e10:1/_d2;
+      });
+      const _tw=_wts.reduce((a,b)=>a+b,0);
+      const _et=_pool.reduce((s,r,i)=>s+(r._et!=null?r._et:r[pf])*_wts[i],0)/_tw;
+      // Confidence metrics
+      const _effN=_tw*_tw/_wts.reduce((s,w)=>s+w*w,0);
+      const _wVar=_pool.reduce((s,r,i)=>s+_wts[i]*Math.pow((r._et!=null?r._et:r[pf])-_et,2),0)/_tw;
+      const _wStd=Math.sqrt(_wVar);
+      const _histMAE=ws<=2?0.043:ws<=8?0.037:0.031;
+      const _range=Math.max(_wStd*1.5,_histMAE*0.8);
+      const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
+      const _lo=(_et-_range*0.4+_soff).toFixed(3);
+      const _hi=(_et+_range*0.6+_soff).toFixed(3);
+      const _sug=(_et+_range*0.6+_soff).toFixed(3);
+      let _lvl='high',_pct=85;
+      if(_effN<5||_range>.04){_lvl='low';_pct=40;}
+      else if(_effN<10||_range>.025){_lvl='med';_pct=65;}
+      const _lvlTxt={high:'High confidence',med:'Moderate confidence',low:'Low confidence — widen margin'};
+      const _calmNote=ws<=2?' Calm wind — variance is higher.':'';
+      const _soffNote=_soff!==0?` Session offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
+      document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
+      document.getElementById('conf-dial').textContent=_sug;
+      const _bar=document.getElementById('conf-bar');
+      _bar.style.width=_pct+'%';_bar.className='conf-bar '+_lvl;
+      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} effective ref runs · ±${_range.toFixed(3)}${_calmNote}${_soffNote}`;
+      document.getElementById('conf-block').style.display='block';
+    }
+  }catch(_e){document.getElementById('conf-block').style.display='none';}
 }
 
 function updatePoolNote(){
@@ -1744,48 +1804,6 @@ function computeConfidence(pool,weights,tw,et,distance,ws){
   if(effN<5||range>.04){level='low';pct=40;}
   else if(effN<10||range>.025){level='med';pct=65;}
   return{lo:et-range*0.4,hi:et+range*0.6,range,level,pct,effN:Math.round(effN)};
-}
-
-// ── Hook into existing predict() to add confidence block ─────
-// We patch the end of predict() by overriding the final display step
-const _origPredict=predict;
-function predict(){
-  _origPredict();
-  // After original predict runs, check if rbox is visible and add confidence
-  const rbox=document.getElementById('rbox');
-  if(rbox.style.display==='none')return;
-  const tf=document.getElementById('p-track').value;
-  const dist=document.getElementById('p-dist').value;
-  const da=parseFloat(document.getElementById('p-da').value);
-  const temp=parseFloat(document.getElementById('p-temp').value);
-  const hum=parseFloat(document.getElementById('p-hum').value);
-  const ws=parseFloat(document.getElementById('p-ws').value)||0;
-  const wd=document.getElementById('p-wd').value;
-  const sunRaw=document.getElementById('p-sun').value;
-  if(isNaN(da))return;
-  const pool=getPool(tf,dist);
-  if(pool.length<5)return;
-  const scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
-  // Use active tuning bench algo scales if track matches
-  const matchAlgo=tbAlgos.find(a=>a.trackFilter===tf||a.trackFilter===tf);
-  if(matchAlgo){scales.DA=matchAlgo.DA;scales.WS=matchAlgo.WS;scales.TEMP=matchAlgo.TEMP;scales.HUM=matchAlgo.HUM;scales.WD=matchAlgo.WD;scales.SUN=matchAlgo.SUN;}
-  try{
-    const {et,weights,tw}=calcIDW(pool,dist,da,temp,hum,ws,windDirNum(wd),sunNum(sunRaw),scales);
-    const finalET=et+sessionOffset/1000;
-    const conf=computeConfidence(pool,weights,tw,et,dist,ws);
-    const lo=(conf.lo+sessionOffset/1000).toFixed(3);
-    const hi=(conf.hi+sessionOffset/1000).toFixed(3);
-    const sugDial=(finalET+conf.range*0.6).toFixed(3);
-    document.getElementById('conf-range').textContent=`${lo} – ${hi}`;
-    document.getElementById('conf-dial').textContent=sugDial;
-    const bar=document.getElementById('conf-bar');
-    bar.style.width=conf.pct+'%';bar.className='conf-bar '+conf.level;
-    const lvlTxt={high:'High confidence',med:'Moderate confidence',low:'Low confidence — widen margin'};
-    const calmNote=ws<=2?' Calm wind — variance is higher.':'';
-    const soffNote=sessionOffset!==0?` Session offset: ${sessionOffset>0?'+':''}${(sessionOffset/1000).toFixed(3)}`:'' ;
-    document.getElementById('conf-note').textContent=`${lvlTxt[conf.level]} · ${conf.effN} effective ref runs · ±${conf.range.toFixed(3)}${calmNote}${soffNote}`;
-    document.getElementById('conf-block').style.display='block';
-  }catch(e){document.getElementById('conf-block').style.display='none';}
 }
 
 // ── Bench table ───────────────────────────────────────────────
