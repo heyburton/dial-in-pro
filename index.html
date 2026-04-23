@@ -221,6 +221,18 @@ tr:hover td{background:var(--sf2)}
         <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
       </div>
     </div>
+    <div class="fr" id="p-derived-row" style="display:none">
+      <div class="f">
+        <label>Water Grains <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(gr/lb)</span>
+          <span id="p-grains-flag" style="font-family:var(--mo);font-size:.6rem;display:none;margin-left:6px"></span>
+        </label>
+        <input type="number" id="p-grains" readonly>
+      </div>
+      <div class="f">
+        <label>Rel. Air Density <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(%)</span></label>
+        <input type="number" id="p-rad" readonly>
+      </div>
+    </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
   </div>
   </div>
@@ -738,45 +750,51 @@ let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 // ════════════════════════════════════════════════════════════════
 const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa County Airport (KAPC)',d:9.98},samoa:{n:'Arcata/Eureka Airport (KACV)',d:3.1},lasvegas:{n:'North Las Vegas Airport (KVGT)',d:2.8},firebird:{n:'Phoenix Sky Harbor (KPHX)',d:11.04}};
 
+let _fetchInProgress=false;
 async function doFetch(msg){
-  const tid=document.getElementById('p-track').value;
-  if(tid==='all'){setWxSt('Select a specific track to fetch live weather','');return;}
-  const t=tracks.find(x=>x.name===tid||x.id===tid);
-  if(!t||!t.lat){setWxSt('Track has no coordinates — add a Plus Code in Tracks tab','err');return;}
-  setWxSt('Fetching weather…','busy');
-  const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
-  for(const {la,ln,i} of tries){
-    try{
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
-      const res=await fetch(url,{signal:AbortSignal.timeout(7000)});
-      if(!res.ok)continue;
-      const data=await res.json();
-      const c=data.current;
-      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
-      const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
-      const inHg=hpaToInHg(c.surface_pressure);
-      document.getElementById('p-da').value=Math.round(da);
-      document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
-      document.getElementById('p-hum').value=c.relative_humidity_2m;
-      document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
-      document.getElementById('p-wd').value=wl;
-      document.getElementById('p-baro').value=inHg;
-      updateDerivedWeather();
-      const si=ST[t.id]||{};
-      const nm=si.n||(i===0?`Grid @ track coords`:`Grid offset ${i}`);
-      const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
-      const suf=i>0?` (station ${i+1} of 3)`:'';
-      setWxSt(`${nm} — ${ds}${suf}`,'ok');
-      if(msg)toast('Weather updated ✓');
-      return;
-    }catch(e){/* try next */}
-  }
-  if(msg){
-    setWxSt('All weather sources failed — enter conditions manually','err');
-    toast('Could not fetch weather',true);
-  }else{
-    // Silent auto-fetch failed — leave status as-is rather than showing error
-    setWxSt('Weather unavailable — tap Refresh to try again','');
+  if(_fetchInProgress)return;
+  _fetchInProgress=true;
+  try{
+    const tid=document.getElementById('p-track').value;
+    if(tid==='all'){setWxSt('Select a specific track to fetch live weather','');return;}
+    const t=tracks.find(x=>x.name===tid||x.id===tid);
+    if(!t||!t.lat){setWxSt('Track has no coordinates — add a Plus Code in Tracks tab','err');return;}
+    if(msg)setWxSt('Fetching weather…','busy');
+    const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
+    for(const {la,ln,i} of tries){
+      try{
+        const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+        const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
+        if(!res.ok)continue;
+        const data=await res.json();
+        const c=data.current;
+        if(c.temperature_2m==null)continue;
+        const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
+        const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
+        const inHg=hpaToInHg(c.surface_pressure);
+        document.getElementById('p-da').value=Math.round(da);
+        document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
+        document.getElementById('p-hum').value=c.relative_humidity_2m;
+        document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
+        document.getElementById('p-wd').value=wl;
+        document.getElementById('p-baro').value=inHg;
+        setTimeout(updateDerivedWeather,200);
+        const si=ST[t.id]||{};
+        const nm=si.n||(i===0?`${t.name} area`:`${t.name} area (offset ${i})`);
+        const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
+        setWxSt(`${nm} — ${ds}`,'ok');
+        if(msg)toast('Weather updated ✓');
+        return;
+      }catch(e){/* try next */}
+    }
+    if(msg){
+      setWxSt('All weather sources failed — enter conditions manually','err');
+      toast('Could not fetch weather',true);
+    }else{
+      setWxSt('Tap Refresh to fetch weather','');
+    }
+  }finally{
+    _fetchInProgress=false;
   }
 }
 
