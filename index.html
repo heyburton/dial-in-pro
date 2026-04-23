@@ -221,18 +221,6 @@ tr:hover td{background:var(--sf2)}
         <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
       </div>
     </div>
-    <div class="fr" id="p-derived-row" style="display:none">
-      <div class="f">
-        <label>Water Grains <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(gr/lb)</span>
-          <span id="p-grains-flag" style="font-family:var(--mo);font-size:.6rem;display:none;margin-left:6px"></span>
-        </label>
-        <input type="number" id="p-grains" readonly>
-      </div>
-      <div class="f">
-        <label>Rel. Air Density <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(%)</span></label>
-        <input type="number" id="p-rad" readonly>
-      </div>
-    </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
   </div>
   </div>
@@ -885,17 +873,8 @@ function getPool(trackFilter,distance){
     pool=runs.filter(r=>r.ft1320!=null&&validRun(r));
   }
   if(trackFilter!=='all') pool=pool.filter(r=>r.track===trackFilter);
-  // Attach effective ET — strictly use the finish ET for the requested distance
-  // calcET is pedal-off estimator output and may be a 1320 ET even in eighth pool
-  pool=pool.map(r=>{
-    let _et;
-    if(distance==='eighth'){
-      _et=r.ft660; // always use actual 660' time for eighth pool
-    }else{
-      _et=r.calcET!=null?r.calcET:r.ft1320; // calcET for lifted runs, else 1320
-    }
-    return{...r,_et};
-  });
+  // Attach effective ET for use in prediction
+  pool=pool.map(r=>({...r,_et:getET(r)||r.ft1320||r.ft660}));
   return pool;
 }
 
@@ -1076,11 +1055,16 @@ function predict(){
         return _d2<1e-10?1e10:1/_d2;
       });
       const _tw0=_wts0.reduce((a,b)=>a+b,0);
-      // Outlier awareness — note runs far from weighted mean but don't down-weight
-      // (pool size too small per track to reliably distinguish outliers from real variation)
+      // Outlier detection — down-weight runs far from weighted mean
       const _wMean=_poolETs.reduce((s,e,i)=>s+e*_wts0[i],0)/_tw0;
       const _wStd0=Math.sqrt(_poolETs.reduce((s,e,i)=>s+_wts0[i]*Math.pow(e-_wMean,2),0)/_tw0);
-      const _wts=_wts0; // use raw weights — no down-weighting until pool is larger
+      const _wts=_wts0.map((w,i)=>{
+        if(_wStd0<=0)return w;
+        const _dev=Math.abs(_poolETs[i]-_wMean);
+        if(_dev>3.0*_wStd0)return w*0.15; // only flag genuine outliers (3 sigma)
+        if(_dev>2.5*_wStd0)return w*0.4;  // mild down-weight at 2.5 sigma
+        return w;
+      });
       const _tw=_wts.reduce((a,b)=>a+b,0);
       const _effN=_tw*_tw/_wts.reduce((s,w)=>s+w*w,0);
       // Weighted variance centered on final displayed ET
@@ -1100,7 +1084,15 @@ function predict(){
       const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
       const _lo=(final-_range*0.4+_soff).toFixed(3);
       const _hi=(final+_range*0.6+_soff).toFixed(3);
-      const _sugDial=(_p75+_grainsBias+_soff).toFixed(3);
+      // Clamp suggested dial within [_lo, _hi] — always inside the confidence range
+      // Use 75th percentile when pool is large enough, else bias toward high end of range
+      const _loNum=parseFloat(_lo), _hiNum=parseFloat(_hi);
+      let _sugRaw=_p75+_grainsBias+_soff;
+      // If pool is small or percentile falls outside range, use high end of range
+      if(_effN<8||_sugRaw<_loNum||_sugRaw>_hiNum){
+        _sugRaw=_loNum+(_hiNum-_loNum)*0.75; // 75% of the way to the high end
+      }
+      const _sugDial=_sugRaw.toFixed(3);
       let _lvl='high',_pct=85;
       if(_effN<5||_range>.04){_lvl='low';_pct=40;}
       else if(_effN<10||_range>.025){_lvl='med';_pct=65;}
@@ -1109,7 +1101,7 @@ function predict(){
       const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
       const _soffNote=_soff!==0?` Offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
       const _nOut=_wStd0>0?_poolETs.filter(e=>Math.abs(e-_wMean)>2*_wStd0).length:0;
-      const _outNote=_nOut>0?` ${_nOut} run${_nOut>1?'s':''} >2σ from mean.`:'';
+      const _outNote=_nOut>0?` ${_nOut} run${_nOut>1?'s':''} far from average.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
       document.getElementById('conf-dial').textContent=_sugDial;
       const _bar=document.getElementById('conf-bar');
