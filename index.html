@@ -761,6 +761,7 @@ async function doFetch(msg){
       document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
       document.getElementById('p-wd').value=wl;
       document.getElementById('p-baro').value=inHg;
+      updateDerivedWeather();
       const si=ST[t.id]||{};
       const nm=si.n||(i===0?`Grid @ track coords`:`Grid offset ${i}`);
       const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
@@ -790,13 +791,44 @@ function calcDA(tf,rh,phpa,elft){
   return Math.round(pa+120*(tc-isaTemp));
 }
 function hpaToInHg(hpa){return Math.round(hpa*0.02953*100)/100;}
+function calcGrains(tf,rh,baroInHg){
+  const tc=(tf-32)*5/9;
+  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  const e=(rh/100)*es;
+  const vp=e*0.02953;
+  const b=baroInHg||29.92;
+  return Math.round(7000*0.622*vp/(b-vp)*10)/10;
+}
+function calcRAD(tf,rh,phpa){
+  const tc=(tf-32)*5/9;
+  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  const e=(rh/100)*es;
+  const pd=phpa-e;
+  return Math.round((pd/1013.25)*(288.15/(tc+273.15))*1000)/10;
+}
+function updateDerivedWeather(){
+  const tf=parseFloat(document.getElementById('p-temp').value);
+  const rh=parseFloat(document.getElementById('p-hum').value);
+  const baro=parseFloat(document.getElementById('p-baro').value);
+  if(isNaN(tf)||isNaN(rh)||isNaN(baro)){document.getElementById('p-derived-row').style.display='none';return;}
+  const phpa=baro/0.02953;
+  const grains=calcGrains(tf,rh,baro);
+  const rad=calcRAD(tf,rh,phpa);
+  document.getElementById('p-grains').value=grains.toFixed(1);
+  document.getElementById('p-rad').value=rad.toFixed(1);
+  document.getElementById('p-derived-row').style.display='';
+  const flag=document.getElementById('p-grains-flag');
+  if(grains>100){flag.textContent='⚠ HIGH';flag.style.color='var(--er)';flag.style.display='inline';}
+  else if(grains>80){flag.textContent='↑ ELEVATED';flag.style.color='var(--ac2)';flag.style.display='inline';}
+  else{flag.style.display='none';}
+}
 function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
   if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
-function ov(id){}
+function ov(id){if(['p-temp','p-hum','p-baro'].includes(id))updateDerivedWeather();}
 function onTrackChange(){
   ['p-da','p-temp','p-hum','p-ws','p-baro'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('p-wd').value='';
@@ -990,7 +1022,6 @@ function predict(){
     const _pool=getPool(tf,dist);
     if(_pool.length>=5){
       const _scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
-      // Apply saved tuning bench scales if available for this track
       if(typeof tbAlgos!=='undefined'){
         const _ma=tbAlgos.find(a=>a.trackFilter===tf||a.id===tf);
         if(_ma){_scales.DA=_ma.DA;_scales.WS=_ma.WS;_scales.TEMP=_ma.TEMP;_scales.HUM=_ma.HUM;_scales.WD=_ma.WD;_scales.SUN=_ma.SUN;}
@@ -1000,13 +1031,14 @@ function predict(){
       const _pAvgT=_pool.reduce((s,r)=>s+(r.temp||0),0)/_pool.length;
       const _pAvgH=_pool.reduce((s,r)=>s+(r.humidity||0),0)/_pool.length;
       const _pAvgWS=_pool.reduce((s,r)=>s+(r.windSpeed||0),0)/_pool.length;
-      const _pAvgWDN=_pool.reduce((s,r)=>s+windDirNum(r.windDir||''),0)/_pool.length;
       const _sunR=_pool.filter(r=>sunNum(r.sun)!==null);
       const _pAvgSun=_sunR.length?_sunR.reduce((s,r)=>s+sunNum(r.sun),0)/_sunR.length:0;
       const _qT=!isNaN(temp)?temp:_pAvgT;
       const _qH=!isNaN(hum)?hum:_pAvgH;
       const _qSun=_sunQ!==null?_sunQ:_pAvgSun;
-      const _wts=_pool.map(r=>{
+      const _poolETs=_pool.map(r=>r._et!=null?r._et:r[pf]);
+      // Raw weights
+      const _wts0=_pool.map((r,i)=>{
         const _rs=sunNum(r.sun);const _rsv=_rs!==null?_rs:_pAvgSun;
         const _dDA=((r.da||0)-da)/_scales.DA;
         const _dT=((r.temp||_pAvgT)-_qT)/_scales.TEMP;
@@ -1017,32 +1049,54 @@ function predict(){
         const _d2=_dDA*_dDA+_dT*_dT+_dH*_dH+_dWS*_dWS+_dWD*_dWD+_dS*_dS;
         return _d2<1e-10?1e10:1/_d2;
       });
+      const _tw0=_wts0.reduce((a,b)=>a+b,0);
+      // Outlier detection — down-weight runs far from weighted mean
+      const _wMean=_poolETs.reduce((s,e,i)=>s+e*_wts0[i],0)/_tw0;
+      const _wStd0=Math.sqrt(_poolETs.reduce((s,e,i)=>s+_wts0[i]*Math.pow(e-_wMean,2),0)/_tw0);
+      const _wts=_wts0.map((w,i)=>{
+        if(_wStd0<=0)return w;
+        const _dev=Math.abs(_poolETs[i]-_wMean);
+        if(_dev>2*_wStd0)return w*0.1;
+        if(_dev>1.5*_wStd0)return w*0.4;
+        return w;
+      });
       const _tw=_wts.reduce((a,b)=>a+b,0);
-      const _et=_pool.reduce((s,r,i)=>s+(r._et!=null?r._et:r[pf])*_wts[i],0)/_tw;
-      // Confidence metrics
       const _effN=_tw*_tw/_wts.reduce((s,w)=>s+w*w,0);
-      const _wVar=_pool.reduce((s,r,i)=>s+_wts[i]*Math.pow((r._et!=null?r._et:r[pf])-_et,2),0)/_tw;
-      const _wStd=Math.sqrt(_wVar);
+      // Weighted variance centered on final displayed ET
+      const _wVar=_poolETs.reduce((s,e,i)=>s+_wts[i]*Math.pow(e-final,2),0)/_tw;
+      const _wStd=Math.sqrt(Math.abs(_wVar));
       const _histMAE=ws<=2?0.043:ws<=8?0.037:0.031;
       const _range=Math.max(_wStd*1.5,_histMAE*0.8);
+      // Grains bias correction
+      const _grains=parseFloat(document.getElementById('p-grains')?.value)||0;
+      let _grainsBias=0;
+      if(_grains>100)_grainsBias=0.038*Math.min((_grains-100)/40,1.0);
+      else if(_grains>80)_grainsBias=0.010*(_grains-80)/20;
+      // 75th percentile ET from weighted CDF for suggested dial-in
+      const _sorted=[..._poolETs.map((e,i)=>({et:e,w:_wts[i]}))].sort((a,b)=>a.et-b.et);
+      let _cumW=0,_p75=final+_range*0.6;
+      for(const pt of _sorted){_cumW+=pt.w;if(_cumW/_tw>=0.75){_p75=pt.et;break;}}
       const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
-      const _lo=(_et-_range*0.4+_soff).toFixed(3);
-      const _hi=(_et+_range*0.6+_soff).toFixed(3);
-      const _sug=(_et+_range*0.6+_soff).toFixed(3);
+      const _lo=(final-_range*0.4+_soff).toFixed(3);
+      const _hi=(final+_range*0.6+_soff).toFixed(3);
+      const _sugDial=(_p75+_grainsBias+_soff).toFixed(3);
       let _lvl='high',_pct=85;
       if(_effN<5||_range>.04){_lvl='low';_pct=40;}
       else if(_effN<10||_range>.025){_lvl='med';_pct=65;}
       const _lvlTxt={high:'High confidence',med:'Moderate confidence',low:'Low confidence — widen margin'};
-      const _calmNote=ws<=2?' Calm wind — variance is higher.':'';
-      const _soffNote=_soff!==0?` Session offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
+      const _calmNote=ws<=2?' Calm wind — higher variance.':'';
+      const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
+      const _soffNote=_soff!==0?` Offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
+      const _nOut=_wts.filter((w,i)=>w<_wts0[i]*0.5).length;
+      const _outNote=_nOut>0?` ${_nOut} outlier${_nOut>1?'s':''} down-weighted.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
-      document.getElementById('conf-dial').textContent=_sug;
+      document.getElementById('conf-dial').textContent=_sugDial;
       const _bar=document.getElementById('conf-bar');
       _bar.style.width=_pct+'%';_bar.className='conf-bar '+_lvl;
-      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} effective ref runs · ±${_range.toFixed(3)}${_calmNote}${_soffNote}`;
+      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_calmNote}${_grainsNote}${_soffNote}`;
       document.getElementById('conf-block').style.display='block';
     }
-  }catch(_e){document.getElementById('conf-block').style.display='none';}
+  }catch(_e){console.error('Conf error:',_e);document.getElementById('conf-block').style.display='none';}
 }
 
 function updatePoolNote(){
