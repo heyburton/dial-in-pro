@@ -931,6 +931,11 @@ function onTrackChange(){
 // 1/4 mi predictions: use ft1320 from runs that have it
 // Minimum 5 runs required
 // ════════════════════════════════════════════════════════════════
+function getTrackHeading(trackName){
+  if(!trackName||trackName==='all')return 180; // default Redding
+  const t=tracks.find(x=>x.name===trackName||x.id===trackName);
+  return t?t.heading:180;
+}
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
   const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
@@ -949,9 +954,28 @@ function getPool(trackFilter,distance){
 
 // Encode wind direction as a numeric so IDW can learn directional effects
 // The encoding is arbitrary — what matters is that same directions cluster
-function windDirNum(dir){
+function windDirNum(dir,trackHeading){
+  // Standard labels
   const m={headwind:1,tailwind:-1,crosswind:0,calm:0,'':0};
-  return m[dir]||0;
+  if(m[dir]!==undefined)return m[dir];
+  // Compass labels from Dr.Dial-In import — convert using track heading
+  // Default to Redding heading (180) if not provided
+  const th=trackHeading||180;
+  const compassDeg={
+    'Northerly':0,'North':0,'N':0,
+    'Northeasterly':45,'Northeast':45,'NE':45,
+    'Easterly':90,'East':90,'E':90,
+    'Southeasterly':135,'Southeast':135,'SE':135,
+    'Southerly':180,'South':180,'S':180,
+    'Southwesterly':225,'Southwest':225,'SW':225,
+    'Westerly':270,'West':270,'W':270,
+    'Northwesterly':315,'Northwest':315,'NW':315,
+  };
+  const deg=compassDeg[dir];
+  if(deg===undefined)return 0;
+  // Use bearingToWind logic to classify
+  const wl=bearingToWind(deg,th);
+  return m[wl]||0;
 }
 
 // Encode sun condition as a numeric — same principle as wind direction.
@@ -999,7 +1023,8 @@ function predict(){
   const poolAvgTemp = pool.reduce((s,r)=>s+(r.temp||0),0)/pool.length;
   const poolAvgHum  = pool.reduce((s,r)=>s+(r.humidity||0),0)/pool.length;
   const poolAvgWS   = pool.reduce((s,r)=>s+(r.windSpeed||0),0)/pool.length;
-  const poolAvgWDN  = pool.reduce((s,r)=>s+windDirNum(r.windDir||''),0)/pool.length;
+  const _th=getTrackHeading(tf);
+  const poolAvgWDN  = pool.reduce((s,r)=>s+windDirNum(r.windDir||'',_th),0)/pool.length;
   // Sun pool average: only count runs that actually have sun data logged
   const sunRuns     = pool.filter(r=>sunNum(r.sun)!==null);
   const poolAvgSun  = sunRuns.length>0 ? sunRuns.reduce((s,r)=>s+sunNum(r.sun),0)/sunRuns.length : 0;
@@ -1013,7 +1038,7 @@ function predict(){
 
   // Detect wind diversity in pool — if most runs have similar wind to each other
   // but different from today, wind adds noise not signal — reduce its influence
-  const poolWDNs=pool.map(r=>windDirNum(r.windDir||''));
+  const poolWDNs=pool.map(r=>windDirNum(r.windDir||'',_th));
   const poolWDStd=Math.sqrt(poolWDNs.reduce((s,w)=>s+Math.pow(w-poolAvgWDN,2),0)/pool.length);
   // If pool wind direction std dev is low (everyone calm) AND today differs,
   // wind direction is not helping discriminate — reduce WD and WS scale influence
@@ -1029,13 +1054,13 @@ function predict(){
     const dT   = ((r.temp     || poolAvgTemp) - qTemp) / TEMP_SCALE;
     const dH   = ((r.humidity || poolAvgHum)  - qHum)  / HUM_SCALE;
     const dWS  = ((r.windSpeed|| poolAvgWS)   - qWS)   / eff_WS_SCALE;
-    const dWD  = (windDirNum(r.windDir||'')   - qWDN)  / eff_WD_SCALE;
+    const dWD  = (windDirNum(r.windDir||'',_th) - qWDN)  / eff_WD_SCALE;
     const dSun = (rSunVal                     - qSun)  / SUN_SCALE;
     const dist2 = dDA*dDA + dT*dT + dH*dH + dWS*dWS + dWD*dWD + dSun*dSun;
     const baseW = dist2 < 1e-10 ? 1e10 : 1/dist2;
     // Near-exact match bonus: same wind direction AND close DA AND similar wind speed
     // This prevents a sea of calm runs from diluting a perfect match
-    const sameWD = windDirNum(r.windDir||'')===qWDN && qWDN!==0;
+    const sameWD = windDirNum(r.windDir||'',_th)===qWDN && qWDN!==0;
     const closeDA = Math.abs((r.da||0)-da) < 200;
     const closeWS = Math.abs((r.windSpeed||0)-ws) < 5;
     const nearMatch = sameWD && closeDA && closeWS;
@@ -1167,13 +1192,14 @@ function predict(){
       const _qSun=_sunQ!==null?_sunQ:_pAvgSun;
       const _poolETs=_pool.map(r=>r._et!=null?r._et:r[pf]);
       // Raw weights
+      const _cth=getTrackHeading(tf);
       const _wts0=_pool.map((r,i)=>{
         const _rs=sunNum(r.sun);const _rsv=_rs!==null?_rs:_pAvgSun;
         const _dDA=((r.da||0)-da)/_scales.DA;
         const _dT=((r.temp||_pAvgT)-_qT)/_scales.TEMP;
         const _dH=((r.humidity||_pAvgH)-_qH)/_scales.HUM;
         const _dWS=((r.windSpeed||_pAvgWS)-ws)/_scales.WS;
-        const _dWD=(windDirNum(r.windDir||'')-_wdn)/_scales.WD;
+        const _dWD=(windDirNum(r.windDir||'',_cth)-_wdn)/_scales.WD;
         const _dS=(_rsv-_qSun)/_scales.SUN;
         const _d2=_dDA*_dDA+_dT*_dT+_dH*_dH+_dWS*_dWS+_dWD*_dWD+_dS*_dS;
         return _d2<1e-10?1e10:1/_d2;
@@ -1555,7 +1581,8 @@ function getPredictedETForRun(r){
     const dT=((x.temp||poolAvgTemp)-qTemp)/TEMP_SCALE;
     const dH=((x.humidity||poolAvgHum)-qHum)/HUM_SCALE;
     const dWS=((x.windSpeed||poolAvgWS)-qWS)/WS_SCALE;
-    const dWD=(windDirNum(x.windDir||'')-qWDN)/WD_SCALE;
+    const _rth=getTrackHeading(r.track||'');
+    const dWD=(windDirNum(x.windDir||'',_rth)-qWDN)/WD_SCALE;
     const dSun=(rSunVal-qSun)/SUN_SCALE;
     const d2=dDA*dDA+dT*dT+dH*dH+dWS*dWS+dWD*dWD+dSun*dSun;
     return d2<1e-10?1e10:1/d2;
