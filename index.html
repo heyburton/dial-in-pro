@@ -224,15 +224,15 @@ tr:hover td{background:var(--sf2)}
         <div style="display:flex;align-items:center;gap:8px">
           <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
           <div id="wind-arrow-wrap" style="display:none;flex-shrink:0" title="">
-            <svg id="wind-arrow-svg" width="36" height="36" viewBox="0 0 44 44">
-              <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#333" stroke-width="1"/>
-              <!-- Car icon facing up -->
-              <rect x="17" y="14" width="10" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.2"/>
-              <rect x="19" y="12" width="6" height="5" rx="1" fill="none" stroke="#555" stroke-width="1"/>
-              <!-- Wind arrow — direction relative to car, not compass -->
-              <g id="wind-arrow-g">
-                <polygon points="22,4 18,14 22,11 26,14" fill="#fef8d5"/>
-                <line x1="22" y1="11" x2="22" y2="22" stroke="#fef8d5" stroke-width="2"/>
+            <svg id="wind-arrow-svg" width="40" height="40" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#444" stroke-width="1.5"/>
+              <text x="22" y="8" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">N</text>
+              <text x="22" y="41" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">S</text>
+              <text x="5" y="25" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">W</text>
+              <text x="39" y="25" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">E</text>
+              <g id="wind-arrow-g" transform="rotate(0,22,22)">
+                <polygon points="22,5 18,18 22,15 26,18" fill="#fef8d5"/>
+                <line x1="22" y1="15" x2="22" y2="35" stroke="#fef8d5" stroke-width="2.5"/>
               </g>
             </svg>
           </div>
@@ -461,7 +461,7 @@ tr:hover td{background:var(--sf2)}
     </div>
 
     <!-- Algorithm values -->
-    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Each value = how much that variable must change to affect ET by .01 seconds. Larger number = less sensitive. Defaults tuned for bracket-tuned street cars.</div>
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Each value represents how much that variable must change to affect ET by .01 seconds:</div>
     <div class="algo-row">
       <span class="algo-lbl">Every</span>
       <input type="number" class="algo-inp" id="algo-temp" step="0.1" min="0.1">
@@ -614,7 +614,7 @@ const AK='dip_algo';
 const ALGO_DEFAULTS={
   temp:2.1,    // °F per .01 ET
   baro:0.10,   // inHg per .01 ET
-  vp:0.070,    // inHg vapor pressure per .01 ET (standard ~0.07)
+  vp:0.010,    // inHg vapor pressure per .01 ET
   hum:14,      // % humidity per .01 ET
   autoTune:true,
   showSuggestions:true
@@ -882,24 +882,20 @@ function updateWindArrow(){
   const wrap=document.getElementById('wind-arrow-wrap');
   if(!wd||wd===''){wrap.style.display='none';return;}
   wrap.style.display='inline-block';
-  // Car always faces UP on screen. Arrow shows where wind comes FROM.
-  // Tailwind: wind from behind (below car) → arrow points UP (toward front of car)
-  // Headwind: wind from ahead (above car) → arrow points DOWN (toward back of car)
-  // Crosswind: wind from right side → arrow points LEFT (across car)
-  // Calm: no arrow rotation needed
-  const labels={
-    headwind:'Headwind — wind from ahead',
-    tailwind:'Tailwind — wind from behind',
-    crosswind:'Crosswind — wind from the side',
-    calm:'Calm — no significant wind'
-  };
+  // Arrow points FROM the direction the wind is coming from
+  // relative to the track orientation
+  const t=tracks.find(x=>x.name===document.getElementById('p-track').value||x.id===document.getElementById('p-track').value);
+  const trackHeading=t?t.heading:0;
   let arrowDeg=0;
-  if(wd==='headwind') arrowDeg=180;  // arrow points down = wind from above
-  else if(wd==='tailwind') arrowDeg=0;   // arrow points up = wind from below
-  else if(wd==='crosswind') arrowDeg=90; // arrow points left = wind from right
+  const labels={headwind:'Coming from ahead (into your face)',tailwind:'Coming from behind',crosswind:'Coming from the side',calm:'No significant wind'};
+  if(wd==='headwind') arrowDeg=(trackHeading+180)%360; // wind FROM ahead
+  else if(wd==='tailwind') arrowDeg=trackHeading;       // wind FROM behind
+  else if(wd==='crosswind') arrowDeg=(trackHeading+90)%360;
   else arrowDeg=0;
   document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
-  if(wrap)wrap.title=labels[wd]||'';
+  // Update tooltip
+  const wrap2=document.getElementById('wind-arrow-wrap');
+  if(wrap2)wrap2.title=labels[wd]||'';
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
@@ -1071,9 +1067,13 @@ function predict(){
   else if(daGap<=800){idwWeight=0.70+(300-daGap+300)*0.27/500;physicsWeight=1-idwWeight;}
   else{idwWeight=0.45;physicsWeight=0.55;}
 
-  // Blend: IDW base + weighted physics DA correction + residual Kyle correction
-  // The Kyle residual is scaled down by IDW weight (less relevant when extrapolating)
-  const algoCorrection=physicsDA*physicsWeight+kyleResidual*idwWeight;
+  // Scale Kyle residual by how much DA differs from reference runs
+  // When DA is similar to reference runs, IDW already captured the weather effects
+  // Kyle correction only adds value when we're extrapolating into new DA territory
+  const daResidual=Math.abs(da-wtAvgDA);
+  // Kyle weight: 0 when DA matches refs exactly, ramps to 0.4 at 500ft+ gap
+  const kyleWeight=Math.min(daResidual/500,1.0)*0.4;
+  const algoCorrection=physicsDA*physicsWeight+kyleResidual*kyleWeight;
   const final=idwBase+algoCorrection;
 
   // Track extrapolation distance for display
@@ -1113,10 +1113,7 @@ function predict(){
   document.getElementById('r-dist').textContent=dist==='eighth'?'1/8 MILE — 660 FT':'1/4 MILE — 1,320 FT';
   const corrSign=algoCorrection>=0?'+':'';
   const corrNote=Math.abs(algoCorrection)>0.001?` • Algo correction: ${corrSign}${algoCorrection.toFixed(3)}`:'';
-  // DA effect: show how much DA difference from reference runs affects ET
-  const _daEffect=physicsDA!==undefined?physicsDA:0;
-  const _daEffNote=Math.abs(_daEffect)>0.002?` • DA effect: ${_daEffect>=0?'+':''}${_daEffect.toFixed(3)}`:''
-  document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}${corrNote}${_daEffNote}`;
+  document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}${corrNote}`;
   document.getElementById('rbox').style.display='block';
   updatePoolNote();
 
@@ -1181,14 +1178,9 @@ function predict(){
       let _cumW=0,_p75=final+_range*0.6;
       for(const pt of _sorted){_cumW+=pt.w;if(_cumW/_tw>=0.75){_p75=pt.et;break;}}
       const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
-      // Clamp low end: use fastest ET from runs within 400ft DA of today
-      // Much more accurate than using best-ever ET minus arbitrary buffer
-      const _todayDA=da;
-      const _nearRuns=_pool.filter(r=>Math.abs((r.da||0)-_todayDA)<=400);
-      const _refPool=_nearRuns.length>=2?_nearRuns:_pool;
-      const _bestNearET=Math.min(..._refPool.map(r=>r._et!=null?r._et:(r.ft660||r.ft1320||99)));
-      // Floor = fastest nearby ET minus small margin (.012) for slightly better conditions
-      const _hardFloor=_bestNearET-0.012;
+      // Clamp low end of range to best known ET minus .040 (physical plausibility)
+      const _bestET=_pool.length?Math.min(..._pool.map(r=>r._et!=null?r._et:(r.ft660||r.ft1320||99))):99;
+      const _hardFloor=_bestET-0.040;
       const _loRaw=final-_range*0.4+_soff;
       const _lo=Math.max(_loRaw,_hardFloor).toFixed(3);
       const _hi=(final+_range*0.6+_soff).toFixed(3);
