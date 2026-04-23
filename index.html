@@ -221,23 +221,20 @@ tr:hover td{background:var(--sf2)}
     </div>
     <div class="fr">
       <div class="f"><label>Wind Direction</label>
-        <select id="p-wd" onchange="updateWindArrow()"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
-        <div class="wind-arrow-wrap" id="wind-arrow-wrap" style="display:none">
-          <svg class="wind-arrow-svg" id="wind-arrow-svg" width="44" height="44" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="20" fill="none" stroke="#333" stroke-width="1.5"/>
-            <text x="22" y="8" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">N</text>
-            <text x="22" y="40" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">S</text>
-            <text x="6" y="25" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">W</text>
-            <text x="38" y="25" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">E</text>
-            <!-- Arrow points FROM wind origin (direction wind is blowing FROM) -->
-            <g id="wind-arrow-g" transform="rotate(0,22,22)">
-              <polygon points="22,6 19,20 22,17 25,20" fill="#fef8d5"/>
-              <line x1="22" y1="17" x2="22" y2="34" stroke="#fef8d5" stroke-width="2"/>
-            </g>
-          </svg>
-          <div>
-            <div class="wind-arrow-label">Wind from</div>
-            <div class="wind-arrow-info" id="wind-arrow-info">—</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
+          <div id="wind-arrow-wrap" style="display:none;flex-shrink:0" title="">
+            <svg id="wind-arrow-svg" width="40" height="40" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#444" stroke-width="1.5"/>
+              <text x="22" y="8" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">N</text>
+              <text x="22" y="41" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">S</text>
+              <text x="5" y="25" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">W</text>
+              <text x="39" y="25" text-anchor="middle" font-size="7" fill="#666" font-family="sans-serif">E</text>
+              <g id="wind-arrow-g" transform="rotate(0,22,22)">
+                <polygon points="22,5 18,18 22,15 26,18" fill="#fef8d5"/>
+                <line x1="22" y1="15" x2="22" y2="35" stroke="#fef8d5" stroke-width="2.5"/>
+              </g>
+            </svg>
           </div>
         </div>
       </div>
@@ -882,10 +879,9 @@ function bearingToWind(wd,th){
 }
 function updateWindArrow(){
   const wd=document.getElementById('p-wd').value;
-  const ws=parseFloat(document.getElementById('p-ws').value)||0;
   const wrap=document.getElementById('wind-arrow-wrap');
-  if(!wd||wd===''||ws===0){wrap.style.display='none';return;}
-  wrap.style.display='flex';
+  if(!wd||wd===''){wrap.style.display='none';return;}
+  wrap.style.display='inline-block';
   // Arrow points FROM the direction the wind is coming from
   // relative to the track orientation
   const t=tracks.find(x=>x.name===document.getElementById('p-track').value||x.id===document.getElementById('p-track').value);
@@ -897,7 +893,9 @@ function updateWindArrow(){
   else if(wd==='crosswind') arrowDeg=(trackHeading+90)%360;
   else arrowDeg=0;
   document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
-  document.getElementById('wind-arrow-info').textContent=labels[wd]||'';
+  // Update tooltip
+  const wrap2=document.getElementById('wind-arrow-wrap');
+  if(wrap2)wrap2.title=labels[wd]||'';
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
@@ -1837,6 +1835,16 @@ document.getElementById('l-dist').addEventListener('change',function(){
   document.getElementById('poe-fields-quarter').style.display=isQ?'':'none';
   document.getElementById('poe-fields-eighth').style.display=isQ?'none':'';
 });
+// Fix Redding heading in localStorage if stored as 270 (old default)
+try{
+  const _tk=localStorage.getItem('dip_t4');
+  if(_tk){
+    const _ts=JSON.parse(_tk);
+    let _changed=false;
+    _ts.forEach(t=>{if(t.id==='redding'&&t.heading===270){t.heading=180;_changed=true;}});
+    if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
+  }
+}catch(e){}
 refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();
 
 // ════════════════════════════════════════════════════════════════
