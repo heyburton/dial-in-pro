@@ -221,6 +221,18 @@ tr:hover td{background:var(--sf2)}
         <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
       </div>
     </div>
+    <div class="fr" id="p-derived-row" style="display:none">
+      <div class="f">
+        <label>Water Grains <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(gr/lb)</span>
+          <span id="p-grains-flag" style="font-family:var(--mo);font-size:.6rem;display:none;margin-left:6px"></span>
+        </label>
+        <input type="number" id="p-grains" readonly>
+      </div>
+      <div class="f">
+        <label>Rel. Air Density <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(%)</span></label>
+        <input type="number" id="p-rad" readonly>
+      </div>
+    </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
   </div>
   </div>
@@ -738,54 +750,45 @@ let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 // ════════════════════════════════════════════════════════════════
 const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa County Airport (KAPC)',d:9.98},samoa:{n:'Arcata/Eureka Airport (KACV)',d:3.1},lasvegas:{n:'North Las Vegas Airport (KVGT)',d:2.8},firebird:{n:'Phoenix Sky Harbor (KPHX)',d:11.04}};
 
-let _fetchInProgress=false;
 async function doFetch(msg){
-  // Guard against concurrent fetches (flickering fix)
-  if(_fetchInProgress)return;
-  _fetchInProgress=true;
-  try{
-    const tid=document.getElementById('p-track').value;
-    if(tid==='all'){setWxSt('Select a specific track to fetch live weather','');return;}
-    const t=tracks.find(x=>x.name===tid||x.id===tid);
-    if(!t||!t.lat){setWxSt('Track has no coordinates — add a Plus Code in Tracks tab','err');return;}
-    if(msg)setWxSt('Fetching weather…','busy');
-    const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
-    for(const {la,ln,i} of tries){
-      try{
-        const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
-        const res=await fetch(url,{signal:AbortSignal.timeout(8000)});
-        if(!res.ok)continue;
-        const data=await res.json();
-        const c=data.current;
-        if(c.temperature_2m==null)continue;
-        const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
-        const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
-        const inHg=hpaToInHg(c.surface_pressure);
-        document.getElementById('p-da').value=Math.round(da);
-        document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
-        document.getElementById('p-hum').value=c.relative_humidity_2m;
-        document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
-        document.getElementById('p-wd').value=wl;
-        document.getElementById('p-baro').value=inHg;
-        // Small delay to ensure all DOM values are set before reading them
-        setTimeout(updateDerivedWeather,50);
-        const si=ST[t.id]||{};
-        const nm=si.n||(i===0?`${t.name} area`:`${t.name} area (offset ${i})`);
-        const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
-        setWxSt(`${nm} — ${ds}`,'ok');
-        if(msg)toast('Weather updated ✓');
-        return;
-      }catch(e){/* try next */}
-    }
-    // All attempts failed
-    if(msg){
-      setWxSt('All weather sources failed — enter conditions manually','err');
-      toast('Could not fetch weather',true);
-    }else{
-      setWxSt('Tap Refresh to fetch weather','');
-    }
-  }finally{
-    _fetchInProgress=false;
+  const tid=document.getElementById('p-track').value;
+  if(tid==='all'){setWxSt('Select a specific track to fetch live weather','');return;}
+  const t=tracks.find(x=>x.name===tid||x.id===tid);
+  if(!t||!t.lat){setWxSt('Track has no coordinates — add a Plus Code in Tracks tab','err');return;}
+  setWxSt('Fetching weather…','busy');
+  const tries=[{la:t.lat,ln:t.lng,i:0},{la:t.lat+.05,ln:t.lng+.05,i:1},{la:t.lat-.05,ln:t.lng-.05,i:2}];
+  for(const {la,ln,i} of tries){
+    try{
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,relative_humidity_2m,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+      const res=await fetch(url,{signal:AbortSignal.timeout(7000)});
+      if(!res.ok)continue;
+      const data=await res.json();
+      const c=data.current;
+      const da=calcDA(c.temperature_2m,c.relative_humidity_2m,c.surface_pressure,t.elevation||0);
+      const wl=bearingToWind(c.wind_direction_10m,t.heading||0);
+      const inHg=hpaToInHg(c.surface_pressure);
+      document.getElementById('p-da').value=Math.round(da);
+      document.getElementById('p-temp').value=c.temperature_2m.toFixed(1);
+      document.getElementById('p-hum').value=c.relative_humidity_2m;
+      document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
+      document.getElementById('p-wd').value=wl;
+      document.getElementById('p-baro').value=inHg;
+      updateDerivedWeather();
+      const si=ST[t.id]||{};
+      const nm=si.n||(i===0?`Grid @ track coords`:`Grid offset ${i}`);
+      const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
+      const suf=i>0?` (station ${i+1} of 3)`:'';
+      setWxSt(`${nm} — ${ds}${suf}`,'ok');
+      if(msg)toast('Weather updated ✓');
+      return;
+    }catch(e){/* try next */}
+  }
+  if(msg){
+    setWxSt('All weather sources failed — enter conditions manually','err');
+    toast('Could not fetch weather',true);
+  }else{
+    // Silent auto-fetch failed — leave status as-is rather than showing error
+    setWxSt('Weather unavailable — tap Refresh to try again','');
   }
 }
 
@@ -882,8 +885,17 @@ function getPool(trackFilter,distance){
     pool=runs.filter(r=>r.ft1320!=null&&validRun(r));
   }
   if(trackFilter!=='all') pool=pool.filter(r=>r.track===trackFilter);
-  // Attach effective ET for use in prediction
-  pool=pool.map(r=>({...r,_et:getET(r)||r.ft1320||r.ft660}));
+  // Attach effective ET — strictly use the finish ET for the requested distance
+  // calcET is pedal-off estimator output and may be a 1320 ET even in eighth pool
+  pool=pool.map(r=>{
+    let _et;
+    if(distance==='eighth'){
+      _et=r.ft660; // always use actual 660' time for eighth pool
+    }else{
+      _et=r.calcET!=null?r.calcET:r.ft1320; // calcET for lifted runs, else 1320
+    }
+    return{...r,_et};
+  });
   return pool;
 }
 
@@ -1064,23 +1076,11 @@ function predict(){
         return _d2<1e-10?1e10:1/_d2;
       });
       const _tw0=_wts0.reduce((a,b)=>a+b,0);
-      // Outlier detection — down-weight runs far from weighted mean
+      // Outlier awareness — note runs far from weighted mean but don't down-weight
+      // (pool size too small per track to reliably distinguish outliers from real variation)
       const _wMean=_poolETs.reduce((s,e,i)=>s+e*_wts0[i],0)/_tw0;
       const _wStd0=Math.sqrt(_poolETs.reduce((s,e,i)=>s+_wts0[i]*Math.pow(e-_wMean,2),0)/_tw0);
-      // Outlier detection relative to top-weighted neighbors (not full pool)
-      // Find the weighted mean of the TOP 10 closest runs only
-      const _sorted0=[..._wts0.map((w,i)=>({w,et:_poolETs[i]}))].sort((a,b)=>b.w-a.w);
-      const _top10=_sorted0.slice(0,Math.min(10,_sorted0.length));
-      const _top10tw=_top10.reduce((s,x)=>s+x.w,0);
-      const _neighborMean=_top10.reduce((s,x)=>s+x.et*x.w,0)/_top10tw;
-      const _neighborStd=Math.sqrt(_top10.reduce((s,x)=>s+x.w*Math.pow(x.et-_neighborMean,2),0)/_top10tw);
-      const _wts=_wts0.map((w,i)=>{
-        if(_neighborStd<=0)return w;
-        const _dev=Math.abs(_poolETs[i]-_neighborMean);
-        if(_dev>3.5*_neighborStd)return w*0.1; // extreme outlier vs neighbors
-        if(_dev>2.5*_neighborStd)return w*0.35; // moderate outlier
-        return w;
-      });
+      const _wts=_wts0; // use raw weights — no down-weighting until pool is larger
       const _tw=_wts.reduce((a,b)=>a+b,0);
       const _effN=_tw*_tw/_wts.reduce((s,w)=>s+w*w,0);
       // Weighted variance centered on final displayed ET
@@ -1108,8 +1108,8 @@ function predict(){
       const _calmNote=ws<=2?' Calm wind — higher variance.':'';
       const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
       const _soffNote=_soff!==0?` Offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
-      const _nOut=_wts.filter((w,i)=>w<_wts0[i]*0.5).length; // count runs down-weighted by 50%+
-      const _outNote=_nOut>0?` ${_nOut} outlier${_nOut>1?'s':''} down-weighted.`:'';
+      const _nOut=_wStd0>0?_poolETs.filter(e=>Math.abs(e-_wMean)>2*_wStd0).length:0;
+      const _outNote=_nOut>0?` ${_nOut} run${_nOut>1?'s':''} >2σ from mean.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
       document.getElementById('conf-dial').textContent=_sugDial;
       const _bar=document.getElementById('conf-bar');
