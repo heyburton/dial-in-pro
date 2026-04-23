@@ -1032,7 +1032,14 @@ function predict(){
     const dWD  = (windDirNum(r.windDir||'')   - qWDN)  / eff_WD_SCALE;
     const dSun = (rSunVal                     - qSun)  / SUN_SCALE;
     const dist2 = dDA*dDA + dT*dT + dH*dH + dWS*dWS + dWD*dWD + dSun*dSun;
-    return dist2 < 1e-10 ? 1e10 : 1/dist2;
+    const baseW = dist2 < 1e-10 ? 1e10 : 1/dist2;
+    // Near-exact match bonus: same wind direction AND close DA AND similar wind speed
+    // This prevents a sea of calm runs from diluting a perfect match
+    const sameWD = windDirNum(r.windDir||'')===qWDN && qWDN!==0;
+    const closeDA = Math.abs((r.da||0)-da) < 200;
+    const closeWS = Math.abs((r.windSpeed||0)-ws) < 5;
+    const nearMatch = sameWD && closeDA && closeWS;
+    return nearMatch ? baseW * 25 : baseW;
   });
 
   const tw=wts.reduce((a,b)=>a+b,0);
