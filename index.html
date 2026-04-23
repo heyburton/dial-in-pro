@@ -771,8 +771,13 @@ async function doFetch(msg){
       return;
     }catch(e){/* try next */}
   }
-  setWxSt('All weather sources failed — enter conditions manually','err');
-  if(msg)toast('Could not fetch weather',true);
+  if(msg){
+    setWxSt('All weather sources failed — enter conditions manually','err');
+    toast('Could not fetch weather',true);
+  }else{
+    // Silent auto-fetch failed — leave status as-is rather than showing error
+    setWxSt('Weather unavailable — tap Refresh to try again','');
+  }
 }
 
 function calcDA(tf,rh,phpa,elft){
@@ -1056,8 +1061,8 @@ function predict(){
       const _wts=_wts0.map((w,i)=>{
         if(_wStd0<=0)return w;
         const _dev=Math.abs(_poolETs[i]-_wMean);
-        if(_dev>2*_wStd0)return w*0.1;
-        if(_dev>1.5*_wStd0)return w*0.4;
+        if(_dev>3.0*_wStd0)return w*0.15; // only flag genuine outliers (3 sigma)
+        if(_dev>2.5*_wStd0)return w*0.4;  // mild down-weight at 2.5 sigma
         return w;
       });
       const _tw=_wts.reduce((a,b)=>a+b,0);
@@ -1087,7 +1092,7 @@ function predict(){
       const _calmNote=ws<=2?' Calm wind — higher variance.':'';
       const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
       const _soffNote=_soff!==0?` Offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
-      const _nOut=_wts.filter((w,i)=>w<_wts0[i]*0.5).length;
+      const _nOut=_wts.filter((w,i)=>w<_wts0[i]*0.5).length; // count runs down-weighted by 50%+
       const _outNote=_nOut>0?` ${_nOut} outlier${_nOut>1?'s':''} down-weighted.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
       document.getElementById('conf-dial').textContent=_sugDial;
