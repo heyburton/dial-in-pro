@@ -1040,10 +1040,14 @@ function predict(){
   // but different from today, wind adds noise not signal — reduce its influence
   const poolWDNs=pool.map(r=>windDirNum(r.windDir||'',_th));
   const poolWDStd=Math.sqrt(poolWDNs.reduce((s,w)=>s+Math.pow(w-poolAvgWDN,2),0)/pool.length);
-  // If pool wind direction std dev is low (everyone calm) AND today differs,
-  // wind direction is not helping discriminate — reduce WD and WS scale influence
-  const windDiversityLow=poolWDStd<0.15&&Math.abs(qWDN-poolAvgWDN)>0.5;
-  const eff_WS_SCALE=windDiversityLow?WS_SCALE*4:WS_SCALE; // stretch scale = less influence
+  // Check if a near-match run exists (same wind direction + close DA + close speed)
+  // If so, DON'T stretch scales — let wind discrimination work normally
+  const hasNearWindMatch=pool.some(r=>{
+    const rWDN=windDirNum(r.windDir||'',_th);
+    return rWDN===qWDN && qWDN!==0 && Math.abs((r.da||0)-da)<200 && Math.abs((r.windSpeed||0)-ws)<5;
+  });
+  const windDiversityLow=!hasNearWindMatch&&poolWDStd<0.15&&Math.abs(qWDN-poolAvgWDN)>0.5;
+  const eff_WS_SCALE=windDiversityLow?WS_SCALE*4:WS_SCALE;
   const eff_WD_SCALE=windDiversityLow?WD_SCALE*4:WD_SCALE;
 
   // Compute multi-dimensional distance for each run in the pool
@@ -1853,7 +1857,12 @@ function showTopRuns(){
   list.innerHTML=ranked.map((x,i)=>{
     const r=x.r;
     const et=r._et!=null?r._et.toFixed(3):'—';
-    const wind=r.windSpeed?`${r.windSpeed}mph ${r.windDir||''}`:'calm';
+    const _rth2=getTrackHeading(r.track||'');
+    const _classified=windDirNum(r.windDir||'',_rth2);
+    const _classMap={'1':'headwind','-1':'tailwind','0':'crosswind'};
+    const _classLabel=_classMap[String(_classified)]||'calm';
+    const _rawLabel=r.windDir&&r.windDir!=='calm'&&r.windDir!=='headwind'&&r.windDir!=='tailwind'&&r.windDir!=='crosswind'?` (${r.windDir})`:'';
+    const wind=r.windSpeed?`${r.windSpeed}mph ${_classLabel}${_rawLabel}`:'calm';
     return`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 60px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:.65rem">
       <span style="color:var(--mu)">#${i+1}</span>
       <span>${r.date||'—'}</span>
