@@ -933,7 +933,8 @@ function onTrackChange(){
 // ════════════════════════════════════════════════════════════════
 function getTrackHeading(trackName){
   if(!trackName||trackName==='all')return 180; // default Redding
-  const t=tracks.find(x=>x.name===trackName||x.id===trackName);
+  const tn=(trackName||'').trim().toLowerCase();
+  const t=tracks.find(x=>(x.name||'').trim().toLowerCase()===tn||(x.id||'').trim().toLowerCase()===tn);
   return t?t.heading:180;
 }
 function getPool(trackFilter,distance){
@@ -957,7 +958,8 @@ function getPool(trackFilter,distance){
 function windDirNum(dir,trackHeading){
   // Standard labels
   const m={headwind:1,tailwind:-1,crosswind:0,calm:0,'':0};
-  if(m[dir]!==undefined)return m[dir];
+  const dirClean=(dir||'').trim();
+  if(m[dirClean]!==undefined)return m[dirClean];
   // Compass labels from Dr.Dial-In import — convert using track heading
   // Default to Redding heading (180) if not provided
   const th=trackHeading||180;
@@ -971,7 +973,7 @@ function windDirNum(dir,trackHeading){
     'Westerly':270,'West':270,'W':270,
     'Northwesterly':315,'Northwest':315,'NW':315,
   };
-  const deg=compassDeg[dir];
+  const deg=compassDeg[dirClean];
   if(deg===undefined)return 0;
   // Use bearingToWind logic to classify
   const wl=bearingToWind(deg,th);
@@ -1044,7 +1046,7 @@ function predict(){
   // If so, DON'T stretch scales — let wind discrimination work normally
   const hasNearWindMatch=pool.some(r=>{
     const rWDN=windDirNum(r.windDir||'',_th);
-    return rWDN===qWDN && qWDN!==0 && Math.abs((r.da||0)-da)<200 && Math.abs((r.windSpeed||0)-ws)<5;
+    return rWDN===qWDN && qWDN!==0 && Math.abs((r.da||0)-da)<300 && Math.abs((r.windSpeed||0)-ws)<5;
   });
   const windDiversityLow=!hasNearWindMatch&&poolWDStd<0.15&&Math.abs(qWDN-poolAvgWDN)>0.5;
   const eff_WS_SCALE=windDiversityLow?WS_SCALE*4:WS_SCALE;
@@ -1065,7 +1067,7 @@ function predict(){
     // Near-exact match bonus: same wind direction AND close DA AND similar wind speed
     // This prevents a sea of calm runs from diluting a perfect match
     const sameWD = windDirNum(r.windDir||'',_th)===qWDN && qWDN!==0;
-    const closeDA = Math.abs((r.da||0)-da) < 200;
+    const closeDA = Math.abs((r.da||0)-da) < 300;
     const closeWS = Math.abs((r.windSpeed||0)-ws) < 5;
     const nearMatch = sameWD && closeDA && closeWS;
     return nearMatch ? baseW * 25 : baseW;
