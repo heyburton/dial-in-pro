@@ -264,6 +264,14 @@ tr:hover td{background:var(--sf2)}
     <div class="rdi" id="r-dist"></div>
     <div class="ret" id="r-et">-.---</div>
     <div class="rsu" id="r-sub"></div>
+    <div id="da-delta-block" style="display:none;margin-top:10px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);font-family:var(--mo);font-size:.7rem">
+      <div style="font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:6px">Since Your Last Run</div>
+      <div style="font-size:.63rem;color:var(--mu);margin-bottom:6px" id="da-delta-ref"></div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><span style="color:var(--mu)">DA  </span><span id="da-delta-val"></span></div>
+        <div><span style="color:var(--mu)">Predicted ET  </span><span id="et-delta-val"></span></div>
+      </div>
+    </div>
     <div class="rspl" id="r-spl"></div>
     <div style="margin-top:10px;text-align:center">
       <button class="bsm bgho" onclick="showTopRuns()" id="top-runs-btn" style="display:none">▶ Show Top Reference Runs</button>
@@ -1174,6 +1182,42 @@ function predict(){
   const corrNote=Math.abs(algoCorrection)>0.001?` • Algo correction: ${corrSign}${algoCorrection.toFixed(3)}`:'';
   document.getElementById('r-sub').textContent=`${trackLbl}  •  ${srcNote} ${pool.length} runs  •  DA ${Math.round(da).toLocaleString()} ft${windNote}${sunNote}${corrNote}`;
   document.getElementById('rbox').style.display='block';
+  // Since Your Last Run — compare current prediction to most recent logged run
+  try{
+    const _pf2=dist==='eighth'?'ft660':'ft1320';
+    const _trackRuns=runs.filter(r=>{
+      const _matchTrack=tf==='all'?true:r.track===tf;
+      const _matchDist=r.distance===dist;
+      const _hasDA=r.da!=null;
+      const _hasET=r[_pf2]!=null;
+      return _matchTrack&&_matchDist&&_hasDA&&_hasET;
+    });
+    if(_trackRuns.length>0){
+      // Most recent first — sort by date desc then time desc
+      const _lastRun=[..._trackRuns].sort((a,b)=>{
+        const _d=(b.date||'').localeCompare(a.date||'');
+        if(_d!==0)return _d;
+        return(b.time||'00:00').localeCompare(a.time||'00:00');
+      })[0];
+      const _lastET=_lastRun[_pf2];
+      const _lastDA=_lastRun.da;
+      const _daDiff=Math.round(da-_lastDA);
+      const _etDiff=final-_lastET;
+      const _daSign=_daDiff>0?'+':_daDiff===0?'':'-';
+      const _etSign=_etDiff>0?'+':_etDiff===0?'':'-';
+      const _daColor=_daDiff===0?'var(--tx)':'var(--ac)';
+      const _etColor=_etDiff>0.005?'var(--er)':_etDiff<-0.005?'var(--ok)':'var(--tx)';
+      document.getElementById('da-delta-ref').textContent=
+        `Last run ${_lastRun.date||''}${_lastRun.time?' at '+_lastRun.time:''} — ET ${_lastET.toFixed(3)} at DA ${Math.round(_lastDA).toLocaleString()} ft`;
+      document.getElementById('da-delta-val').innerHTML=
+        `<span style="color:${_daColor}">${_daSign}${Math.abs(_daDiff)} ft</span>`;
+      document.getElementById('et-delta-val').innerHTML=
+        `<span style="color:${_etColor}">${_etSign}${Math.abs(_etDiff).toFixed(3)} sec</span>`;
+      document.getElementById('da-delta-block').style.display='block';
+    }else{
+      document.getElementById('da-delta-block').style.display='none';
+    }
+  }catch(_de){document.getElementById('da-delta-block').style.display='none';}
   updatePoolNote();
 
 
