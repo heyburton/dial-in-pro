@@ -1011,16 +1011,25 @@ function predict(){
   // If sun not specified, use pool average — contributes zero discrimination
   const qSun  = sunQ!==null ? sunQ : poolAvgSun;
 
+  // Detect wind diversity in pool — if most runs have similar wind to each other
+  // but different from today, wind adds noise not signal — reduce its influence
+  const poolWDNs=pool.map(r=>windDirNum(r.windDir||''));
+  const poolWDStd=Math.sqrt(poolWDNs.reduce((s,w)=>s+Math.pow(w-poolAvgWDN,2),0)/pool.length);
+  // If pool wind direction std dev is low (everyone calm) AND today differs,
+  // wind direction is not helping discriminate — reduce WD and WS scale influence
+  const windDiversityLow=poolWDStd<0.15&&Math.abs(qWDN-poolAvgWDN)>0.5;
+  const eff_WS_SCALE=windDiversityLow?WS_SCALE*4:WS_SCALE; // stretch scale = less influence
+  const eff_WD_SCALE=windDiversityLow?WD_SCALE*4:WD_SCALE;
+
   // Compute multi-dimensional distance for each run in the pool
   const wts = pool.map(r=>{
     const rSun = sunNum(r.sun);
-    // Runs without sun data use pool average — no penalty, no bonus
     const rSunVal = rSun!==null ? rSun : poolAvgSun;
     const dDA  = (r.da        - da)   / DA_SCALE;
     const dT   = ((r.temp     || poolAvgTemp) - qTemp) / TEMP_SCALE;
     const dH   = ((r.humidity || poolAvgHum)  - qHum)  / HUM_SCALE;
-    const dWS  = ((r.windSpeed|| poolAvgWS)   - qWS)   / WS_SCALE;
-    const dWD  = (windDirNum(r.windDir||'')   - qWDN)  / WD_SCALE;
+    const dWS  = ((r.windSpeed|| poolAvgWS)   - qWS)   / eff_WS_SCALE;
+    const dWD  = (windDirNum(r.windDir||'')   - qWDN)  / eff_WD_SCALE;
     const dSun = (rSunVal                     - qSun)  / SUN_SCALE;
     const dist2 = dDA*dDA + dT*dT + dH*dH + dWS*dWS + dWD*dWD + dSun*dSun;
     return dist2 < 1e-10 ? 1e10 : 1/dist2;
@@ -1028,6 +1037,15 @@ function predict(){
 
   const tw=wts.reduce((a,b)=>a+b,0);
   const idwBase=pool.reduce((s,r,i)=>s+r._et*wts[i],0)/tw;
+
+  // Explicit wind speed benefit correction
+  // Based on empirical data: ~.009 ET per 4.5mph wind (your car, all directions help)
+  // Compare today's wind speed to weighted avg wind speed of reference runs
+  const wtAvgWS=pool.reduce((s,r,i)=>s+(r.windSpeed||0)*wts[i],0)/tw;
+  const windSpeedDiff=ws-wtAvgWS; // positive = more wind today
+  const WIND_ET_RATIO=0.009/4.5;  // ET seconds per mph of wind
+  const windBenefit=-windSpeedDiff*WIND_ET_RATIO; // negative = faster (more wind = faster)
+  window._lastWindBenefit=windBenefit;
 
   // ── Hybrid correction: IDW + physics blend ─────────────────────
   // How far is today's DA from the nearest reference run?
@@ -1076,7 +1094,7 @@ function predict(){
   const daResidual=Math.abs(da-wtAvgDA);
   // Kyle weight: 0 when DA matches refs exactly, ramps to 0.4 at 500ft+ gap
   const kyleWeight=Math.min(daResidual/500,1.0)*0.4;
-  const algoCorrection=physicsDA*physicsWeight+kyleResidual*kyleWeight;
+  const algoCorrection=physicsDA*physicsWeight+kyleResidual*kyleWeight+(window._lastWindBenefit||0);
   const final=idwBase+algoCorrection;
 
   // Track extrapolation distance for display
