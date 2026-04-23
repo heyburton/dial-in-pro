@@ -163,6 +163,12 @@ tr:hover td{background:var(--sf2)}
 .conf-bar{height:100%;transition:width .4s}
 .conf-bar.high{background:var(--ok)}.conf-bar.med{background:var(--ac)}.conf-bar.low{background:var(--er)}
 .conf-note{font-family:var(--mo);font-size:.6rem;color:var(--mu);line-height:1.5;margin-top:5px}
+
+/* Wind arrow indicator */
+.wind-arrow-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:var(--sf2);border:1px solid var(--bd)}
+.wind-arrow-svg{flex-shrink:0}
+.wind-arrow-info{font-family:var(--mo);font-size:.68rem;color:var(--tx);line-height:1.6}
+.wind-arrow-label{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -215,7 +221,25 @@ tr:hover td{background:var(--sf2)}
     </div>
     <div class="fr">
       <div class="f"><label>Wind Direction</label>
-        <select id="p-wd"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
+        <select id="p-wd" onchange="updateWindArrow()"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
+        <div class="wind-arrow-wrap" id="wind-arrow-wrap" style="display:none">
+          <svg class="wind-arrow-svg" id="wind-arrow-svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="none" stroke="#333" stroke-width="1.5"/>
+            <text x="22" y="8" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">N</text>
+            <text x="22" y="40" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">S</text>
+            <text x="6" y="25" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">W</text>
+            <text x="38" y="25" text-anchor="middle" font-size="8" fill="#555" font-family="sans-serif">E</text>
+            <!-- Arrow points FROM wind origin (direction wind is blowing FROM) -->
+            <g id="wind-arrow-g" transform="rotate(0,22,22)">
+              <polygon points="22,6 19,20 22,17 25,20" fill="#fef8d5"/>
+              <line x1="22" y1="17" x2="22" y2="34" stroke="#fef8d5" stroke-width="2"/>
+            </g>
+          </svg>
+          <div>
+            <div class="wind-arrow-label">Wind from</div>
+            <div class="wind-arrow-info" id="wind-arrow-info">—</div>
+          </div>
+        </div>
       </div>
       <div class="f"><label>Sun on Track</label>
         <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
@@ -244,6 +268,13 @@ tr:hover td{background:var(--sf2)}
     <div class="ret" id="r-et">-.---</div>
     <div class="rsu" id="r-sub"></div>
     <div class="rspl" id="r-spl"></div>
+    <div style="margin-top:10px;text-align:center">
+      <button class="bsm bgho" onclick="showTopRuns()" id="top-runs-btn" style="display:none">▶ Show Top Reference Runs</button>
+    </div>
+    <div id="top-runs-panel" style="display:none;margin-top:10px;background:var(--sf2);border:1px solid var(--bd);padding:12px">
+      <div style="font-size:.6rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mu);margin-bottom:8px">Top Weighted Reference Runs</div>
+      <div id="top-runs-list"></div>
+    </div>
   <div class="conf-block" id="conf-block" style="display:none">
     <div class="conf-row">
       <span class="conf-lbl">Confidence Range</span>
@@ -547,7 +578,7 @@ function decodePlusCode(raw){
 // DEFAULT TRACKS
 // ════════════════════════════════════════════════════════════════
 function defTracks(){return[
-  {id:'redding', name:'Redding',   lat:40.5135,lng:-122.2902,heading:270,distance:'quarter',plusCode:'GP75+HX',    address:'1495 Hominy Way, Redding, CA',   elevation:499},
+  {id:'redding', name:'Redding',   lat:40.5135,lng:-122.2902,heading:180,distance:'quarter',plusCode:'GP75+HX',    address:'1495 Hominy Way, Redding, CA',   elevation:499},
   {id:'sonoma',  name:'Sonoma',    lat:38.1609,lng:-122.4535,heading:315,distance:'quarter',plusCode:'5G6W+84',    address:'29355 Arnold Dr, Sonoma, CA',    elevation:18},
   {id:'samoa',   name:'Samoa',     lat:40.8068,lng:-124.1771,heading:90, distance:'eighth', plusCode:'84GQQQMQ+PP',address:'Samoa, CA',                      elevation:10},
   {id:'lasvegas',name:'Las Vegas', lat:36.2719,lng:-115.0117,heading:90, distance:'quarter',plusCode:'7XHR+24',    address:'The Strip at LVMS',              elevation:1656},
@@ -778,7 +809,7 @@ async function doFetch(msg){
         document.getElementById('p-ws').value=c.wind_speed_10m.toFixed(1);
         document.getElementById('p-wd').value=wl;
         document.getElementById('p-baro').value=inHg;
-        setTimeout(updateDerivedWeather,200);
+        setTimeout(()=>{updateDerivedWeather();updateWindArrow();},200);
         const si=ST[t.id]||{};
         const nm=si.n||(i===0?`${t.name} area`:`${t.name} area (offset ${i})`);
         const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
@@ -848,6 +879,25 @@ function updateDerivedWeather(){
 function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
   if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
+}
+function updateWindArrow(){
+  const wd=document.getElementById('p-wd').value;
+  const ws=parseFloat(document.getElementById('p-ws').value)||0;
+  const wrap=document.getElementById('wind-arrow-wrap');
+  if(!wd||wd===''||ws===0){wrap.style.display='none';return;}
+  wrap.style.display='flex';
+  // Arrow points FROM the direction the wind is coming from
+  // relative to the track orientation
+  const t=tracks.find(x=>x.name===document.getElementById('p-track').value||x.id===document.getElementById('p-track').value);
+  const trackHeading=t?t.heading:0;
+  let arrowDeg=0;
+  const labels={headwind:'Coming from ahead (into your face)',tailwind:'Coming from behind',crosswind:'Coming from the side',calm:'No significant wind'};
+  if(wd==='headwind') arrowDeg=(trackHeading+180)%360; // wind FROM ahead
+  else if(wd==='tailwind') arrowDeg=trackHeading;       // wind FROM behind
+  else if(wd==='crosswind') arrowDeg=(trackHeading+90)%360;
+  else arrowDeg=0;
+  document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
+  document.getElementById('wind-arrow-info').textContent=labels[wd]||'';
 }
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
@@ -978,33 +1028,55 @@ function predict(){
   const tw=wts.reduce((a,b)=>a+b,0);
   const idwBase=pool.reduce((s,r,i)=>s+r._et*wts[i],0)/tw;
 
-  // ── Kyle Algorithm Correction ──────────────────────────────────
-  // Use IDW-weighted average conditions of the pool — this represents
-  // the "effective" conditions of the reference runs the IDW selected.
-  // Correcting against this weighted average means we only adjust for
-  // the residual difference, not conditions IDW already accounted for.
+  // ── Hybrid correction: IDW + physics blend ─────────────────────
+  // How far is today's DA from the nearest reference run?
+  const poolDAs=pool.map(r=>r.da||0);
+  const nearestDA=poolDAs.reduce((best,d)=>Math.abs(d-da)<Math.abs(best-da)?d:best, poolDAs[0]);
+  const daGap=Math.abs(da-nearestDA); // ft outside known data range
+
+  // Physics-based DA correction (your car: ~.016 ET per 500ft DA, bracket tune compressed)
+  // DA up = slower, DA down = faster
+  const DA_ET_RATIO=0.016/500; // ET seconds per foot of DA
+  const wtAvgDA=pool.reduce((s,r,i)=>s+(r.da||0)*wts[i],0)/tw;
+  const physicsDA=(da-wtAvgDA)*DA_ET_RATIO; // negative = today faster than refs
+
+  // Kyle residual corrections for temp/baro/VP/humidity
+  // Only apply residual — IDW already accounts for most of this
   const calcVP=(tf,rh)=>{
     const tc=(tf-32)*5/9;
     const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
     return(rh/100)*es*0.02953;
   };
-  const wtAvgTemp = pool.reduce((s,r,i)=>s+(r.temp||poolAvgTemp)*wts[i],0)/tw;
-  const wtAvgHum  = pool.reduce((s,r,i)=>s+(r.humidity||poolAvgHum)*wts[i],0)/tw;
-  const wtAvgBaro = pool.reduce((s,r,i)=>s+(r.pressure||30.0)*wts[i],0)/tw;
-  const wtAvgVP   = pool.reduce((s,r,i)=>s+calcVP(r.temp||poolAvgTemp,r.humidity||poolAvgHum)*wts[i],0)/tw;
+  const wtAvgTemp=pool.reduce((s,r,i)=>s+(r.temp||poolAvgTemp)*wts[i],0)/tw;
+  const wtAvgHum =pool.reduce((s,r,i)=>s+(r.humidity||poolAvgHum)*wts[i],0)/tw;
+  const wtAvgBaro=pool.reduce((s,r,i)=>s+(r.pressure||30.0)*wts[i],0)/tw;
+  const wtAvgVP  =pool.reduce((s,r,i)=>s+calcVP(r.temp||poolAvgTemp,r.humidity||poolAvgHum)*wts[i],0)/tw;
+  const todayVP  =!isNaN(temp)&&!isNaN(hum)?calcVP(temp,hum):wtAvgVP;
+  const todayBaro=parseFloat(document.getElementById('p-baro').value)||wtAvgBaro;
+  const a=algoSettings;
+  const tempDelta =!isNaN(temp)?(temp-wtAvgTemp)/a.temp*0.01:0;
+  const baroDelta =(todayBaro-wtAvgBaro)/a.baro*-0.01;
+  const vpDelta   =(todayVP-wtAvgVP)/a.vp*0.01;
+  const humDelta  =!isNaN(hum)?(hum-wtAvgHum)/a.hum*0.01:0;
+  const kyleResidual=tempDelta+baroDelta+vpDelta+humDelta;
 
-  const todayVP   = !isNaN(temp)&&!isNaN(hum)?calcVP(temp,hum):wtAvgVP;
-  const todayBaro = parseFloat(document.getElementById('p-baro').value)||wtAvgBaro;
+  // Blend IDW and physics based on extrapolation distance
+  // Within 300ft of nearest run: trust IDW entirely
+  // 300-800ft gap: blend in more physics
+  // 800ft+ gap: physics dominates, IDW anchors
+  let idwWeight, physicsWeight;
+  if(daGap<=300){idwWeight=0.97;physicsWeight=0.03;}
+  else if(daGap<=800){idwWeight=0.70+(300-daGap+300)*0.27/500;physicsWeight=1-idwWeight;}
+  else{idwWeight=0.45;physicsWeight=0.55;}
 
-  // Apply Kyle's corrections: + = slower, - = faster
-  const a = algoSettings;
-  const tempDelta = !isNaN(temp) ? (temp - wtAvgTemp) / a.temp * 0.01 : 0;
-  const baroDelta = (todayBaro - wtAvgBaro) / a.baro * -0.01; // baro↑ = faster
-  const vpDelta   = (todayVP - wtAvgVP) / a.vp * 0.01;
-  const humDelta  = !isNaN(hum) ? (hum - wtAvgHum) / a.hum * 0.01 : 0;
-  const algoCorrection = tempDelta + baroDelta + vpDelta + humDelta;
+  // Blend: IDW base + weighted physics DA correction + residual Kyle correction
+  // The Kyle residual is scaled down by IDW weight (less relevant when extrapolating)
+  const algoCorrection=physicsDA*physicsWeight+kyleResidual*idwWeight;
+  const final=idwBase+algoCorrection;
 
-  const final = idwBase + algoCorrection;
+  // Track extrapolation distance for display
+  window._lastDAGap=daGap;
+  window._lastNearestDA=nearestDA;
 
   // Predicted splits — ratio method from pool (also purely data-driven)
   const sFields=dist==='eighth'?['ft60','ft330']:['ft60','ft330','ft660','ft1000'];
@@ -1032,6 +1104,10 @@ function predict(){
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
   document.getElementById('r-et').textContent=final.toFixed(3);
+  // Store pool+weights globally for top runs display
+  window._lastPool=pool;window._lastWts=wts;window._lastTw=tw;window._lastPf=pf;
+  document.getElementById('top-runs-btn').style.display='';
+  document.getElementById('top-runs-panel').style.display='none';
   document.getElementById('r-dist').textContent=dist==='eighth'?'1/8 MILE — 660 FT':'1/4 MILE — 1,320 FT';
   const corrSign=algoCorrection>=0?'+':'';
   const corrNote=Math.abs(algoCorrection)>0.001?` • Algo correction: ${corrSign}${algoCorrection.toFixed(3)}`:'';
@@ -1100,7 +1176,11 @@ function predict(){
       let _cumW=0,_p75=final+_range*0.6;
       for(const pt of _sorted){_cumW+=pt.w;if(_cumW/_tw>=0.75){_p75=pt.et;break;}}
       const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
-      const _lo=(final-_range*0.4+_soff).toFixed(3);
+      // Clamp low end of range to best known ET minus .040 (physical plausibility)
+      const _bestET=_pool.length?Math.min(..._pool.map(r=>r._et!=null?r._et:(r.ft660||r.ft1320||99))):99;
+      const _hardFloor=_bestET-0.040;
+      const _loRaw=final-_range*0.4+_soff;
+      const _lo=Math.max(_loRaw,_hardFloor).toFixed(3);
       const _hi=(final+_range*0.6+_soff).toFixed(3);
       // Clamp suggested dial within [_lo, _hi] — always inside the confidence range
       // Use 75th percentile when pool is large enough, else bias toward high end of range
@@ -1124,7 +1204,9 @@ function predict(){
       document.getElementById('conf-dial').textContent=_sugDial;
       const _bar=document.getElementById('conf-bar');
       _bar.style.width=_pct+'%';_bar.className='conf-bar '+_lvl;
-      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_calmNote}${_grainsNote}${_soffNote}`;
+      const _daGap=window._lastDAGap||0;
+      const _extNote=_daGap>800?` ⚠ Extrapolated ${Math.round(_daGap)}ft beyond data.`:_daGap>300?` Beyond data by ${Math.round(_daGap)}ft.`:'';
+      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_extNote}${_calmNote}${_grainsNote}${_soffNote}`;
       document.getElementById('conf-block').style.display='block';
     }
   }catch(_e){console.error('Conf error:',_e);document.getElementById('conf-block').style.display='none';}
@@ -1696,6 +1778,36 @@ function parseCSV(file){
 // ════════════════════════════════════════════════════════════════
 // NAV + TOAST
 // ════════════════════════════════════════════════════════════════
+function showTopRuns(){
+  const pool=window._lastPool||[];
+  const wts=window._lastWts||[];
+  const tw=window._lastTw||1;
+  const pf=window._lastPf||'ft660';
+  if(!pool.length){return;}
+  // Sort by weight descending, take top 5
+  const ranked=[...pool.map((r,i)=>({r,w:wts[i],pct:Math.round(wts[i]/tw*100)}))].sort((a,b)=>b.w-a.w).slice(0,5);
+  const btn=document.getElementById('top-runs-btn');
+  const panel=document.getElementById('top-runs-panel');
+  if(panel.style.display!=='none'){panel.style.display='none';btn.textContent='▶ Show Top Reference Runs';return;}
+  const list=document.getElementById('top-runs-list');
+  list.innerHTML=ranked.map((x,i)=>{
+    const r=x.r;
+    const et=r._et!=null?r._et.toFixed(3):'—';
+    const wind=r.windSpeed?`${r.windSpeed}mph ${r.windDir||''}`:'calm';
+    return`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 60px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:.65rem">
+      <span style="color:var(--mu)">#${i+1}</span>
+      <span>${r.date||'—'}</span>
+      <span>DA ${Math.round(r.da||0)}</span>
+      <span>${wind}</span>
+      <span style="display:flex;align-items:center;gap:4px">
+        <span style="color:var(--ac)">${et}</span>
+        <span style="font-size:.55rem;color:var(--mu)">${x.pct}%</span>
+      </span>
+    </div>`;
+  }).join('');
+  panel.style.display='block';
+  btn.textContent='▲ Hide Reference Runs';
+}
 function nav(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
