@@ -205,10 +205,10 @@ tr:hover td{background:var(--sf2)}
     <div class="ct">// Conditions</div>
     <div class="wxb">
       <span class="wxs" id="wxs">Select a track to fetch live weather</span>
-      <button class="wxr" onclick="doFetch(true);resetWxTimer()">&#8635; Refresh</button>
+      <button class="wxr" onclick="doFetch(true)">&#8635; Refresh</button>
     </div>
     <div id="wx-timer-bar" style="display:none;font-family:var(--mo);font-size:.58rem;color:var(--mu);padding:3px 10px 4px;letter-spacing:.05em">
-      Auto-refresh in <span id="wx-countdown">10:00</span>
+      Next update in <span id="wx-countdown">—</span>
     </div>
     <div class="f">
       <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED — or enter manually</span></label>
@@ -814,28 +814,42 @@ let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa County Airport (KAPC)',d:9.98},samoa:{n:'Arcata/Eureka Airport (KACV)',d:3.1},lasvegas:{n:'North Las Vegas Airport (KVGT)',d:2.8},firebird:{n:'Phoenix Sky Harbor (KPHX)',d:11.04}};
 
 let _fetchInProgress=false;
-let _wxTimerSecs=0;
 let _wxTimerInterval=null;
-const WX_REFRESH_SECS=900; // 15 minutes (Open-Meteo updates every ~15 min)
-function resetWxTimer(){
-  _wxTimerSecs=WX_REFRESH_SECS;
+const WX_UPDATE_MINS=15; // Open-Meteo updates every ~15 minutes
+function startWxTimer(obsTimeISO){
+  // Calculate seconds until the next 15-minute update boundary
+  // Uses the observation timestamp from Open-Meteo so timer is accurate
+  // regardless of when the user taps Refresh
+  if(_wxTimerInterval)clearInterval(_wxTimerInterval);
+  let secsRemaining;
+  if(obsTimeISO){
+    const obsMs=new Date(obsTimeISO).getTime();
+    const nowMs=Date.now();
+    const ageMs=nowMs-obsMs; // how old is this observation
+    const cycleLenMs=WX_UPDATE_MINS*60*1000;
+    const msUntilNext=cycleLenMs-(ageMs%cycleLenMs);
+    secsRemaining=Math.max(10,Math.round(msUntilNext/1000));
+  }else{
+    secsRemaining=WX_UPDATE_MINS*60; // fallback if no timestamp
+  }
   const bar=document.getElementById('wx-timer-bar');
   if(bar)bar.style.display='';
-  if(_wxTimerInterval)clearInterval(_wxTimerInterval);
-  _wxTimerInterval=setInterval(()=>{
-    _wxTimerSecs--;
-    const m=Math.floor(_wxTimerSecs/60);
-    const s=_wxTimerSecs%60;
+  function tick(){
+    secsRemaining--;
+    const m=Math.floor(secsRemaining/60);
+    const s=secsRemaining%60;
     const el=document.getElementById('wx-countdown');
     if(el)el.textContent=`${m}:${String(s).padStart(2,'0')}`;
-    if(_wxTimerSecs<=0){
+    if(secsRemaining<=0){
       clearInterval(_wxTimerInterval);
       _wxTimerInterval=null;
       const tid=document.getElementById('p-track')?.value;
-      if(tid&&tid!=='all'){doFetch(false);resetWxTimer();}
-      else{const b=document.getElementById('wx-timer-bar');if(b)b.style.display='none';}
+      if(tid&&tid!=='all'){doFetch(false);}
+      // After auto-fetch, timer will restart via startWxTimer in doFetch success
     }
-  },1000);
+  }
+  tick(); // update display immediately
+  _wxTimerInterval=setInterval(tick,1000);
 }
 async function doFetch(msg){
   if(_fetchInProgress)return;
@@ -870,7 +884,7 @@ async function doFetch(msg){
         const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
         setWxSt(`${nm} — ${ds}`,'ok');
         if(msg)toast('Weather updated ✓');
-        resetWxTimer();
+        startWxTimer(c.time||null); // sync timer to actual observation timestamp
         return;
       }catch(e){/* try next */}
     }
