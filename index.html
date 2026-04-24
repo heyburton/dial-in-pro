@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--sf:#111;--sf2:#1a1a1a;--bd:#2a2a2a;--ac:#fef8d5;--ac2:#ff6b00;--tx:#f0f0f0;--mu:#666;--ok:#00ff88;--er:#ff3333;--mo:'Share Tech Mono',monospace;--di:'Barlow Condensed',sans-serif}
+:root{--bg:#0a0a0a;--sf:#111;--sf2:#1a1a1a;--bd:#2a2a2a;--ac:#fef8d5;--ac2:#ff6b00;--tx:#f0f0f0;--mu:#666;--ok:#00ff88;--er:#ff3333;--mo:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--di:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:var(--di);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:1000}
@@ -205,7 +205,10 @@ tr:hover td{background:var(--sf2)}
     <div class="ct">// Conditions</div>
     <div class="wxb">
       <span class="wxs" id="wxs">Select a track to fetch live weather</span>
-      <button class="wxr" onclick="doFetch(true)">&#8635; Refresh</button>
+      <button class="wxr" onclick="doFetch(true);resetWxTimer()">&#8635; Refresh</button>
+    </div>
+    <div id="wx-timer-bar" style="display:none;font-family:var(--mo);font-size:.58rem;color:var(--mu);padding:3px 10px 4px;letter-spacing:.05em">
+      Auto-refresh in <span id="wx-countdown">10:00</span>
     </div>
     <div class="f">
       <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED — or enter manually</span></label>
@@ -329,7 +332,21 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
       <div class="f"><label>Wind Direction</label>
-        <select id="l-wd"><option value="calm">Calm</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option></select>
+        <select id="l-wd">
+              <option value="">— Unknown —</option>
+              <option value="calm">Calm</option>
+              <option value="headwind">Headwind</option>
+              <option value="tailwind">Tailwind</option>
+              <option value="crosswind">Crosswind</option>
+              <option value="Northerly">↑ Northerly (N)</option>
+              <option value="Northeasterly">↗ Northeasterly (NE)</option>
+              <option value="Easterly">→ Easterly (E)</option>
+              <option value="Southeasterly">↘ Southeasterly (SE)</option>
+              <option value="Southerly">↓ Southerly (S)</option>
+              <option value="Southwesterly">↙ Southwesterly (SW)</option>
+              <option value="Westerly">← Westerly (W)</option>
+              <option value="Northwesterly">↖ Northwesterly (NW)</option>
+            </select>
       </div>
       <div class="f"><label>Sun</label>
         <select id="l-sun"><option value="full">Full Sun</option><option value="partial">Partial</option><option value="shade">Shade/Night</option></select>
@@ -787,6 +804,29 @@ let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa County Airport (KAPC)',d:9.98},samoa:{n:'Arcata/Eureka Airport (KACV)',d:3.1},lasvegas:{n:'North Las Vegas Airport (KVGT)',d:2.8},firebird:{n:'Phoenix Sky Harbor (KPHX)',d:11.04}};
 
 let _fetchInProgress=false;
+let _wxTimerSecs=0;
+let _wxTimerInterval=null;
+const WX_REFRESH_SECS=600; // 10 minutes
+function resetWxTimer(){
+  _wxTimerSecs=WX_REFRESH_SECS;
+  const bar=document.getElementById('wx-timer-bar');
+  if(bar)bar.style.display='';
+  if(_wxTimerInterval)clearInterval(_wxTimerInterval);
+  _wxTimerInterval=setInterval(()=>{
+    _wxTimerSecs--;
+    const m=Math.floor(_wxTimerSecs/60);
+    const s=_wxTimerSecs%60;
+    const el=document.getElementById('wx-countdown');
+    if(el)el.textContent=`${m}:${String(s).padStart(2,'0')}`;
+    if(_wxTimerSecs<=0){
+      clearInterval(_wxTimerInterval);
+      _wxTimerInterval=null;
+      const tid=document.getElementById('p-track')?.value;
+      if(tid&&tid!=='all'){doFetch(false);resetWxTimer();}
+      else{const b=document.getElementById('wx-timer-bar');if(b)b.style.display='none';}
+    }
+  },1000);
+}
 async function doFetch(msg){
   if(_fetchInProgress)return;
   _fetchInProgress=true;
@@ -820,6 +860,7 @@ async function doFetch(msg){
         const ds=si.d?(si.d.toFixed(1)+' mi from track'):(i===0?'on-site':gDist(t.lat,t.lng,la,ln).toFixed(1)+' mi');
         setWxSt(`${nm} — ${ds}`,'ok');
         if(msg)toast('Weather updated ✓');
+        resetWxTimer();
         return;
       }catch(e){/* try next */}
     }
@@ -1543,7 +1584,7 @@ function calcPedalOff(){
   // Get pool of all-out runs from same track (or all tracks if not enough)
   let pool=runs.filter(r=>r.distance===dist&&r.ft60&&r.ft330);
   if(isQ)pool=pool.filter(r=>r.ft660&&r.ft1000&&r.ft1320);
-  else pool=pool.filter(r=>r.ft660);
+  else pool=pool.filter(r=>r.ft660&&r.ft60&&r.ft330);
 
   let trackPool=pool.filter(r=>r.track===track);
   const usePool=trackPool.length>=3?trackPool:pool;
@@ -1947,11 +1988,13 @@ document.getElementById('l-date').value=localDateStr();
 const now=new Date();
 document.getElementById('l-time').value=now.toTimeString().slice(0,5);
 // Toggle pedal-off fields based on distance
-document.getElementById('l-dist').addEventListener('change',function(){
-  const isQ=this.value==='quarter';
+function updatePoeFields(){
+  const isQ=document.getElementById('l-dist').value==='quarter';
   document.getElementById('poe-fields-quarter').style.display=isQ?'':'none';
   document.getElementById('poe-fields-eighth').style.display=isQ?'none':'';
-});
+}
+document.getElementById('l-dist').addEventListener('change',updatePoeFields);
+updatePoeFields(); // init on load
 // Fix Redding heading in localStorage if stored as 270 (old default)
 try{
   const _tk=localStorage.getItem('dip_t4');
