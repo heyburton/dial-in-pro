@@ -225,7 +225,17 @@ tr:hover td{background:var(--sf2)}
     <div class="fr">
       <div class="f"><label>Wind Direction</label>
         <div style="display:flex;align-items:center;gap:8px">
-          <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0"><option value="">—</option><option value="headwind">Headwind</option><option value="tailwind">Tailwind</option><option value="crosswind">Crosswind</option><option value="calm">Calm</option></select>
+          <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0">
+                <option value="">—</option>
+                <option value="calm">Calm</option>
+                <option value="headwind">↓ Headwind</option>
+                <option value="tailwind">↑ Tailwind</option>
+                <option value="crosswind">← → Crosswind</option>
+                <option value="front-left">↙ Front-left</option>
+                <option value="front-right">↘ Front-right</option>
+                <option value="rear-left">↖ Rear-left</option>
+                <option value="rear-right">↗ Rear-right</option>
+              </select>
           <div id="wind-arrow-wrap" style="display:none;flex-shrink:0" title="">
             <svg id="wind-arrow-svg" width="36" height="36" viewBox="0 0 44 44">
               <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#333" stroke-width="1"/>
@@ -334,18 +344,14 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Wind Direction</label>
         <select id="l-wd">
               <option value="">— Unknown —</option>
-              <option value="calm">Calm</option>
-              <option value="headwind">Headwind</option>
-              <option value="tailwind">Tailwind</option>
-              <option value="crosswind">Crosswind</option>
-              <option value="Northerly">↑ Northerly (N)</option>
-              <option value="Northeasterly">↗ Northeasterly (NE)</option>
-              <option value="Easterly">→ Easterly (E)</option>
-              <option value="Southeasterly">↘ Southeasterly (SE)</option>
-              <option value="Southerly">↓ Southerly (S)</option>
-              <option value="Southwesterly">↙ Southwesterly (SW)</option>
-              <option value="Westerly">← Westerly (W)</option>
-              <option value="Northwesterly">↖ Northwesterly (NW)</option>
+              <option value="calm">Calm / No wind</option>
+              <option value="headwind">↓ Headwind — straight into front</option>
+              <option value="tailwind">↑ Tailwind — straight from behind</option>
+              <option value="crosswind">← → Crosswind — from the side</option>
+              <option value="front-left">↙ Front-left quarter</option>
+              <option value="front-right">↘ Front-right quarter</option>
+              <option value="rear-left">↖ Rear-left quarter</option>
+              <option value="rear-right">↗ Rear-right quarter</option>
             </select>
       </div>
       <div class="f"><label>Sun</label>
@@ -806,7 +812,7 @@ const ST={redding:{n:'Redding Municipal Airport (KRDD)',d:0.5},sonoma:{n:'Napa C
 let _fetchInProgress=false;
 let _wxTimerSecs=0;
 let _wxTimerInterval=null;
-const WX_REFRESH_SECS=600; // 10 minutes
+const WX_REFRESH_SECS=900; // 15 minutes (Open-Meteo updates every ~15 min)
 function resetWxTimer(){
   _wxTimerSecs=WX_REFRESH_SECS;
   const bar=document.getElementById('wx-timer-bar');
@@ -945,6 +951,10 @@ function updateWindArrow(){
   if(wd==='headwind') arrowDeg=180;
   else if(wd==='tailwind') arrowDeg=0;
   else if(wd==='crosswind') arrowDeg=90;
+  else if(wd==='front-left') arrowDeg=225;
+  else if(wd==='front-right') arrowDeg=135;
+  else if(wd==='rear-left') arrowDeg=315;
+  else if(wd==='rear-right') arrowDeg=45;
   else arrowDeg=0;
   document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
   if(wrap)wrap.title=labels[wd]||'';
@@ -1006,7 +1016,9 @@ function getPool(trackFilter,distance){
 // The encoding is arbitrary — what matters is that same directions cluster
 function windDirNum(dir,trackHeading){
   // Standard labels
-  const m={headwind:1,tailwind:-1,crosswind:0,calm:0,'':0};
+  const m={headwind:1,tailwind:-1,crosswind:0,calm:0,'':0,
+    'front-left':0.7,'front-right':0.7,   // quartering headwinds
+    'rear-left':-0.7,'rear-right':-0.7};  // quartering tailwinds
   const dirClean=(dir||'').trim();
   if(m[dirClean]!==undefined)return m[dirClean];
   // Compass labels from Dr.Dial-In import — convert using track heading
@@ -1461,6 +1473,7 @@ function editRun(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('pg-runs').classList.add('active');
   document.querySelectorAll('.tab')[1].classList.add('active');
+  updatePoeFields(); // ensure pedal-off fields match distance
   window.scrollTo(0,0);
 }
 
@@ -1473,6 +1486,7 @@ function showLogForm(){
   const n=new Date();
   document.getElementById('l-time').value=n.toTimeString().slice(0,5);
   document.getElementById('l-date').value=localDateStr();
+  updatePoeFields(); // ensure pedal-off fields match selected distance
   window.scrollTo(0,0);
 }
 
