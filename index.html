@@ -230,8 +230,10 @@ tr:hover td{background:var(--sf2)}
                 <option value="calm">Calm</option>
                 <option value="headwind">↓ Headwind</option>
                 <option value="tailwind">↑ Tailwind</option>
-                <option value="crosswind">← → Crosswind</option>
-                <option value="front-left">↙ Front-left</option>
+                <option value="crosswind">← → Crosswind (side unknown)</option>
+                <option value="crosswind-left">← Left crosswind</option>
+                <option value="crosswind-right">→ Right crosswind</option>
+                <option value="front-left">↙ Front-left quarter</option>
                 <option value="front-right">↘ Front-right</option>
                 <option value="rear-left">↖ Rear-left</option>
                 <option value="rear-right">↗ Rear-right</option>
@@ -347,7 +349,9 @@ tr:hover td{background:var(--sf2)}
               <option value="calm">Calm / No wind</option>
               <option value="headwind">↓ Headwind — straight into front</option>
               <option value="tailwind">↑ Tailwind — straight from behind</option>
-              <option value="crosswind">← → Crosswind — from the side</option>
+              <option value="crosswind">← → Crosswind (side unknown)</option>
+              <option value="crosswind-left">← Left crosswind</option>
+              <option value="crosswind-right">→ Right crosswind</option>
               <option value="front-left">↙ Front-left quarter</option>
               <option value="front-right">↘ Front-right quarter</option>
               <option value="rear-left">↖ Rear-left quarter</option>
@@ -955,6 +959,8 @@ function updateWindArrow(){
   else if(wd==='front-right') arrowDeg=135;
   else if(wd==='rear-left') arrowDeg=315;
   else if(wd==='rear-right') arrowDeg=45;
+  else if(wd==='crosswind-left') arrowDeg=270;  // arrow points right = wind from left
+  else if(wd==='crosswind-right') arrowDeg=90;  // arrow points left = wind from right
   else arrowDeg=0;
   document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
   if(wrap)wrap.title=labels[wd]||'';
@@ -1018,7 +1024,8 @@ function windDirNum(dir,trackHeading){
   // Standard labels
   const m={headwind:1,tailwind:-1,crosswind:0,calm:0,'':0,
     'front-left':0.7,'front-right':0.7,   // quartering headwinds
-    'rear-left':-0.7,'rear-right':-0.7};  // quartering tailwinds
+    'rear-left':-0.7,'rear-right':-0.7,   // quartering tailwinds
+    'crosswind-left':0.15,'crosswind-right':-0.15}; // pure side crosswinds (slight left/right bias)
   const dirClean=(dir||'').trim();
   if(m[dirClean]!==undefined)return m[dirClean];
   // Compass labels from Dr.Dial-In import — convert using track heading
