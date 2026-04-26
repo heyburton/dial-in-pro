@@ -1096,7 +1096,7 @@ function getTrackHeading(trackName){
 }
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
-  const validRun=r=>!r.exclude&&(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
   const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
   let pool;
   if(distance==='eighth'){
@@ -1321,10 +1321,15 @@ function predict(){
       return _am<=12&&r._et;
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
     if(_recentRuns.length>0){
-      const _ref=_recentRuns[0];
-      const _refWS=_ref.windSpeed||0;
-      const _refWDN=windDirNum(_ref.windDir||'',_th);
-      final=carSpecificPrediction(da,ws,qWDN,_ref._et,_ref.da||0,_refWS,_refWDN);
+      // Use up to 3 most recent runs as weighted anchor (recency-weighted average)
+      const _anchors=_recentRuns.slice(0,3);
+      const _anchorWts=_anchors.map((_,i)=>Math.pow(0.5,i)); // 1, 0.5, 0.25
+      const _anchorTW=_anchorWts.reduce((a,b)=>a+b,0);
+      const _anchorET=_anchors.reduce((s,r,i)=>s+r._et*_anchorWts[i],0)/_anchorTW;
+      const _anchorDA=_anchors.reduce((s,r,i)=>s+(r.da||0)*_anchorWts[i],0)/_anchorTW;
+      const _anchorWS=_anchors.reduce((s,r,i)=>s+(r.windSpeed||0)*_anchorWts[i],0)/_anchorTW;
+      const _anchorWDN=windDirNum(_anchors[0].windDir||'',_th); // use most recent for direction
+      final=carSpecificPrediction(da,ws,qWDN,_anchorET,_anchorDA,_anchorWS,_anchorWDN);
     }else{
       final=idwBase+algoCorrection; // fallback to IDW
     }
@@ -2135,18 +2140,17 @@ function initTableScroll(){
   tw.addEventListener('touchmove',e=>{
     const dx=Math.abs(e.touches[0].clientX-_startX);
     const dy=Math.abs(e.touches[0].clientY-_startY);
-    if(!_lockAxis&&(dx>4||dy>4)){
-      _lockAxis=dx>dy?'x':'y';
+    if(!_lockAxis){
+      // Determine primary axis after 5px of movement
+      if(dx>5||dy>5) _lockAxis=dx>dy?'x':'y';
     }
     if(_lockAxis==='x'){
-      e.preventDefault(); // block vertical drift during horizontal scroll
-      tw.scrollLeft-=(e.touches[0].clientX-_startX);
+      // Horizontal scroll — prevent vertical page scroll
+      e.preventDefault();
+      tw.scrollLeft+=(_startX-e.touches[0].clientX);
       _startX=e.touches[0].clientX;
-    }else if(_lockAxis==='y'){
-      e.preventDefault(); // block horizontal drift during vertical scroll
-      tw.scrollTop-=(e.touches[0].clientY-_startY);
-      _startY=e.touches[0].clientY;
     }
+    // If vertical, browser handles it naturally
   },{passive:false});
   tw.addEventListener('touchend',()=>{_lockAxis=null;},{passive:true});
 }
