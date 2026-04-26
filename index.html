@@ -77,7 +77,7 @@ select option{background:var(--bg)}
 .be{font-family:var(--di);font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;background:rgba(254,248,213,.1);color:var(--ac)}
 .bq{font-family:var(--di);font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;background:rgba(255,107,0,.1);color:var(--ac2)}
 /* table */
-.tw{overflow-x:auto;overflow-y:auto;max-height:72vh}
+.tw{overflow-x:auto;overflow-y:auto;max-height:72vh;touch-action:auto}
 table{width:100%;border-collapse:collapse;font-family:var(--mo);font-size:.72rem}
 th{font-family:var(--di);font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td{padding:6px 8px;border-bottom:1px solid rgba(42,42,42,.5);white-space:nowrap}
@@ -2122,6 +2122,33 @@ function showTopRuns(){
   panel.style.display='block';
   btn.textContent='▲ Hide Reference Runs';
 }
+// ── Axis-locked scroll for log book table ────────────────────
+function initTableScroll(){
+  const tw=document.querySelector('.tw');
+  if(!tw)return;
+  let _startX=0,_startY=0,_lockAxis=null;
+  tw.addEventListener('touchstart',e=>{
+    _startX=e.touches[0].clientX;
+    _startY=e.touches[0].clientY;
+    _lockAxis=null;
+  },{passive:true});
+  tw.addEventListener('touchmove',e=>{
+    const dx=Math.abs(e.touches[0].clientX-_startX);
+    const dy=Math.abs(e.touches[0].clientY-_startY);
+    if(!_lockAxis){
+      // Determine primary axis after 5px of movement
+      if(dx>5||dy>5) _lockAxis=dx>dy?'x':'y';
+    }
+    if(_lockAxis==='x'){
+      // Horizontal scroll — prevent vertical page scroll
+      e.preventDefault();
+      tw.scrollLeft+=(_startX-e.touches[0].clientX);
+      _startX=e.touches[0].clientX;
+    }
+    // If vertical, browser handles it naturally
+  },{passive:false});
+  tw.addEventListener('touchend',()=>{_lockAxis=null;},{passive:true});
+}
 function nav(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -2163,7 +2190,7 @@ try{
     if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
   }
 }catch(e){}
-refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();
 
 // ════════════════════════════════════════════════════════════════
 // NAMED ALGORITHMS (per-track scale constants)
