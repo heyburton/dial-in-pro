@@ -1096,7 +1096,7 @@ function getTrackHeading(trackName){
 }
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
-  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  const validRun=r=>!r.exclude&&(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
   const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
   let pool;
   if(distance==='eighth'){
@@ -2135,17 +2135,18 @@ function initTableScroll(){
   tw.addEventListener('touchmove',e=>{
     const dx=Math.abs(e.touches[0].clientX-_startX);
     const dy=Math.abs(e.touches[0].clientY-_startY);
-    if(!_lockAxis){
-      // Determine primary axis after 5px of movement
-      if(dx>5||dy>5) _lockAxis=dx>dy?'x':'y';
+    if(!_lockAxis&&(dx>4||dy>4)){
+      _lockAxis=dx>dy?'x':'y';
     }
     if(_lockAxis==='x'){
-      // Horizontal scroll — prevent vertical page scroll
-      e.preventDefault();
-      tw.scrollLeft+=(_startX-e.touches[0].clientX);
+      e.preventDefault(); // block vertical drift during horizontal scroll
+      tw.scrollLeft-=(e.touches[0].clientX-_startX);
       _startX=e.touches[0].clientX;
+    }else if(_lockAxis==='y'){
+      e.preventDefault(); // block horizontal drift during vertical scroll
+      tw.scrollTop-=(e.touches[0].clientY-_startY);
+      _startY=e.touches[0].clientY;
     }
-    // If vertical, browser handles it naturally
   },{passive:false});
   tw.addEventListener('touchend',()=>{_lockAxis=null;},{passive:true});
 }
