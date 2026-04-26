@@ -475,6 +475,35 @@ tr:hover td{background:var(--sf2)}
 <div id="pg-settings" class="page">
 <div style="max-width:680px;margin:0 auto">
 
+  <!-- PREDICTION METHOD -->
+  <div class="card">
+    <div class="ct">// Prediction Method</div>
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Choose how ET predictions are calculated. Your logged runs are always shown as reference regardless of method.</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="radio" name="predMethod" value="idw" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
+        <div>
+          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Similar Runs (IDW)</div>
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Finds your most similar logged runs and weights them by conditions. Best with 20+ runs at a track.</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="radio" name="predMethod" value="hale" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
+        <div>
+          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Patrick Hale Standard Atmosphere</div>
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Physics-first method used by Dr. Dial-In. Good for new tracks or fewer logged runs. Based on standard motorsports weather correction.</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+        <input type="radio" name="predMethod" value="carspecific" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
+        <div>
+          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Car-Specific Physics</div>
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Uses sensitivity coefficients derived from your logged runs (0.018s/500ft DA, 0.012s/4.5mph wind). Anchors to your most recent run. Best after 50+ runs.</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
   <!-- PREDICTION ALGORITHM -->
   <div class="card">
     <div class="ct">// Prediction Algorithm</div>
