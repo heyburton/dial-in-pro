@@ -437,7 +437,7 @@ tr:hover td{background:var(--sf2)}
     <table><thead><tr>
       <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th></th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -1148,9 +1148,9 @@ function predict(){
     // Direction adds a smaller secondary penalty
     const sqrtRWS = Math.sqrt(Math.max(rWS,0));
     const sqrtQWS = Math.sqrt(Math.max(ws,0));
-    const dWS_eff = (sqrtRWS - sqrtQWS) / (eff_WS_SCALE * 0.3);
-    const dWD_pen = (rWDN - qWDN) / (eff_WD_SCALE * 3.0);
-    const dWind = dWS_eff + dWD_pen * 0.25;
+    const dWS_eff = (sqrtRWS - sqrtQWS) / (eff_WS_SCALE * 0.15); // tighter = more impact
+    const dWD_pen = (rWDN - qWDN) / (eff_WD_SCALE * 4.0);         // direction even less
+    const dWind = dWS_eff + dWD_pen * 0.15;
     // Recency: more recent runs get higher weight
     const _runDate = new Date(r.date||'2020-01-01');
     const _ageMonths = (Date.now() - _runDate.getTime()) / (1000*60*60*24*30.4);
@@ -1777,7 +1777,7 @@ function toggleExclude(id){
   const r=runs.find(x=>x.id===id);
   if(!r)return;
   r.exclude=!r.exclude;
-  saveRuns();
+  sRuns(runs);
   renderTable();
   toast(r.exclude?'Run excluded from predictions':'Run included in predictions');
 }
