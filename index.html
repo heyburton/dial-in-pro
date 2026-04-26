@@ -1138,21 +1138,31 @@ function predict(){
   const wts = pool.map(r=>{
     const rSun = sunNum(r.sun);
     const rSunVal = rSun!==null ? rSun : poolAvgSun;
+    const rWS = r.windSpeed||0;
+    const rWDN = windDirNum(r.windDir||'',_th);
     const dDA  = (r.da        - da)   / DA_SCALE;
     const dT   = ((r.temp     || poolAvgTemp) - qTemp) / TEMP_SCALE;
     const dH   = ((r.humidity || poolAvgHum)  - qHum)  / HUM_SCALE;
-    const dWS  = ((r.windSpeed|| poolAvgWS)   - qWS)   / eff_WS_SCALE;
-    const dWD  = (windDirNum(r.windDir||'',_th) - qWDN)  / eff_WD_SCALE;
     const dSun = (rSunVal                     - qSun)  / SUN_SCALE;
-    const dist2 = dDA*dDA + dT*dT + dH*dH + dWS*dWS + dWD*dWD + dSun*dSun;
+    // Wind: speed is primary (sqrt-scaled for diminishing returns above ~5mph)
+    // Direction adds a smaller secondary penalty
+    const sqrtRWS = Math.sqrt(Math.max(rWS,0));
+    const sqrtQWS = Math.sqrt(Math.max(ws,0));
+    const dWS_eff = (sqrtRWS - sqrtQWS) / (eff_WS_SCALE * 0.3);
+    const dWD_pen = (rWDN - qWDN) / (eff_WD_SCALE * 3.0);
+    const dWind = dWS_eff + dWD_pen * 0.25;
+    // Recency: more recent runs get higher weight
+    const _runDate = new Date(r.date||'2020-01-01');
+    const _ageMonths = (Date.now() - _runDate.getTime()) / (1000*60*60*24*30.4);
+    const _recencyMult = _ageMonths<=3?1.0:_ageMonths<=6?0.85:_ageMonths<=12?0.70:0.50;
+    const dist2 = dDA*dDA + dT*dT + dH*dH + dWind*dWind + dSun*dSun;
     const baseW = dist2 < 1e-10 ? 1e10 : 1/dist2;
     // Near-exact match bonus: same wind direction AND close DA AND similar wind speed
-    // This prevents a sea of calm runs from diluting a perfect match
-    const sameWD = windDirNum(r.windDir||'',_th)===qWDN && qWDN!==0;
+    const sameWD = rWDN===qWDN && qWDN!==0;
     const closeDA = Math.abs((r.da||0)-da) < 300;
-    const closeWS = Math.abs((r.windSpeed||0)-ws) < 5;
+    const closeWS = Math.abs(rWS-ws) < 5;
     const nearMatch = sameWD && closeDA && closeWS;
-    return nearMatch ? baseW * 25 : baseW;
+    return (nearMatch ? baseW * 25 : baseW) * _recencyMult;
   });
 
   const tw=wts.reduce((a,b)=>a+b,0);
@@ -1740,7 +1750,7 @@ function renderTable(){
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
     const predET=getPredictedETForRun(r);
     const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
-    return`<tr>
+    return`<tr style="${r.exclude?'opacity:0.45;':''}">
       <td style="color:var(--mu)">${i+1}</td>
       <td>${r.date||'—'}</td>
       <td style="color:var(--mu)">${r.time||'—'}</td>
@@ -1757,10 +1767,19 @@ function renderTable(){
       <td>${qLabel}</td>
       <td style="display:flex;gap:4px">
         <button class="bsm bgho" onclick="editRun(${r.id})">Edit</button>
+        <button class="bsm ${r.exclude?'bdng':'bgho'}" onclick="toggleExclude(${r.id})" title="${r.exclude?'Excluded from predictions — click to include':'Click to exclude from predictions'}">${r.exclude?'⊘':'◎'}</button>
         <button class="bsm bdng" onclick="delRun(${r.id})">✕</button>
       </td>
     </tr>`;
   }).join('');
+}
+function toggleExclude(id){
+  const r=runs.find(x=>x.id===id);
+  if(!r)return;
+  r.exclude=!r.exclude;
+  saveRuns();
+  renderTable();
+  toast(r.exclude?'Run excluded from predictions':'Run included in predictions');
 }
 function delRun(id){
   if(!confirm('Delete this run?'))return;
