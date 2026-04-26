@@ -478,29 +478,27 @@ tr:hover td{background:var(--sf2)}
   <!-- PREDICTION METHOD -->
   <div class="card">
     <div class="ct">// Prediction Method</div>
-    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Choose how ET predictions are calculated. Your logged runs are always shown as reference regardless of method.</div>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="radio" name="predMethod" value="idw" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
-        <div>
-          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Similar Runs (IDW)</div>
-          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Finds your most similar logged runs and weights them by conditions. Best with 20+ runs at a track.</div>
-        </div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="radio" name="predMethod" value="hale" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
-        <div>
-          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Patrick Hale Standard Atmosphere</div>
-          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Physics-first method used by Dr. Dial-In. Good for new tracks or fewer logged runs. Based on standard motorsports weather correction.</div>
-        </div>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-        <input type="radio" name="predMethod" value="carspecific" onchange="savePredMethod(this.value)" style="margin-top:3px;accent-color:var(--ac2)">
-        <div>
-          <div style="font-weight:600;font-size:.82rem;margin-bottom:2px">Car-Specific Physics</div>
-          <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">Uses sensitivity coefficients derived from your logged runs (0.018s/500ft DA, 0.012s/4.5mph wind). Anchors to your most recent run. Best after 50+ runs.</div>
-        </div>
-      </label>
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:14px">Choose how ET predictions are calculated. Only one method active at a time. Logged runs always shown as reference.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Similar Runs (IDW)</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Finds your most similar logged runs, weighted by conditions. Best with 20+ runs.</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="pm-idw" onchange="setPredMethod('idw',this.checked)"><span class="tgl-s"></span></label>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Patrick Hale Standard Atmosphere</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Physics-first method used by Dr. Dial-In. Good for new tracks or fewer logged runs.</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="pm-hale" onchange="setPredMethod('hale',this.checked)"><span class="tgl-s"></span></label>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Car-Specific Physics</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Derived from your logged runs (0.018s/500ft DA, 0.012s/4.5mph wind). Best after 50+ runs.</div>
+      </div>
+      <label class="tgl"><input type="checkbox" id="pm-carspecific" onchange="setPredMethod('carspecific',this.checked)"><span class="tgl-s"></span></label>
     </div>
   </div>
 
@@ -701,15 +699,25 @@ function renderAlgoTab(){
   renderAlgoInsights();
 }
 
-function savePredMethod(val){
+function setPredMethod(val,isOn){
+  // Only one method active at a time — turning one on turns others off
+  if(!isOn){
+    // If user turned off the active one, revert to IDW
+    val='idw';
+  }
   algoSettings.predMethod=val;
   sAlgo(algoSettings);
-  toast('Prediction method updated');
+  initPredMethodUI();
+  toast(`Prediction method: ${{'idw':'Similar Runs','hale':'Patrick Hale','carspecific':'Car-Specific'}[val]}`);
 }
+function savePredMethod(val){setPredMethod(val,true);}
 function initPredMethodUI(){
   const method=algoSettings.predMethod||'idw';
-  const radio=document.querySelector(`input[name="predMethod"][value="${method}"]`);
-  if(radio)radio.checked=true;
+  const ids=['idw','hale','carspecific'];
+  ids.forEach(id=>{
+    const el=document.getElementById('pm-'+id);
+    if(el)el.checked=(id===method);
+  });
 }
 function saveAlgo(){
   algoSettings.temp=parseFloat(document.getElementById('algo-temp').value)||ALGO_DEFAULTS.temp;
