@@ -77,7 +77,7 @@ select option{background:var(--bg)}
 .be{font-family:var(--di);font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;background:rgba(254,248,213,.1);color:var(--ac)}
 .bq{font-family:var(--di);font-size:.6rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;background:rgba(255,107,0,.1);color:var(--ac2)}
 /* table */
-.tw{overflow-x:auto}
+.tw{overflow-x:auto;overflow-y:auto;max-height:72vh}
 table{width:100%;border-collapse:collapse;font-family:var(--mo);font-size:.72rem}
 th{font-family:var(--di);font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
 td{padding:6px 8px;border-bottom:1px solid rgba(42,42,42,.5);white-space:nowrap}
@@ -434,10 +434,10 @@ tr:hover td{background:var(--sf2)}
     </div>
   </div>
   <div class="tw">
-    <table><thead><tr>
+    <table><thead style="position:sticky;top:0;z-index:10;background:var(--bg)"><tr>
       <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th></th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -1161,7 +1161,9 @@ function predict(){
     const sameWD = rWDN===qWDN && qWDN!==0;
     const closeDA = Math.abs((r.da||0)-da) < 300;
     const closeWS = Math.abs(rWS-ws) < 5;
-    const nearMatch = sameWD && closeDA && closeWS;
+    // Near-match bonus only applies to runs within 12 months
+    // Older runs with coincidentally similar conditions shouldn't dominate
+    const nearMatch = sameWD && closeDA && closeWS && _ageMonths <= 12;
     return (nearMatch ? baseW * 25 : baseW) * _recencyMult;
   });
 
@@ -1765,11 +1767,9 @@ function renderTable(){
       <td>${n(r.mph1320)}</td><td>${rb}</td>
       <td style="color:var(--mu);font-size:.65rem">${r.lane?r.lane.charAt(0).toUpperCase()+r.lane.slice(1):'—'}</td>
       <td>${qLabel}</td>
-      <td style="display:flex;gap:4px">
-        <button class="bsm bgho" onclick="editRun(${r.id})">Edit</button>
-        <button class="bsm ${r.exclude?'bdng':'bgho'}" onclick="toggleExclude(${r.id})" title="${r.exclude?'Excluded from predictions — click to include':'Click to exclude from predictions'}">${r.exclude?'⊘':'◎'}</button>
-        <button class="bsm bdng" onclick="delRun(${r.id})">✕</button>
-      </td>
+      <td><button class="bsm ${r.exclude?'bdng':'bgho'}" onclick="toggleExclude(${r.id})" title="${r.exclude?'Excluded — click to re-include':'Click to exclude from predictions'}">${r.exclude?'⊘':'◎'}</button></td>
+      <td><button class="bsm bgho" onclick="editRun(${r.id})">Edit</button></td>
+      <td><button class="bsm bdng" onclick="delRun(${r.id})">✕</button></td>
     </tr>`;
   }).join('');
 }
