@@ -651,6 +651,7 @@ const ALGO_DEFAULTS={
   baro:0.10,   // inHg per .01 ET
   vp:0.070,    // inHg vapor pressure per .01 ET (standard ~0.07)
   hum:14,      // % humidity per .01 ET
+  predMethod:'idw', // 'idw' | 'hale' | 'carspecific'
   autoTune:true,
   showSuggestions:true
 };
@@ -671,6 +672,16 @@ function renderAlgoTab(){
   renderAlgoInsights();
 }
 
+function savePredMethod(val){
+  algoSettings.predMethod=val;
+  sAlgo(algoSettings);
+  toast('Prediction method updated');
+}
+function initPredMethodUI(){
+  const method=algoSettings.predMethod||'idw';
+  const radio=document.querySelector(`input[name="predMethod"][value="${method}"]`);
+  if(radio)radio.checked=true;
+}
 function saveAlgo(){
   algoSettings.temp=parseFloat(document.getElementById('algo-temp').value)||ALGO_DEFAULTS.temp;
   algoSettings.baro=parseFloat(document.getElementById('algo-baro').value)||ALGO_DEFAULTS.baro;
@@ -915,6 +926,36 @@ function calcDA(tf,rh,phpa,elft){
   return Math.round(pa+120*(tc-isaTemp));
 }
 function hpaToInHg(hpa){return Math.round(hpa*0.02953*100)/100;}
+function haleCorrection(tf, rh, baroInHg){
+  // Patrick Hale Standard Atmosphere correction
+  // Standard conditions: 59°F (519.67°R), 29.921 inHg, 0% humidity
+  const P_std=29.921, T_std=519.67;
+  const T_actual=tf+459.67; // Rankine
+  // Vapor pressure (Tetens formula)
+  const tc=(tf-32)*5/9;
+  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  const vp_hpa=(rh/100)*es;
+  const vp_inhg=vp_hpa*0.02953;
+  const P_dry=baroInHg-vp_inhg;
+  // Correction factors
+  const Pcorr=Math.sqrt(P_std/P_dry);
+  const Tcorr=Math.sqrt(T_actual/T_std);
+  // Combined: ratio of actual to standard
+  return Pcorr*Tcorr; // multiply reference ET by this
+}
+function carSpecificPrediction(da, ws, wdNum, bestRefET, bestRefDA, bestRefWS, bestRefWDN){
+  // Car-specific physics prediction anchored to best recent reference run
+  // Derived from 62 Redding runs: 0.018s/500ft DA, 0.012s/4.5mph wind
+  const DA_SENS=0.018/500;
+  const WIND_SENS=0.012/4.5;
+  const dDA=da-bestRefDA;
+  const dWS=ws-bestRefWS;
+  // DA effect: more DA = slower
+  const daEffect=dDA*DA_SENS;
+  // Wind effect: more wind = faster (regardless of direction, speed dominates)
+  const windEffect=-dWS*WIND_SENS;
+  return bestRefET+daEffect+windEffect;
+}
 function calcGrains(tf,rh,baroInHg){
   const tc=(tf-32)*5/9;
   const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
@@ -1175,7 +1216,7 @@ function predict(){
   // Compare today's wind speed to weighted avg wind speed of reference runs
   const wtAvgWS=pool.reduce((s,r,i)=>s+(r.windSpeed||0)*wts[i],0)/tw;
   const windSpeedDiff=ws-wtAvgWS; // positive = more wind today
-  const WIND_ET_RATIO=0.009/4.5;  // ET seconds per mph of wind
+  const WIND_ET_RATIO=0.012/4.5;  // ET seconds per mph of wind (data-derived: ~0.0026/mph)
   const windBenefit=-windSpeedDiff*WIND_ET_RATIO; // negative = faster (more wind = faster)
   window._lastWindBenefit=windBenefit;
 
@@ -1187,7 +1228,7 @@ function predict(){
 
   // Physics-based DA correction (your car: ~.016 ET per 500ft DA, bracket tune compressed)
   // DA up = slower, DA down = faster
-  const DA_ET_RATIO=0.016/500; // ET seconds per foot of DA
+  const DA_ET_RATIO=0.018/500; // ET seconds per foot of DA (data-derived from 62 Redding runs)
   const wtAvgDA=pool.reduce((s,r,i)=>s+(r.da||0)*wts[i],0)/tw;
   const physicsDA=(da-wtAvgDA)*DA_ET_RATIO; // negative = today faster than refs
 
@@ -1227,7 +1268,32 @@ function predict(){
   // Kyle weight: 0 when DA matches refs exactly, ramps to 0.4 at 500ft+ gap
   const kyleWeight=Math.min(daResidual/500,1.0)*0.4;
   const algoCorrection=physicsDA*physicsWeight+kyleResidual*kyleWeight+(window._lastWindBenefit||0);
-  const final=idwBase+algoCorrection;
+  let final;
+  const _predMethod=algoSettings.predMethod||'idw';
+  if(_predMethod==='hale'){
+    // Patrick Hale: use standard atmosphere correction applied to best reference ET
+    const _bestRef=pool.reduce((best,r,i)=>wts[i]>wts[best.i]?{r,i}:{r:best.r,i:best.i},{r:pool[0],i:0}).r;
+    const _refET=_bestRef._et||idwBase;
+    const _haleCorr=haleCorrection(temp||poolAvgTemp,hum||poolAvgHum,todayBaro||30.0);
+    const _refHale=haleCorrection(_bestRef.temp||poolAvgTemp,_bestRef.humidity||poolAvgHum,_bestRef.pressure||30.0);
+    final=_refET*(_haleCorr/_refHale);
+  }else if(_predMethod==='carspecific'){
+    // Car-specific: anchor to most recent best run within reasonable DA range
+    const _recentRuns=pool.filter(r=>{
+      const _am=(Date.now()-new Date(r.date||'2020').getTime())/(1000*60*60*24*30.4);
+      return _am<=12&&r._et;
+    }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    if(_recentRuns.length>0){
+      const _ref=_recentRuns[0];
+      const _refWS=_ref.windSpeed||0;
+      const _refWDN=windDirNum(_ref.windDir||'',_th);
+      final=carSpecificPrediction(da,ws,qWDN,_ref._et,_ref.da||0,_refWS,_refWDN);
+    }else{
+      final=idwBase+algoCorrection; // fallback to IDW
+    }
+  }else{
+    final=idwBase+algoCorrection; // IDW (default)
+  }
 
   // Track extrapolation distance for display
   window._lastDAGap=daGap;
@@ -1255,6 +1321,7 @@ function predict(){
   }
 
   const trackLbl=tf==='all'?'All Tracks':tf;
+  const _methodLabel={'idw':'','hale':' · Hale method','carspecific':' · Car-specific'}[_predMethod]||'';
   const srcNote=dist==='eighth'?`All runs w/ 660' data:`:`Runs with 1320' data:`;
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
@@ -2059,7 +2126,7 @@ try{
     if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
   }
 }catch(e){}
-refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();
 
 // ════════════════════════════════════════════════════════════════
 // NAMED ALGORITHMS (per-track scale constants)
