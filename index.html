@@ -1096,7 +1096,7 @@ function getTrackHeading(trackName){
 }
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
-  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  const validRun=r=>!r.exclude&&(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
   const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
   let pool;
   if(distance==='eighth'){
@@ -1385,7 +1385,7 @@ function predict(){
       const _matchDist=r.distance===dist;
       const _hasDA=r.da!=null;
       const _hasET=r[_pf2]!=null;
-      return _matchTrack&&_matchDist&&_hasDA&&_hasET;
+      return !r.exclude&&_matchTrack&&_matchDist&&_hasDA&&_hasET;
     });
     if(_trackRuns.length>0){
       // Most recent first — sort by date desc then time desc
@@ -1418,8 +1418,7 @@ function predict(){
 
   // ── Confidence block ──────────────────────────────────────────
   try{
-    const _pool=getPool(tf,dist);
-    if(_pool.length>=5){
+        const _pool=getPool(tf,dist).filter(r=>!r.exclude); if(_pool.length>=5){
       const _scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
       if(typeof tbAlgos!=='undefined'){
         const _ma=tbAlgos.find(a=>a.trackFilter===tf||a.id===tf);
