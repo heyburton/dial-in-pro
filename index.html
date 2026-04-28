@@ -1339,7 +1339,12 @@ function predict(){
     const _refET=_bestRef._et||idwBase;
     const _haleCorr=haleCorrection(temp||poolAvgTemp,hum||poolAvgHum,todayBaro||30.0);
     const _refHale=haleCorrection(_bestRef.temp||poolAvgTemp,_bestRef.humidity||poolAvgHum,_bestRef.pressure||30.0);
-    final=_refET*(_haleCorr/_refHale);
+    const _haleBase=_refET*(_haleCorr/_refHale);
+    // Add empirical wind correction derived from your logged runs (.012s per 4.5mph)
+    // Hale's formula handles atmospheric physics but not wind — this fills that gap
+    const _refWS=_bestRef.windSpeed||0;
+    const _haleWindBenefit=-((ws||0)-_refWS)*(0.012/4.5);
+    final=_haleBase+_haleWindBenefit;
   }else if(_predMethod==='carspecific'){
     // Car-specific: anchor to most recent best run within reasonable DA range
     const _recentRuns=pool.filter(r=>{
@@ -2184,17 +2189,19 @@ function initTableScroll(){
   tw.addEventListener('touchmove',e=>{
     const dx=Math.abs(e.touches[0].clientX-_startX);
     const dy=Math.abs(e.touches[0].clientY-_startY);
-    if(!_lockAxis&&(dx>8||dy>8)){
+    // Lock axis after 10px — higher threshold prevents accidental locks
+    if(!_lockAxis&&(dx>10||dy>10)){
       _lockAxis=dx>dy?'x':'y';
     }
     if(_lockAxis==='x'){
+      // Horizontal scroll — prevent page from scrolling vertically
       e.preventDefault();
-      tw.scrollLeft-=(e.touches[0].clientX-_startX);
+      tw.scrollLeft+=(_startX-e.touches[0].clientX);
       _startX=e.touches[0].clientX;
-    }else if(_lockAxis==='y'){
-      if(dx>3)e.preventDefault();
       _startY=e.touches[0].clientY;
     }
+    // Vertical: do nothing — let the browser handle page scroll naturally
+    // No preventDefault, no manual scroll — browser native feels best
   },{passive:false});
   tw.addEventListener('touchend',()=>{_lockAxis=null;},{passive:true});
 }
