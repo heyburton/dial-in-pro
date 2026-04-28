@@ -200,6 +200,13 @@ tr:hover td{background:var(--sf2)}
         <option value="quarter">1/4 Mile (1,320')</option>
       </select>
     </div>
+    <div class="f"><label>Prediction Method</label>
+      <select id="p-method" onchange="savePredMethodFromDropdown(this.value)">
+        <option value="idw">Similar Runs (IDW)</option>
+        <option value="hale">Patrick Hale Standard Atmosphere</option>
+        <option value="carspecific">Car-Specific Physics</option>
+      </select>
+    </div>
   </div>
   <div class="card">
     <div class="ct">// Conditions</div>
@@ -700,24 +707,29 @@ function renderAlgoTab(){
 }
 
 function setPredMethod(val,isOn){
-  // Only one method active at a time — turning one on turns others off
-  if(!isOn){
-    // If user turned off the active one, revert to IDW
-    val='idw';
-  }
+  if(!isOn) val='idw';
   algoSettings.predMethod=val;
   sAlgo(algoSettings);
   initPredMethodUI();
   toast(`Prediction method: ${{'idw':'Similar Runs','hale':'Patrick Hale','carspecific':'Car-Specific'}[val]}`);
 }
 function savePredMethod(val){setPredMethod(val,true);}
+function savePredMethodFromDropdown(val){
+  algoSettings.predMethod=val;
+  sAlgo(algoSettings);
+  initPredMethodUI(); // sync settings toggles too
+}
 function initPredMethodUI(){
   const method=algoSettings.predMethod||'idw';
+  // Sync settings toggles
   const ids=['idw','hale','carspecific'];
   ids.forEach(id=>{
     const el=document.getElementById('pm-'+id);
     if(el)el.checked=(id===method);
   });
+  // Sync predict tab dropdown
+  const dd=document.getElementById('p-method');
+  if(dd)dd.value=method;
 }
 function saveAlgo(){
   algoSettings.temp=parseFloat(document.getElementById('algo-temp').value)||ALGO_DEFAULTS.temp;
@@ -1096,17 +1108,29 @@ function getTrackHeading(trackName){
 }
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
-  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
-  const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
+  // !r.exclude: respect the user's "Ignore" toggle
+  const validRun=r=>!r.exclude&&(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  // For eighth mile: use calcET if run is logged as eighth, else use ft660
+  // This allows lifted eighth-mile runs with calcET to contribute correctly
+  // Quarter-mile calcETs are never used for eighth predictions
+  const getET=r=>{
+    if(distance==='eighth'){
+      if(r.calcET!=null&&r.distance==='eighth')return r.calcET;
+      return r.ft660;
+    }else{
+      return r.calcET!=null?r.calcET:r.ft1320;
+    }
+  };
   let pool;
   if(distance==='eighth'){
+    // Include ALL runs with a valid ft660 — quarter-mile runs have valid 660' splits too
     pool=runs.filter(r=>r.ft660!=null&&validRun(r));
   }else{
     pool=runs.filter(r=>r.ft1320!=null&&validRun(r));
   }
   if(trackFilter!=='all') pool=pool.filter(r=>r.track===trackFilter);
-  // Attach effective ET for use in prediction
-  pool=pool.map(r=>({...r,_et:getET(r)||r.ft1320||r.ft660}));
+  // Attach effective ET — strictly use the finish ET for the requested distance
+  pool=pool.map(r=>({...r,_et:getET(r)}));
   return pool;
 }
 
@@ -1351,10 +1375,16 @@ function predict(){
   const sEl=document.getElementById('r-spl');
   sEl.innerHTML='';
   sFields.forEach((sf,idx)=>{
-    const vr=pool.filter(r=>r[sf]&&r[pf]);
+    const vr=pool.filter(r=>r[sf]&&r[pf]&&!r.exclude);
     if(vr.length>=3){
       const ratio=vr.reduce((s,r)=>s+r[sf]/r[pf],0)/vr.length;
-      sEl.innerHTML+=`<div class="spi"><div class="spv">${(final*ratio).toFixed(3)}</div><div class="spl">${sLabels[idx]}</div></div>`;
+      const raw=(final*ratio);
+      // Bound split to historical min/max to prevent extrapolation artifacts
+      const histVals=vr.map(r=>parseFloat(r[sf])).filter(v=>!isNaN(v));
+      const histMin=Math.min(...histVals)-0.05;
+      const histMax=Math.max(...histVals)+0.05;
+      const bounded=Math.max(histMin,Math.min(histMax,raw));
+      sEl.innerHTML+=`<div class="spi"><div class="spv">${bounded.toFixed(3)}</div><div class="spl">${sLabels[idx]}</div></div>`;
     }
   });
   const vm=pool.filter(r=>r[mf]&&r[pf]);
@@ -1364,7 +1394,7 @@ function predict(){
   }
 
   const trackLbl=tf==='all'?'All Tracks':tf;
-  const _methodLabel={'idw':'','hale':' · Hale method','carspecific':' · Car-specific'}[_predMethod]||'';
+  const _methodLabel={'idw':'','hale':' · Patrick Hale','carspecific':' · Car-Specific Physics'}[_predMethod]||'';
   const srcNote=dist==='eighth'?`All runs w/ 660' data:`:`Runs with 1320' data:`;
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
