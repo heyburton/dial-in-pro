@@ -1096,7 +1096,7 @@ function getTrackHeading(trackName){
 }
 function getPool(trackFilter,distance){
   // Use All Out runs + runs with calcET as valid reference data
-  const validRun=r=>!r.exclude&&(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
+  const validRun=r=>(r.quality==='allout'||r.quality===undefined||r.calcET!=null);
   const getET=r=>r.calcET!=null?r.calcET:(distance==='eighth'?r.ft660:r.ft1320);
   let pool;
   if(distance==='eighth'){
@@ -1222,13 +1222,14 @@ function predict(){
     const dT   = ((r.temp     || poolAvgTemp) - qTemp) / TEMP_SCALE;
     const dH   = ((r.humidity || poolAvgHum)  - qHum)  / HUM_SCALE;
     const dSun = (rSunVal                     - qSun)  / SUN_SCALE;
-    // Wind: speed is primary (sqrt-scaled for diminishing returns above ~5mph)
-    // Direction adds a smaller secondary penalty
-    const sqrtRWS = Math.sqrt(Math.max(rWS,0));
-    const sqrtQWS = Math.sqrt(Math.max(ws,0));
-    const dWS_eff = (sqrtRWS - sqrtQWS) / (eff_WS_SCALE * 0.15); // tighter = more impact
-    const dWD_pen = (rWDN - qWDN) / (eff_WD_SCALE * 4.0);         // direction even less
-    const dWind = dWS_eff + dWD_pen * 0.15;
+    // Wind: convert to effective impact — headwind/tailwind same magnitude, speed dominates
+    // headwind=1.0, tailwind=0.9, side crosswind=0.55, crosswind unknown=0.45
+    const _wf=w=>w===1||w===0.7?1.0:w===-1||w===-0.7?0.9:Math.abs(w)===0.15?0.55:0.45;
+    const rImpact=rWS*_wf(rWDN);
+    const qImpact=ws*_wf(qWDN);
+    const sqrtRI=Math.sqrt(Math.max(rImpact,0));
+    const sqrtQI=Math.sqrt(Math.max(qImpact,0));
+    const dWind=(sqrtRI-sqrtQI)/(eff_WS_SCALE*0.15);
     // Recency: more recent runs get higher weight
     const _runDate = new Date(r.date||'2020-01-01');
     const _ageMonths = (Date.now() - _runDate.getTime()) / (1000*60*60*24*30.4);
@@ -1385,7 +1386,7 @@ function predict(){
       const _matchDist=r.distance===dist;
       const _hasDA=r.da!=null;
       const _hasET=r[_pf2]!=null;
-      return !r.exclude&&_matchTrack&&_matchDist&&_hasDA&&_hasET;
+      return _matchTrack&&_matchDist&&_hasDA&&_hasET;
     });
     if(_trackRuns.length>0){
       // Most recent first — sort by date desc then time desc
@@ -1418,7 +1419,8 @@ function predict(){
 
   // ── Confidence block ──────────────────────────────────────────
   try{
-        const _pool=getPool(tf,dist).filter(r=>!r.exclude); if(_pool.length>=5){
+    const _pool=getPool(tf,dist);
+    if(_pool.length>=5){
       const _scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
       if(typeof tbAlgos!=='undefined'){
         const _ma=tbAlgos.find(a=>a.trackFilter===tf||a.id===tf);
