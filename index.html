@@ -286,6 +286,7 @@ tr:hover td{background:var(--sf2)}
     <div class="rdi" id="r-dist"></div>
     <div class="ret" id="r-et">-.---</div>
     <div class="rsu" id="r-sub"></div>
+    <div id="r-method-badge" style="display:none;text-align:center;font-family:var(--mo);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-top:2px"></div>
     <div id="da-delta-block" style="display:none;margin-top:10px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);font-family:var(--mo);font-size:.7rem">
       <div style="font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:6px">Since Your Last Run</div>
       <div style="font-size:.63rem;color:var(--mu);margin-bottom:6px" id="da-delta-ref"></div>
@@ -1377,12 +1378,21 @@ function predict(){
   sFields.forEach((sf,idx)=>{
     const vr=pool.filter(r=>r[sf]&&r[pf]&&!r.exclude);
     if(vr.length>=3){
-      const ratio=vr.reduce((s,r)=>s+r[sf]/r[pf],0)/vr.length;
+      // Filter outlier splits before computing ratio (e.g. bad timing data)
+      const rawVals=vr.map(r=>parseFloat(r[sf])).filter(v=>!isNaN(v)&&v>0);
+      const mean=rawVals.reduce((a,b)=>a+b,0)/rawVals.length;
+      const std=Math.sqrt(rawVals.reduce((s,v)=>s+Math.pow(v-mean,2),0)/rawVals.length);
+      const cleanRuns=vr.filter(r=>{
+        const v=parseFloat(r[sf]);
+        return !isNaN(v)&&v>0&&(std<0.001||Math.abs(v-mean)<=3*std);
+      });
+      if(cleanRuns.length<2)return;
+      const ratio=cleanRuns.reduce((s,r)=>s+parseFloat(r[sf])/parseFloat(r[pf]),0)/cleanRuns.length;
       const raw=(final*ratio);
-      // Bound split to historical min/max to prevent extrapolation artifacts
-      const histVals=vr.map(r=>parseFloat(r[sf])).filter(v=>!isNaN(v));
-      const histMin=Math.min(...histVals)-0.05;
-      const histMax=Math.max(...histVals)+0.05;
+      // Also bound to clean historical range
+      const cleanVals=cleanRuns.map(r=>parseFloat(r[sf]));
+      const histMin=Math.min(Math.min(...cleanVals)-0.020, 1.95);
+      const histMax=Math.max(Math.max(...cleanVals)+0.020, 2.25);
       const bounded=Math.max(histMin,Math.min(histMax,raw));
       sEl.innerHTML+=`<div class="spi"><div class="spv">${bounded.toFixed(3)}</div><div class="spl">${sLabels[idx]}</div></div>`;
     }
@@ -1395,6 +1405,9 @@ function predict(){
 
   const trackLbl=tf==='all'?'All Tracks':tf;
   const _methodLabel={'idw':'','hale':' · Patrick Hale','carspecific':' · Car-Specific Physics'}[_predMethod]||'';
+  const _methodBadgeText={'idw':'Similar Runs (IDW)','hale':'Patrick Hale Standard Atmosphere','carspecific':'Car-Specific Physics'}[_predMethod]||'Similar Runs (IDW)';
+  const _badge=document.getElementById('r-method-badge');
+  if(_badge){_badge.textContent=`Method: ${_methodBadgeText}`;_badge.style.display='';}
   const srcNote=dist==='eighth'?`All runs w/ 660' data:`:`Runs with 1320' data:`;
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
@@ -2171,17 +2184,17 @@ function initTableScroll(){
   tw.addEventListener('touchmove',e=>{
     const dx=Math.abs(e.touches[0].clientX-_startX);
     const dy=Math.abs(e.touches[0].clientY-_startY);
-    if(!_lockAxis){
-      // Determine primary axis after 5px of movement
-      if(dx>5||dy>5) _lockAxis=dx>dy?'x':'y';
+    if(!_lockAxis&&(dx>8||dy>8)){
+      _lockAxis=dx>dy?'x':'y';
     }
     if(_lockAxis==='x'){
-      // Horizontal scroll — prevent vertical page scroll
       e.preventDefault();
-      tw.scrollLeft+=(_startX-e.touches[0].clientX);
+      tw.scrollLeft-=(e.touches[0].clientX-_startX);
       _startX=e.touches[0].clientX;
+    }else if(_lockAxis==='y'){
+      if(dx>3)e.preventDefault();
+      _startY=e.touches[0].clientY;
     }
-    // If vertical, browser handles it naturally
   },{passive:false});
   tw.addEventListener('touchend',()=>{_lockAxis=null;},{passive:true});
 }
