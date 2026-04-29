@@ -993,16 +993,17 @@ function haleCorrection(tf, rh, baroInHg){
   // Combined: ratio of actual to standard
   return Pcorr*Tcorr; // multiply reference ET by this
 }
-function carSpecificPrediction(da, ws, wdNum, bestRefET, bestRefDA, bestRefWS, bestRefWDN){
+function carSpecificPrediction(da, ws, wdNum, bestRefET, bestRefDA, bestRefWS, bestRefWDN, distance){
   // Car-specific physics prediction anchored to best recent reference run
-  // Derived from 62 Redding runs: 0.018s/500ft DA, 0.012s/4.5mph wind
-  const DA_SENS=0.018/500;
-  const WIND_SENS=0.012/4.5;
+  // Coefficients derived from same-day pair regression analysis:
+  //   1/8 mile: DA=0.018/500ft, Wind=0.012/4.5mph (62 Redding runs)
+  //   1/4 mile: DA=0.026/500ft, Wind=0.008/4.5mph (83 Redding + 69 Sonoma runs)
+  const isQuarter = distance==='quarter';
+  const DA_SENS   = isQuarter ? 0.026/500 : 0.018/500;
+  const WIND_SENS = isQuarter ? 0.008/4.5 : 0.012/4.5;
   const dDA=da-bestRefDA;
   const dWS=ws-bestRefWS;
-  // DA effect: more DA = slower
   const daEffect=dDA*DA_SENS;
-  // Wind effect: more wind = faster (regardless of direction, speed dominates)
   const windEffect=-dWS*WIND_SENS;
   return bestRefET+daEffect+windEffect;
 }
@@ -1360,7 +1361,7 @@ function predict(){
       const _anchorDA=_anchors.reduce((s,r,i)=>s+(r.da||0)*_anchorWts[i],0)/_anchorTW;
       const _anchorWS=_anchors.reduce((s,r,i)=>s+(r.windSpeed||0)*_anchorWts[i],0)/_anchorTW;
       const _anchorWDN=windDirNum(_anchors[0].windDir||'',_th); // use most recent for direction
-      final=carSpecificPrediction(da,ws,qWDN,_anchorET,_anchorDA,_anchorWS,_anchorWDN);
+      final=carSpecificPrediction(da,ws,qWDN,_anchorET,_anchorDA,_anchorWS,_anchorWDN,dist);
     }else{
       final=idwBase+algoCorrection; // fallback to IDW
     }
