@@ -1353,8 +1353,15 @@ function predict(){
       return _am<=12&&r._et;
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
     if(_recentRuns.length>0){
+      // Prefer current-event runs (within 4 days) so anchor adapts mid-event
+      // rather than mixing in older runs from previous events
+      const _eventCutoff=Date.now()-4*24*60*60*1000;
+      const _eventRuns=_recentRuns.filter(r=>new Date(r.date||'2020').getTime()>=_eventCutoff);
+      const _histRuns=_recentRuns.filter(r=>new Date(r.date||'2020').getTime()<_eventCutoff);
+      // 3+ event runs → use only those; fewer → fill remaining slots with historical
+      const _anchorPool=_eventRuns.length>=3?_eventRuns:[..._eventRuns,..._histRuns];
       // Use up to 3 most recent runs as weighted anchor (recency-weighted average)
-      const _anchors=_recentRuns.slice(0,3);
+      const _anchors=_anchorPool.slice(0,3);
       const _anchorWts=_anchors.map((_,i)=>Math.pow(0.5,i)); // 1, 0.5, 0.25
       const _anchorTW=_anchorWts.reduce((a,b)=>a+b,0);
       const _anchorET=_anchors.reduce((s,r,i)=>s+r._et*_anchorWts[i],0)/_anchorTW;
