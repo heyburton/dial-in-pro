@@ -1351,7 +1351,7 @@ function predict(){
     const _recentRuns=pool.filter(r=>{
       const _am=(Date.now()-new Date(r.date||'2020').getTime())/(1000*60*60*24*30.4);
       return _am<=12&&r._et;
-    }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    }).sort((a,b)=>new Date(b.date)-new Date(a.date)||((b.time||'').localeCompare(a.time||'')));
     if(_recentRuns.length>0){
       // Prefer current-event runs (within 4 days) so anchor adapts mid-event
       // rather than mixing in older runs from previous events
