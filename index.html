@@ -557,48 +557,55 @@ tr:hover td{background:var(--sf2)}
     </div>
     <!-- Car-Specific Physics coefficient tuning -->
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
-      <div style="font-family:var(--mo);font-size:.65rem;color:var(--ac);letter-spacing:.12em;margin-bottom:10px">CAR-SPECIFIC COEFFICIENTS</div>
-      <div class="g3" style="gap:8px;margin-bottom:10px">
-        <div>
-          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA / 500ft — 1/8 mi</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="bsm bgho" onclick="adjCS('csDA8',-1)">−</button>
-            <span id="cs-da8-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.018</span>
-            <button class="bsm bgho" onclick="adjCS('csDA8',1)">+</button>
-          </div>
-        </div>
-        <div>
-          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA / 500ft — 1/4 mi</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="bsm bgho" onclick="adjCS('csDA4',-1)">−</button>
-            <span id="cs-da4-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.026</span>
-            <button class="bsm bgho" onclick="adjCS('csDA4',1)">+</button>
-          </div>
-        </div>
-        <div>
-          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="bsm bgho" onclick="adjCS('csAnchor',-1)">−</button>
-            <span id="cs-anchor-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">3</span>
-            <button class="bsm bgho" onclick="adjCS('csAnchor',1)">+</button>
-          </div>
+      <div style="font-family:var(--mo);font-size:.65rem;color:var(--ac);letter-spacing:.12em;margin-bottom:4px">CAR-SPECIFIC PHYSICS COEFFICIENTS</div>
+      <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu);margin-bottom:12px">Adjust the prediction tuning for the Car-Specific Physics model</div>
+      <!-- Anchor Runs above columns -->
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs <span style="color:var(--mu);font-weight:400">(2–5 most recent runs used as reference)</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="bsm bgho" onclick="adjCS('csAnchor',-1)">−</button>
+          <span id="cs-anchor-val" style="font-family:var(--mo);font-size:.9rem;min-width:24px;text-align:center">3</span>
+          <button class="bsm bgho" onclick="adjCS('csAnchor',1)">+</button>
         </div>
       </div>
-      <div class="fr" style="gap:8px;margin-bottom:10px">
-        <div>
-          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind / 4.5mph — 1/8 mi</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="bsm bgho" onclick="adjCS('csWind8',-1)">−</button>
-            <span id="cs-wind8-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.012</span>
-            <button class="bsm bgho" onclick="adjCS('csWind8',1)">+</button>
+      <!-- Two-column layout: 1/8 | 1/4 -->
+      <div class="fr" style="gap:16px;margin-bottom:12px">
+        <div style="flex:1">
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/8 MILE</div>
+          <div style="margin-bottom:10px">
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="adjCS('csDA8',-1)">−</button>
+              <span id="cs-da8-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.018</span>
+              <button class="bsm bgho" onclick="adjCS('csDA8',1)">+</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="adjCS('csWind8',-1)">−</button>
+              <span id="cs-wind8-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.012</span>
+              <button class="bsm bgho" onclick="adjCS('csWind8',1)">+</button>
+            </div>
           </div>
         </div>
-        <div>
-          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind / 4.5mph — 1/4 mi</div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="bsm bgho" onclick="adjCS('csWind4',-1)">−</button>
-            <span id="cs-wind4-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.008</span>
-            <button class="bsm bgho" onclick="adjCS('csWind4',1)">+</button>
+        <div style="flex:1">
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/4 MILE</div>
+          <div style="margin-bottom:10px">
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="adjCS('csDA4',-1)">−</button>
+              <span id="cs-da4-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.026</span>
+              <button class="bsm bgho" onclick="adjCS('csDA4',1)">+</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="adjCS('csWind4',-1)">−</button>
+              <span id="cs-wind4-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.008</span>
+              <button class="bsm bgho" onclick="adjCS('csWind4',1)">+</button>
+            </div>
           </div>
         </div>
       </div>
