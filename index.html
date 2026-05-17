@@ -24,7 +24,7 @@ header span{font-family:var(--mo);font-size:.7rem;color:var(--mu);letter-spacing
 @media(max-width:680px){.g2,.g3{grid-template-columns:1fr}}
 .card{background:var(--sf);border:1px solid var(--bd);padding:16px;margin-bottom:14px}
 .card:last-child{margin-bottom:0}
-.ct{font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--mu);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
+.ct{font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
 .f{margin-bottom:11px}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 label{display:block;font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin-bottom:4px}
@@ -52,7 +52,7 @@ select option{background:var(--bg)}
 .tgl input:checked+.tgl-s{background:var(--ac)}
 .tgl input:checked+.tgl-s:before{transform:translateX(22px);background:#000}
 .wxb{display:flex;align-items:center;gap:10px;background:var(--sf2);border:1px solid var(--bd);padding:8px 12px;margin-bottom:12px;flex-wrap:wrap}
-.wxs{font-family:var(--mo);font-size:.7rem;color:var(--mu);flex:1;min-width:140px;line-height:1.4}
+.wxs{font-family:var(--mo);font-size:.7rem;color:var(--tx);flex:1;min-width:140px;line-height:1.4}
 .wxs.ok{color:var(--ok)}.wxs.err{color:var(--er)}.wxs.busy{color:var(--ac2)}
 .wxr{font-family:var(--mo);font-size:.68rem;color:var(--ac);background:none;border:1px solid rgba(254,248,213,.25);padding:4px 9px;cursor:pointer;letter-spacing:.08em;white-space:nowrap}
 .wxr:hover{background:rgba(254,248,213,.07)}
@@ -129,11 +129,7 @@ tr:hover td{background:var(--sf2)}
 .slider-name{font-size:.63rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
 .slider-val{font-family:var(--mo);font-size:1rem;color:var(--ac)}
 .slider-hint{font-family:var(--mo);font-size:.57rem;color:var(--mu);margin-top:3px;line-height:1.4}
-.soff-modal{background:rgba(255,107,0,.06);border:1px solid rgba(255,107,0,.3);padding:13px;margin-bottom:16px}
-.soff-title{font-size:.63rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ac2);margin-bottom:8px}
-.soff-inner{display:flex;align-items:center;gap:12px}
-.soff-big{font-family:var(--mo);font-size:1.5rem;color:var(--ac2);min-width:70px;text-align:center}
-.soff-desc{font-family:var(--mo);font-size:.62rem;color:var(--mu);line-height:1.6;margin-top:6px}
+
 .bench-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .bench-filters select{width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px}
 .bench-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -264,7 +260,7 @@ tr:hover td{background:var(--sf2)}
         <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
       </div>
     </div>
-    <div class="fr" id="p-derived-row" style="display:none">
+    <div class="g3" id="p-derived-row" style="display:none">
       <div class="f">
         <label>Water Grains <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(gr/lb)</span>
           <span id="p-grains-flag" style="font-family:var(--mo);font-size:.6rem;display:none;margin-left:6px"></span>
@@ -274,6 +270,10 @@ tr:hover td{background:var(--sf2)}
       <div class="f">
         <label>Rel. Air Density <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(%)</span></label>
         <input type="number" id="p-rad" readonly>
+      </div>
+      <div class="f">
+        <label>Vapor Pressure <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(inHg)</span></label>
+        <input type="number" id="p-vp" readonly>
       </div>
     </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
@@ -430,6 +430,14 @@ tr:hover td{background:var(--sf2)}
   </div>
   </div>
 
+  <!-- Algorithm Performance block -->
+  <div id="algo-perf-block" style="display:none;margin-bottom:14px">
+    <div class="card" style="margin-bottom:0">
+      <div class="ct">// Algorithm Performance</div>
+      <div id="algo-perf-rows" style="font-family:var(--mo);font-size:.72rem"></div>
+    </div>
+  </div>
+
   <!-- Log Book header -->
   <div class="ss" id="ss"></div>
   <div class="rh">
@@ -439,13 +447,14 @@ tr:hover td{background:var(--sf2)}
       <select id="fd" onchange="renderTable()"><option value="all">All Distances</option><option value="eighth">1/8 Mile</option><option value="quarter">1/4 Mile</option></select>
       <button class="bsm btn-p" onclick="showLogForm()">+ Log New Run</button>
       <button class="bsm bsec" onclick="expCSV()">Export CSV</button>
+      <button class="bsm bsec" onclick="document.getElementById('cfi').click()">Import CSV</button>
     </div>
   </div>
   <div class="tw">
     <table><thead style="position:sticky;top:0;z-index:10;background:var(--bg)"><tr>
       <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>Pred ET</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>IDW</th><th>Hale</th><th>CS</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -1030,9 +1039,13 @@ function updateDerivedWeather(){
   const phpa=baro/0.02953;
   const grains=calcGrains(tf,rh,baro);
   const rad=calcRAD(tf,rh,phpa);
+  const tc2=(tf-32)*5/9;
+  const es2=6.1078*Math.pow(10,(7.5*tc2)/(237.3+tc2));
+  const vp=(rh/100)*es2*0.02953;
   document.getElementById('p-grains').value=grains.toFixed(1);
   document.getElementById('p-rad').value=rad.toFixed(1);
-  document.getElementById('p-derived-row').style.display='';
+  document.getElementById('p-vp').value=vp.toFixed(3);
+  document.getElementById('p-derived-row').style.display='grid';
   const flag=document.getElementById('p-grains-flag');
   if(grains>100){flag.textContent='⚠ HIGH';flag.style.color='var(--er)';flag.style.display='inline';}
   else if(grains>80){flag.textContent='↑ ELEVATED';flag.style.color='var(--ac2)';flag.style.display='inline';}
@@ -1533,20 +1546,20 @@ function predict(){
       const _sorted=[..._poolETs.map((e,i)=>({et:e,w:_wts[i]}))].sort((a,b)=>a.et-b.et);
       let _cumW=0,_p75=final+_range*0.6;
       for(const pt of _sorted){_cumW+=pt.w;if(_cumW/_tw>=0.75){_p75=pt.et;break;}}
-      const _soff=(typeof sessionOffset!=='undefined'?sessionOffset:0)/1000;
+      const _soff=0;
       // Clamp low end: use fastest ET from runs within 400ft DA of today
       const _nearRuns=_pool.filter(r=>Math.abs((r.da||0)-da)<=400);
       const _refPool=_nearRuns.length>=2?_nearRuns:_pool;
       const _bestNearET=Math.min(..._refPool.map(r=>r._et!=null?r._et:(r.ft660||r.ft1320||99)));
       // Floor = fastest nearby ET minus small margin (.012)
       const _hardFloor=_bestNearET-0.012;
-      const _loRaw=final-_range*0.4+_soff;
+      const _loRaw=final-_range*0.4;
       const _lo=Math.max(_loRaw,_hardFloor).toFixed(3);
-      const _hi=(final+_range*0.6+_soff).toFixed(3);
+      const _hi=(final+_range*0.6).toFixed(3);
       // Clamp suggested dial within [_lo, _hi] — always inside the confidence range
       // Use 75th percentile when pool is large enough, else bias toward high end of range
       const _loNum=parseFloat(_lo), _hiNum=parseFloat(_hi);
-      let _sugRaw=_p75+_grainsBias+_soff;
+      let _sugRaw=_p75+_grainsBias;
       // If pool is small or percentile falls outside range, use high end of range
       if(_effN<8||_sugRaw<_loNum||_sugRaw>_hiNum){
         _sugRaw=_loNum+(_hiNum-_loNum)*0.75; // 75% of the way to the high end
@@ -1558,7 +1571,6 @@ function predict(){
       const _lvlTxt={high:'High confidence',med:'Moderate confidence',low:'Low confidence — widen margin'};
       const _calmNote=ws<=2?' Calm wind — higher variance.':'';
       const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
-      const _soffNote=_soff!==0?` Offset: ${_soff>=0?'+':''}${_soff.toFixed(3)}`:'';
       const _nOut=_wStd0>0?_poolETs.filter(e=>Math.abs(e-_wMean)>2*_wStd0).length:0;
       const _outNote=_nOut>0?` ${_nOut} run${_nOut>1?'s':''} far from average.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
@@ -1567,7 +1579,7 @@ function predict(){
       _bar.style.width=_pct+'%';_bar.className='conf-bar '+_lvl;
       const _daGap=window._lastDAGap||0;
       const _extNote=_daGap>800?` ⚠ Extrapolated ${Math.round(_daGap)}ft beyond data.`:_daGap>300?` Beyond data by ${Math.round(_daGap)}ft.`:'';
-      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_extNote}${_calmNote}${_grainsNote}${_soffNote}`;
+      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_extNote}${_calmNote}${_grainsNote}`;
       document.getElementById('conf-block').style.display='block';
     }
   }catch(_e){console.error('Conf error:',_e);document.getElementById('conf-block').style.display='none';}
@@ -1628,10 +1640,12 @@ function saveRun(){
   }else{
     runs.push(run);
   }
+  // Compute all three model predictions for this run using its logged weather
+  computeAndStorePreds(run);
   sRuns(runs);
   runAutoTune(run);
   clearLogForm();
-  renderTable();renderSS();
+  renderTable();renderSS();renderAlgoPerf();
   toast(eid?'Run updated!':'Run saved! ('+runs.length+' total)');
 }
 
@@ -1894,6 +1908,94 @@ function getPredictedETForRun(r){
   const tw=wts.reduce((a,b)=>a+b,0);
   return(usePool.reduce((s,x,i)=>s+getET(x)*wts[i],0)/tw).toFixed(3);
 }
+
+// ── Hale prediction for a logged run ─────────────────────────
+function getPredHaleForRun(r,usePool){
+  const dist=r.distance;
+  const pf2=dist==='eighth'?'ft660':'ft1320';
+  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  if(!usePool||usePool.length<5)return null;
+  const poolAvgTemp=usePool.reduce((s,x)=>s+(x.temp||0),0)/usePool.length;
+  const poolAvgHum=usePool.reduce((s,x)=>s+(x.humidity||0),0)/usePool.length;
+  // Best ref = most recent run with a valid ET
+  const sorted=[...usePool].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+  const bestRef=sorted.find(x=>getET(x)!=null);
+  if(!bestRef)return null;
+  const refET=getET(bestRef);
+  const rTemp=r.temp||poolAvgTemp,rHum=r.humidity||poolAvgHum,rBaro=r.pressure||30.0;
+  const bTemp=bestRef.temp||poolAvgTemp,bHum=bestRef.humidity||poolAvgHum,bBaro=bestRef.pressure||30.0;
+  const haleCorr=haleCorrection(rTemp,rHum,rBaro);
+  const refHale=haleCorrection(bTemp,bHum,bBaro);
+  if(!refHale||refHale===0)return null;
+  const haleBase=refET*(haleCorr/refHale);
+  const windBenefit=-((r.windSpeed||0)-(bestRef.windSpeed||0))*(0.012/4.5);
+  return(haleBase+windBenefit).toFixed(3);
+}
+
+// ── Car-Specific prediction for a logged run ──────────────────
+function getPredCarSpecForRun(r,usePool){
+  const dist=r.distance;
+  const pf2=dist==='eighth'?'ft660':'ft1320';
+  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  if(!usePool||usePool.length<1)return null;
+  const _th=getTrackHeading(r.track||'');
+  const now=new Date(r.date||Date.now()).getTime();
+  const recent=usePool.filter(x=>{
+    const am=(now-new Date(x.date||'2020').getTime())/(1000*60*60*24*30.4);
+    return am<=12&&getET(x)!=null;
+  }).sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+  if(!recent.length)return null;
+  const eventCut=now-4*24*60*60*1000;
+  const evRuns=recent.filter(x=>new Date(x.date||'2020').getTime()>=eventCut);
+  const hiRuns=recent.filter(x=>new Date(x.date||'2020').getTime()<eventCut);
+  const anchPool=evRuns.length>=3?evRuns:[...evRuns,...hiRuns];
+  const anchors=anchPool.slice(0,3);
+  const anchWts=anchors.map((_,i)=>Math.pow(0.5,i));
+  const anchTW=anchWts.reduce((a,b)=>a+b,0);
+  const anchET=anchors.reduce((s,x,i)=>s+getET(x)*anchWts[i],0)/anchTW;
+  const anchDA=anchors.reduce((s,x,i)=>s+(x.da||0)*anchWts[i],0)/anchTW;
+  const anchWS=anchors.reduce((s,x,i)=>s+(x.windSpeed||0)*anchWts[i],0)/anchTW;
+  const anchWDN=windDirNum(anchors[0].windDir||'',_th);
+  const qWDN=windDirNum(r.windDir||'',_th);
+  return carSpecificPrediction(r.da,r.windSpeed||0,qWDN,anchET,anchDA,anchWS,anchWDN,dist);
+}
+
+// ── Build prediction pool for a given run (shared logic) ──────
+function buildPredPool(r){
+  const dist=r.distance;
+  const pf2=dist==='eighth'?'ft660':'ft1320';
+  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  const pool=runs.filter(x=>
+    x.id!==r.id&&x.da&&getET(x)!=null&&
+    !x.exclude&&
+    (x.quality==='allout'||x.quality===undefined||x.calcET!=null)&&
+    (dist==='eighth'?x.ft660!=null:x.ft1320!=null)
+  );
+  const tPool=pool.filter(x=>x.track===r.track);
+  return tPool.length>=5?tPool:pool;
+}
+
+// ── Compute and store all three predictions on a run ──────────
+function computeAndStorePreds(r){
+  const pool=buildPredPool(r);
+  r.predIDW=getPredictedETForRun(r)||null;
+  r.predHale=getPredHaleForRun(r,pool);
+  r.predCarSpec=getPredCarSpecForRun(r,pool)||null;
+  if(r.predCarSpec)r.predCarSpec=parseFloat(r.predCarSpec).toFixed(3);
+}
+
+// ── Backfill predictions for all runs missing them ────────────
+function backfillPredictions(){
+  let changed=false;
+  runs.forEach(r=>{
+    if(r.predIDW===undefined||r.predHale===undefined||r.predCarSpec===undefined){
+      computeAndStorePreds(r);
+      changed=true;
+    }
+  });
+  if(changed)sRuns(runs);
+}
+
 function renderTable(){
   const ft=document.getElementById('ft')?.value||'all';
   const fd=document.getElementById('fd')?.value||'all';
@@ -1916,8 +2018,17 @@ function renderTable(){
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
-    const predET=getPredictedETForRun(r);
-    const predETVal=predET?`<span style="color:var(--ok)">${predET}</span>`:'—';
+    // Three predictions — highlight closest to actual ET in green
+    const actual=parseFloat(r.calcET||r.ft660||r.ft1320);
+    const pI=r.predIDW!=null?parseFloat(r.predIDW):null;
+    const pH=r.predHale!=null?parseFloat(r.predHale):null;
+    const pC=r.predCarSpec!=null?parseFloat(r.predCarSpec):null;
+    let bestKey=null;
+    if(!isNaN(actual)&&(pI||pH||pC)){
+      const errs={idw:pI!=null?Math.abs(pI-actual):Infinity,hale:pH!=null?Math.abs(pH-actual):Infinity,cs:pC!=null?Math.abs(pC-actual):Infinity};
+      bestKey=Object.keys(errs).reduce((a,b)=>errs[a]<errs[b]?a:b);
+    }
+    const fmtP=(v,key)=>v!=null?`<span style="color:${bestKey===key?'var(--ok)':'var(--mu)'};font-weight:${bestKey===key?'700':'400'}">${v}</span>`:'—';
     return`<tr style="${r.exclude?'opacity:0.45;':''}">
       <td style="color:var(--mu)">${i+1}</td>
       <td>${r.date||'—'}</td>
@@ -1929,7 +2040,10 @@ function renderTable(){
       <td style="color:var(--ac)">${n(r.ft660)}</td><td>${n(r.mph660)}</td>
       <td>${n(r.ft1000)}</td>
       <td style="color:var(--ac2)">${n(r.ft1320)}</td>
-      <td>${calcETVal}</td><td>${predETVal}</td>
+      <td>${calcETVal}</td>
+      <td>${fmtP(r.predIDW,'idw')}</td>
+      <td>${fmtP(r.predHale,'hale')}</td>
+      <td>${fmtP(r.predCarSpec,'cs')}</td>
       <td>${n(r.mph1320)}</td><td>${rb}</td>
       <td style="color:var(--mu);font-size:.65rem">${r.lane?r.lane.charAt(0).toUpperCase()+r.lane.slice(1):'—'}</td>
       <td>${qLabel}</td>
@@ -1950,12 +2064,48 @@ function toggleExclude(id){
 function delRun(id){
   if(!confirm('Delete this run?'))return;
   runs=runs.filter(r=>r.id!==id);sRuns(runs);
-  renderTable();renderSS();toast('Run deleted.');
+  renderTable();renderSS();renderAlgoPerf();toast('Run deleted.');
 }
 
 // ════════════════════════════════════════════════════════════════
 // STATS
 // ════════════════════════════════════════════════════════════════
+function renderAlgoPerf(){
+  const block=document.getElementById('algo-perf-block');
+  const rowsEl=document.getElementById('algo-perf-rows');
+  if(!block||!rowsEl)return;
+  // Only include allout runs with an actual ET and at least one stored prediction
+  const valid=runs.filter(r=>{
+    const actual=parseFloat(r.calcET||r.ft660||r.ft1320);
+    return !isNaN(actual)&&!r.exclude&&(r.predIDW!=null||r.predHale!=null||r.predCarSpec!=null);
+  });
+  if(valid.length<3){block.style.display='none';return;}
+  const stats=(key,label)=>{
+    const pts=valid.filter(r=>r[key]!=null);
+    if(!pts.length)return null;
+    const errs=pts.map(r=>Math.abs(parseFloat(r[key])-(parseFloat(r.calcET||r.ft660||r.ft1320))));
+    const avg=errs.reduce((a,b)=>a+b,0)/errs.length;
+    const best=Math.min(...errs),worst=Math.max(...errs);
+    return{label,avg,best,worst,n:pts.length};
+  };
+  const models=[
+    stats('predIDW','Similar Runs (IDW)'),
+    stats('predHale','Patrick Hale'),
+    stats('predCarSpec','Car-Specific Physics')
+  ].filter(Boolean).sort((a,b)=>a.avg-b.avg);
+  if(!models.length){block.style.display='none';return;}
+  block.style.display='block';
+  rowsEl.innerHTML=models.map((m,i)=>{
+    const isB=i===0;
+    const col=isB?'var(--ok)':'var(--mu)';
+    return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap">
+      <span style="color:${col};font-weight:${isB?700:400};min-width:180px">${isB?'🏆 ':''}${m.label}</span>
+      <span style="color:${col}">avg ±${m.avg.toFixed(3)}</span>
+      <span style="color:var(--mu);font-size:.65rem">best ${m.best.toFixed(3)} · worst ${m.worst.toFixed(3)} · ${m.n} run${m.n!==1?'s':''}</span>
+    </div>`;
+  }).join('');
+}
+
 function renderSS(){
   const e8=runs.filter(r=>r.ft660),e4=runs.filter(r=>r.ft1320);
   const ws=runs.filter(r=>r.result==='win').length,ls=runs.filter(r=>r.result==='loss').length;
@@ -2220,7 +2370,7 @@ function nav(id,btn){
   btn.classList.add('active');
   if(id==='runs'){
     document.getElementById('log-form-wrap').style.display='none';
-    renderTable();renderSS();
+    renderTable();renderSS();renderAlgoPerf();
   }
   if(id==='tracks')renderTracks();
   if(id==='predict'){renderPredictStats();updatePoolNote();}
@@ -2255,12 +2405,15 @@ try{
   }
 }catch(e){}
 refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();
+// Backfill predictions for all existing runs (runs without stored predictions)
+setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
 
 // ════════════════════════════════════════════════════════════════
 // NAMED ALGORITHMS (per-track scale constants)
 // ════════════════════════════════════════════════════════════════
 const TB_AK='dip_tbalgos';
-const TB_SOK='dip_soff2';
+function lTBSoff(){return 0;}
+function sTBSoff(v){}
 
 function defTBAlgos(){return[
   {id:'all',     name:'All Tracks', trackFilter:'all',     DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
@@ -2271,13 +2424,12 @@ function defTBAlgos(){return[
 ];}
 function lTBAlgos(){try{const s=localStorage.getItem(TB_AK);return s?JSON.parse(s):defTBAlgos();}catch{return defTBAlgos();}}
 function sTBAlgos(a){try{localStorage.setItem(TB_AK,JSON.stringify(a));}catch{}}
-function lTBSoff(){try{const s=localStorage.getItem(TB_SOK);return s?parseFloat(s):0;}catch{return 0;}}
-function sTBSoff(v){try{localStorage.setItem(TB_SOK,v);}catch{}}
+
 
 let tbAlgos=lTBAlgos();
 let tbActiveId='all';
 let tbScales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
-let sessionOffset=lTBSoff(); // in thousandths (.001 ET steps)
+
 let benchPage_=0;
 const BENCH_PER=10;
 
@@ -2296,9 +2448,6 @@ function openTuningBench(){
   bsel.innerHTML='<option value="all">All Tracks</option>';
   tracks.forEach(t=>{const o=document.createElement('option');o.value=t.name;o.textContent=t.name;bsel.appendChild(o);});
   if([...bsel.options].some(o=>o.value===bcur))bsel.value=bcur;
-  // Sync session offset slider
-  document.getElementById('tb-soff').value=sessionOffset;
-  updateSoffDisplay();
   renderTBAlgoBtns();
   loadAlgoToSliders(tbActiveId);
   renderBenchTable();
@@ -2370,12 +2519,6 @@ function deleteAlgo(){
 }
 
 // ── Session offset ────────────────────────────────────────────
-function updateSoffDisplay(){
-  const v=parseInt(document.getElementById('tb-soff').value);
-  sessionOffset=v;sTBSoff(v);
-  document.getElementById('tb-soff-val').textContent=(v>=0?'+':'')+(v/1000).toFixed(3);
-}
-function resetSoff(){document.getElementById('tb-soff').value=0;updateSoffDisplay();}
 
 // ── Pure IDW calculation (uses existing windDirNum/sunNum) ────
 function calcIDW(pool,distance,da,temp,hum,ws,wdn,sunQ,scales){
@@ -2557,16 +2700,6 @@ function suggestScales(){
       </select>
       <button class="bsm bsec" onclick="createAlgo()">+ Create</button>
       <button class="bsm bdng" onclick="deleteAlgo()">Delete</button>
-    </div>
-
-    <div class="soff-modal">
-      <div class="soff-title">Session Offset — Today's Bias Correction</div>
-      <div class="soff-inner">
-        <div><div class="soff-big" id="tb-soff-val">+0.000</div></div>
-        <div style="flex:1"><input type="range" id="tb-soff" min="-100" max="100" value="0" step="1" style="width:100%" oninput="updateSoffDisplay()"></div>
-      </div>
-      <div class="soff-desc">Dial in after your first pass. Does NOT change the algorithm — apply per session.<br>Positive = car ran slower than predicted. Negative = car ran faster.</div>
-      <div style="margin-top:8px"><button class="bsm bgho" onclick="resetSoff()">Reset to 0</button></div>
     </div>
 
     <div class="tb-section">Scale Constants <span style="color:var(--mu);font-weight:400;letter-spacing:0;text-transform:none;font-size:.58rem"> — smaller value = more influence on prediction</span></div>
