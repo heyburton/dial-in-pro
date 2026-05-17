@@ -2688,7 +2688,7 @@ function renderPTCSP(){
 function ptAdjCS(key,dir){
   const step=key==='csAnchor'?1:0.002;
   const min={'csDA8':0.004,'csDA4':0.004,'csWind8':0.002,'csWind4':0.002,'csAnchor':2}[key];
-  const max={'csDA8':0.060,'csDA4':0.060,'csWind8':0.030,'csWind4':0.030,'csAnchor':5}[key];
+  const max={'csDA8':0.100,'csDA4':0.100,'csWind8':0.100,'csWind4':0.100,'csAnchor':5}[key];
   ptCSPWork[key]=parseFloat(Math.min(max,Math.max(min,(ptCSPWork[key]||0)+dir*step)).toFixed(3));
   renderPTCSP();
   renderBenchTable();
