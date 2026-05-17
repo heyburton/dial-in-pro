@@ -2892,10 +2892,6 @@ function renderBenchTable(){
   document.getElementById('pg-prev').disabled=benchPage_===0;
   document.getElementById('pg-next').disabled=end>=total;
 
-  // Current scales (saved settings) and adjusted scales (working values)
-  const currScales=scalesFromImp(algoSettings);
-  const adjScales=scalesFromImp(ptIDWWork);
-
   // Build reference pools — _et must use the correct distance-appropriate ET
   // For rp8: use calcET only for 1/8 mile runs; 1/4 mile runs use ft660 split
   // For rp4: use calcET only for 1/4 mile runs; 1/8 mile runs use ft1320 (will be null → excluded)
@@ -2905,31 +2901,27 @@ function renderBenchTable(){
   let rp4=runs.filter(r=>r.ft1320!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
   const rp8a=att8(rp8),rp4a=att4(rp4);
 
-  // Calculate avg errors across all filtered runs for the header stat
+  // Calculate avg errors — Current uses STORED predictions to match Algorithm Performance block
+  // Adjusted recalculates live with working settings
+  const adjScales=scalesFromImp(ptIDWWork);
   let currErrs=[],adjErrs=[];
   pool.forEach(r=>{
     const dist=r.distance;
     const actual=parseFloat(r.calcET||(dist==='eighth'?r.ft660:r.ft1320));
     if(isNaN(actual))return;
+    const storedCurr=parseFloat(isIDW?r.predIDW:r.predCarSpec);
+    if(!isNaN(storedCurr))currErrs.push(Math.abs(actual-storedCurr));
     try{
       if(isIDW){
         const rp=dist==='eighth'?rp8a.filter(x=>x.id!==r.id):rp4a.filter(x=>x.id!==r.id);
         if(rp.length<5)return;
         const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
-        const cET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,currScales).et;
         const aET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,adjScales).et;
-        currErrs.push(Math.abs(actual-cET));
         adjErrs.push(Math.abs(actual-aET));
       }else{
         const now=new Date(r.date||Date.now()).getTime();
-        const prevRuns=runs.filter(x=>x.id!==r.id&&x.distance===dist&&!x.exclude&&(x.quality==='allout'||x.calcET!=null)&&new Date(x.date||'2020').getTime()<now+60000);
-        const prevSorted=[...prevRuns].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
-        const anchors=prevSorted.slice(0,algoSettings.csAnchor||3);
-        const adjAnchors=prevSorted.slice(0,ptCSPWork.csAnchor||3);
-        if(!anchors.length)return;
-        const cET=cspWith(r,anchors,algoSettings);
-        const aET=cspWith(r,adjAnchors,ptCSPWork);
-        if(cET!=null)currErrs.push(Math.abs(actual-cET));
+        const prevSorted=[...runs].filter(x=>x.id!==r.id&&x.distance===dist&&!x.exclude&&(x.quality==='allout'||x.calcET!=null)&&new Date(x.date||'2020').getTime()<now+60000).sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+        const aET=cspWith(r,prevSorted.slice(0,ptCSPWork.csAnchor||3),ptCSPWork);
         if(aET!=null)adjErrs.push(Math.abs(actual-aET));
       }
     }catch{}
@@ -2947,7 +2939,7 @@ function renderBenchTable(){
     }
   }
 
-  // Render page rows
+  // Render page rows — Current = stored prediction, Adjusted = live recalculation
   const colPred=(et,actual)=>{
     if(et==null||isNaN(et))return`<td style="color:var(--mu)">—</td>`;
     const err=Math.abs(et-actual);
@@ -2962,19 +2954,18 @@ function renderBenchTable(){
     const db=dist==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const wind=r.windSpeed?`${r.windSpeed} ${r.windDir||''}`.trim():'calm';
     if(isNaN(actual))return`<tr><td colspan="7" style="color:var(--mu)">—</td></tr>`;
-    let cET=null,aET=null;
+    const cET=parseFloat(isIDW?r.predIDW:r.predCarSpec)||null;
+    let aET=null;
     try{
       if(isIDW){
         const rp=dist==='eighth'?rp8a.filter(x=>x.id!==r.id):rp4a.filter(x=>x.id!==r.id);
         if(rp.length>=5){
           const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
-          cET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,currScales).et;
           aET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,adjScales).et;
         }
       }else{
         const now=new Date(r.date||Date.now()).getTime();
         const prev=[...runs].filter(x=>x.id!==r.id&&x.distance===dist&&!x.exclude&&(x.quality==='allout'||x.calcET!=null)&&new Date(x.date||'2020').getTime()<now+60000).sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
-        cET=cspWith(r,prev.slice(0,algoSettings.csAnchor||3),algoSettings);
         aET=cspWith(r,prev.slice(0,ptCSPWork.csAnchor||3),ptCSPWork);
       }
     }catch{}
