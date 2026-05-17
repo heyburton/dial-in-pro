@@ -551,9 +551,58 @@ tr:hover td{background:var(--sf2)}
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div>
         <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Car-Specific Physics</div>
-        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Derived from your logged runs (0.018s/500ft DA, 0.012s/4.5mph wind). Best after 50+ runs.</div>
+        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Anchors to recent runs, then adjusts for DA and wind delta. Best after 20+ runs.</div>
       </div>
       <label class="tgl"><input type="checkbox" id="pm-carspecific" onchange="setPredMethod('carspecific',this.checked)"><span class="tgl-s"></span></label>
+    </div>
+    <!-- Car-Specific Physics coefficient tuning -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
+      <div style="font-family:var(--mo);font-size:.65rem;color:var(--ac);letter-spacing:.12em;margin-bottom:10px">CAR-SPECIFIC COEFFICIENTS</div>
+      <div class="g3" style="gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA / 500ft — 1/8 mi</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="bsm bgho" onclick="adjCS('csDA8',-1)">−</button>
+            <span id="cs-da8-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.018</span>
+            <button class="bsm bgho" onclick="adjCS('csDA8',1)">+</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA / 500ft — 1/4 mi</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="bsm bgho" onclick="adjCS('csDA4',-1)">−</button>
+            <span id="cs-da4-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.026</span>
+            <button class="bsm bgho" onclick="adjCS('csDA4',1)">+</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="bsm bgho" onclick="adjCS('csAnchor',-1)">−</button>
+            <span id="cs-anchor-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">3</span>
+            <button class="bsm bgho" onclick="adjCS('csAnchor',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="fr" style="gap:8px;margin-bottom:10px">
+        <div>
+          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind / 4.5mph — 1/8 mi</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="bsm bgho" onclick="adjCS('csWind8',-1)">−</button>
+            <span id="cs-wind8-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.012</span>
+            <button class="bsm bgho" onclick="adjCS('csWind8',1)">+</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind / 4.5mph — 1/4 mi</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="bsm bgho" onclick="adjCS('csWind4',-1)">−</button>
+            <span id="cs-wind4-val" style="font-family:var(--mo);font-size:.8rem;min-width:40px;text-align:center">0.008</span>
+            <button class="bsm bgho" onclick="adjCS('csWind4',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <button class="bsm bgho" onclick="resetCSCoeffs()" style="font-size:.6rem">Reset to Defaults</button>
     </div>
   </div>
 
@@ -735,7 +784,13 @@ const ALGO_DEFAULTS={
   hum:14,      // % humidity per .01 ET
   predMethod:'idw', // 'idw' | 'hale' | 'carspecific'
   autoTune:true,
-  showSuggestions:true
+  showSuggestions:true,
+  // Car-Specific Physics coefficients (data-derived from 145+ runs)
+  csDA8:0.018,    // DA sensitivity 1/8 mile: ET seconds per 500ft DA
+  csDA4:0.026,    // DA sensitivity 1/4 mile: ET seconds per 500ft DA
+  csWind8:0.012,  // Wind sensitivity 1/8 mile: ET seconds per 4.5mph
+  csWind4:0.008,  // Wind sensitivity 1/4 mile: ET seconds per 4.5mph
+  csAnchor:3      // Number of anchor runs to use (2–5)
 };
 function lAlgo(){
   try{const s=localStorage.getItem(AK_BASE+'_'+activeCarId);return s?{...ALGO_DEFAULTS,...JSON.parse(s)}:({...ALGO_DEFAULTS});}
@@ -751,7 +806,32 @@ function renderAlgoTab(){
   document.getElementById('algo-hum').value=algoSettings.hum;
   document.getElementById('algo-auto').checked=algoSettings.autoTune;
   document.getElementById('algo-suggest').checked=algoSettings.showSuggestions;
+  renderCSCoeffs();
   renderAlgoInsights();
+}
+function renderCSCoeffs(){
+  const set=(id,v,d)=>{const el=document.getElementById(id);if(el)el.textContent=(v??d).toFixed(id==='cs-anchor-val'?0:3);};
+  set('cs-da8-val',  algoSettings.csDA8,   ALGO_DEFAULTS.csDA8);
+  set('cs-da4-val',  algoSettings.csDA4,   ALGO_DEFAULTS.csDA4);
+  set('cs-wind8-val',algoSettings.csWind8, ALGO_DEFAULTS.csWind8);
+  set('cs-wind4-val',algoSettings.csWind4, ALGO_DEFAULTS.csWind4);
+  document.getElementById('cs-anchor-val').textContent=algoSettings.csAnchor||ALGO_DEFAULTS.csAnchor;
+}
+function adjCS(key,dir){
+  const STEP=key==='csAnchor'?1:0.002;
+  const MIN={'csDA8':0.004,'csDA4':0.004,'csWind8':0.002,'csWind4':0.002,'csAnchor':2}[key];
+  const MAX={'csDA8':0.060,'csDA4':0.060,'csWind8':0.030,'csWind4':0.030,'csAnchor':5}[key];
+  let val=(algoSettings[key]??ALGO_DEFAULTS[key])+dir*STEP;
+  val=Math.min(MAX,Math.max(MIN,parseFloat(val.toFixed(3))));
+  algoSettings[key]=val;
+  sAlgo(algoSettings);
+  renderCSCoeffs();
+}
+function resetCSCoeffs(){
+  ['csDA8','csDA4','csWind8','csWind4','csAnchor'].forEach(k=>{algoSettings[k]=ALGO_DEFAULTS[k];});
+  sAlgo(algoSettings);
+  renderCSCoeffs();
+  toast('Car-Specific coefficients reset to defaults');
 }
 
 function setPredMethod(val,isOn){
@@ -1080,13 +1160,9 @@ function haleCorrection(tf, rh, baroInHg){
   return Pcorr*Tcorr; // multiply reference ET by this
 }
 function carSpecificPrediction(da, ws, wdNum, bestRefET, bestRefDA, bestRefWS, bestRefWDN, distance){
-  // Car-specific physics prediction anchored to best recent reference run
-  // Coefficients derived from same-day pair regression analysis:
-  //   1/8 mile: DA=0.018/500ft, Wind=0.012/4.5mph (62 Redding runs)
-  //   1/4 mile: DA=0.026/500ft, Wind=0.008/4.5mph (83 Redding + 69 Sonoma runs)
   const isQuarter = distance==='quarter';
-  const DA_SENS   = isQuarter ? 0.026/500 : 0.018/500;
-  const WIND_SENS = isQuarter ? 0.008/4.5 : 0.012/4.5;
+  const DA_SENS   = isQuarter ? (algoSettings.csDA4||0.026)/500 : (algoSettings.csDA8||0.018)/500;
+  const WIND_SENS = isQuarter ? (algoSettings.csWind4||0.008)/4.5 : (algoSettings.csWind8||0.012)/4.5;
   const dDA=da-bestRefDA;
   const dWS=ws-bestRefWS;
   const daEffect=dDA*DA_SENS;
@@ -1450,8 +1526,9 @@ function predict(){
       const _histRuns=_recentRuns.filter(r=>new Date(r.date||'2020').getTime()<_eventCutoff);
       // 3+ event runs → use only those; fewer → fill remaining slots with historical
       const _anchorPool=_eventRuns.length>=3?_eventRuns:[..._eventRuns,..._histRuns];
-      // Use up to 3 most recent runs as weighted anchor (recency-weighted average)
-      const _anchors=_anchorPool.slice(0,3);
+      // Use configurable anchor count (default 3), recency-weighted
+      const _anchorCount=Math.min(algoSettings.csAnchor||3,_anchorPool.length);
+      const _anchors=_anchorPool.slice(0,_anchorCount);
       const _anchorWts=_anchors.map((_,i)=>Math.pow(0.5,i)); // 1, 0.5, 0.25
       const _anchorTW=_anchorWts.reduce((a,b)=>a+b,0);
       const _anchorET=_anchors.reduce((s,r,i)=>s+r._et*_anchorWts[i],0)/_anchorTW;
@@ -2026,7 +2103,8 @@ function getPredCarSpecForRun(r,usePool){
   const evRuns=recent.filter(x=>new Date(x.date||'2020').getTime()>=eventCut);
   const hiRuns=recent.filter(x=>new Date(x.date||'2020').getTime()<eventCut);
   const anchPool=evRuns.length>=3?evRuns:[...evRuns,...hiRuns];
-  const anchors=anchPool.slice(0,3);
+  const _anchorCount=Math.min(algoSettings.csAnchor||3,anchPool.length);
+  const anchors=anchPool.slice(0,_anchorCount);
   const anchWts=anchors.map((_,i)=>Math.pow(0.5,i));
   const anchTW=anchWts.reduce((a,b)=>a+b,0);
   const anchET=anchors.reduce((s,x,i)=>s+getET(x)*anchWts[i],0)/anchTW;
@@ -2583,7 +2661,7 @@ try{
     if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
   }
 }catch(e){}
-refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();renderCSCoeffs();
 // Backfill predictions for all existing runs (runs without stored predictions)
 setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
 
