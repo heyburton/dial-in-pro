@@ -2086,10 +2086,12 @@ function renderAlgoPerf(){
   const stats=(key,label)=>{
     const pts=valid.filter(r=>r[key]!=null);
     if(!pts.length)return null;
-    const errs=pts.map(r=>Math.abs(parseFloat(r[key])-(parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320)))));
-    const avg=errs.reduce((a,b)=>a+b,0)/errs.length;
-    const best=Math.min(...errs),worst=Math.max(...errs);
-    return{label,avg,best,worst,n:pts.length};
+    const getActual=r=>parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320));
+    const errs=pts.map(r=>({err:Math.abs(parseFloat(r[key])-getActual(r)),r,pred:parseFloat(r[key]),actual:getActual(r)}));
+    const avg=errs.reduce((a,b)=>a+b.err,0)/errs.length;
+    const worstObj=errs.reduce((a,b)=>b.err>a.err?b:a);
+    const bestErr=Math.min(...errs.map(e=>e.err));
+    return{label,avg,best:bestErr,worst:worstObj.err,worstRun:worstObj.r,worstPred:worstObj.pred,worstActual:worstObj.actual,n:pts.length};
   };
   const models=[
     stats('predIDW','Similar Runs (IDW)'),
@@ -2101,10 +2103,15 @@ function renderAlgoPerf(){
   rowsEl.innerHTML=models.map((m,i)=>{
     const isB=i===0;
     const col=isB?'var(--ok)':'var(--mu)';
-    return`<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--bd);flex-wrap:wrap">
-      <span style="color:${col};font-weight:${isB?700:400};min-width:180px">${isB?'🏆 ':''}${m.label}</span>
-      <span style="color:${col}">avg ±${m.avg.toFixed(3)}</span>
-      <span style="color:var(--mu);font-size:.65rem">best ${m.best.toFixed(3)} · worst ${m.worst.toFixed(3)} · ${m.n} run${m.n!==1?'s':''}</span>
+    const wr=m.worstRun;
+    const worstDetail=wr?`${wr.date} ${wr.track} ${wr.distance==='eighth'?'1/8':'1/4'} · pred ${m.worstPred.toFixed(3)} vs actual ${m.worstActual.toFixed(3)}`:'';
+    return`<div style="padding:7px 0;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="color:${col};font-weight:${isB?700:400};min-width:180px">${isB?'🏆 ':''}${m.label}</span>
+        <span style="color:${col}">avg ±${m.avg.toFixed(3)}</span>
+        <span style="color:var(--mu);font-size:.65rem">best ${m.best.toFixed(3)} · worst ${m.worst.toFixed(3)} · ${m.n} run${m.n!==1?'s':''}</span>
+      </div>
+      ${worstDetail?`<div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-top:3px;padding-left:4px">worst: ${worstDetail}</div>`:''}
     </div>`;
   }).join('');
 }
