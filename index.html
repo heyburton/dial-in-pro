@@ -168,9 +168,47 @@ tr:hover td{background:var(--sf2)}
 </style>
 </head>
 <body>
-<header style="padding:10px 20px">
+<header style="padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
   <img src="Dial-In_Pro_Logo.png" alt="Dial-In Pro" style="height:48px;width:auto;display:block">
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+    <select id="car-select" onchange="onCarSelect(this.value)" style="background:var(--sf2);color:var(--tx);border:1px solid var(--bd);padding:5px 8px;font-family:var(--mo);font-size:.72rem;border-radius:4px;max-width:160px"></select>
+    <button class="bsm bgho" onclick="openRenameCarModal()" title="Rename this car">✎</button>
+    <button class="bsm bgho" onclick="openAddCarModal()" title="Add a new car">+ Car</button>
+  </div>
 </header>
+
+<!-- Add Car Modal -->
+<div id="add-car-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;overflow-y:auto">
+  <div style="background:var(--sf2);border:1px solid var(--bd);max-width:360px;margin:80px auto;padding:24px;border-radius:4px">
+    <div class="ct">// Add New Car</div>
+    <div class="f" style="margin-bottom:12px">
+      <label>Car Name</label>
+      <input type="text" id="new-car-name" placeholder="e.g. Challenger R/T" maxlength="40" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="font-family:var(--mo);font-size:.68rem;color:var(--mu);margin-bottom:16px;line-height:1.6">New car starts with no logged runs. Track list is shared across all cars.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" style="flex:1;margin-top:0" onclick="confirmAddCar()">Add Car</button>
+      <button class="bsm bgho" onclick="closeAddCarModal()">Cancel</button>
+    </div>
+    <div id="add-car-err" style="font-family:var(--mo);font-size:.68rem;color:var(--er);margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- Rename Car Modal -->
+<div id="rename-car-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;overflow-y:auto">
+  <div style="background:var(--sf2);border:1px solid var(--bd);max-width:360px;margin:80px auto;padding:24px;border-radius:4px">
+    <div class="ct">// Rename Car</div>
+    <div class="f" style="margin-bottom:16px">
+      <label>New Name</label>
+      <input type="text" id="rename-car-name" maxlength="40" style="width:100%;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-p" style="flex:1;margin-top:0" onclick="confirmRenameCar()">Save Name</button>
+      <button class="bsm bgho" onclick="closeRenameCarModal()">Cancel</button>
+    </div>
+    <div id="rename-car-err" style="font-family:var(--mo);font-size:.68rem;color:var(--er);margin-top:10px;display:none"></div>
+  </div>
+</div>
 <div class="tabs">
   <button class="tab active" onclick="nav('predict',this)">ET Predict</button>
   <button class="tab" onclick="nav('runs',this)">Log Book</button>
@@ -445,7 +483,7 @@ tr:hover td{background:var(--sf2)}
     <div class="frow">
       <select id="ft" onchange="renderTable()"><option value="all">All Tracks</option></select>
       <select id="fd" onchange="renderTable()"><option value="all">All Distances</option><option value="eighth">1/8 Mile</option><option value="quarter">1/4 Mile</option></select>
-      <button class="bsm btn-p" onclick="showLogForm()">+ Log New Run</button>
+      <button class="bsm btn-p" onclick="showLogFormOrPrompt()">+ Log New Run</button>
       <button class="bsm bsec" onclick="expCSV()">Export CSV</button>
       <button class="bsm bsec" onclick="document.getElementById('cfi').click()">Import CSV</button>
     </div>
@@ -689,7 +727,7 @@ function getIDWScales(){
     SUN_SCALE : 1.5
   };
 }
-const AK='dip_algo';
+const AK_BASE='dip_algo';
 const ALGO_DEFAULTS={
   temp:2.1,    // °F per .01 ET
   baro:0.10,   // inHg per .01 ET
@@ -700,10 +738,10 @@ const ALGO_DEFAULTS={
   showSuggestions:true
 };
 function lAlgo(){
-  try{const s=localStorage.getItem(AK);return s?{...ALGO_DEFAULTS,...JSON.parse(s)}:({...ALGO_DEFAULTS});}
+  try{const s=localStorage.getItem(AK_BASE+'_'+activeCarId);return s?{...ALGO_DEFAULTS,...JSON.parse(s)}:({...ALGO_DEFAULTS});}
   catch{return{...ALGO_DEFAULTS};}
 }
-function sAlgo(a){try{localStorage.setItem(AK,JSON.stringify(a));}catch{}}
+function sAlgo(a){try{localStorage.setItem(AK_BASE+'_'+activeCarId,JSON.stringify(a));}catch{}}
 let algoSettings=lAlgo();
 
 function renderAlgoTab(){
@@ -871,10 +909,49 @@ function runAutoTune(newRun){
   algoSettings.temp=Math.max(0.5,Math.min(10,algoSettings.temp));
   sAlgo(algoSettings);
 }
-const RK='dip_r4',TK='dip_t4';
-function lRuns(){try{const s=localStorage.getItem(RK);return s?JSON.parse(s):defRuns();}catch{return defRuns();}}
+// ════════════════════════════════════════════════════════════════
+// CAR MANAGEMENT — storage and migration
+// ════════════════════════════════════════════════════════════════
+const RK_BASE='dip_r4',TK='dip_t4';
+const CARS_KEY='dip_cars',ACTIVE_CAR_KEY='dip_activecar';
+
+function lCars(){try{const s=localStorage.getItem(CARS_KEY);return s?JSON.parse(s):null;}catch{return null;}}
+function sCars(c){try{localStorage.setItem(CARS_KEY,JSON.stringify(c));}catch{}}
+function getActiveCarId(){return localStorage.getItem(ACTIVE_CAR_KEY)||'mycar';}
+function setActiveCarId(id){try{localStorage.setItem(ACTIVE_CAR_KEY,id);}catch{}}
+function carSlug(name){
+  let s=name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  if(!s)s='car';
+  const existing=(lCars()||[]).map(c=>c.id);
+  let slug=s,n=2;
+  while(existing.includes(slug)){slug=s+'_'+n;n++;}
+  return slug;
+}
+
+// One-time migration: any existing data → "My Car" (user renames after)
+function migrateToMultiCar(){
+  if(lCars())return; // already done
+  const oldRuns=localStorage.getItem('dip_r4');
+  const oldAlgo=localStorage.getItem('dip_algo');
+  const oldTB=localStorage.getItem('dip_tbalgos');
+  const carId='mycar';
+  const car={id:carId,name:'My Car',created:new Date().toISOString()};
+  if(oldRuns)try{localStorage.setItem('dip_r4_'+carId,oldRuns);}catch{}
+  if(oldAlgo)try{localStorage.setItem('dip_algo_'+carId,oldAlgo);}catch{}
+  if(oldTB)try{localStorage.setItem('dip_tbalgos_'+carId,oldTB);}catch{}
+  sCars([car]);
+  setActiveCarId(carId);
+}
+migrateToMultiCar();
+
+// Active car state (set after migration so keys are correct)
+let activeCars=lCars()||[];
+let activeCarId=getActiveCarId();
+function getActiveCar(){return activeCars.find(c=>c.id===activeCarId)||activeCars[0]||null;}
+
+function lRuns(){try{const s=localStorage.getItem(RK_BASE+'_'+activeCarId);return s?JSON.parse(s):defRuns();}catch{return defRuns();}}
 function lTracks(){try{const s=localStorage.getItem(TK);return s?JSON.parse(s):defTracks();}catch{return defTracks();}}
-function sRuns(r){try{localStorage.setItem(RK,JSON.stringify(r));}catch{}}
+function sRuns(r){try{localStorage.setItem(RK_BASE+'_'+activeCarId,JSON.stringify(r));}catch{}}
 function sTracks(t){try{localStorage.setItem(TK,JSON.stringify(t));}catch{}}
 let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 
@@ -2388,6 +2465,98 @@ function nav(id,btn){
 }
 function toast(m,e=false){const t=document.getElementById('toast');t.textContent=m;t.className='toast show'+(e?' err':'');setTimeout(()=>t.className='toast',3000);}
 
+// ════════════════════════════════════════════════════════════════
+// CAR MANAGEMENT — UI functions
+// ════════════════════════════════════════════════════════════════
+function renderCarSelector(){
+  const sel=document.getElementById('car-select');
+  if(!sel)return;
+  const cars=lCars()||[];
+  sel.innerHTML=cars.map(c=>`<option value="${c.id}"${c.id===activeCarId?' selected':''}>${c.name}</option>`).join('');
+}
+function onCarSelect(carId){
+  if(carId===activeCarId)return;
+  switchCar(carId);
+}
+function switchCar(carId){
+  activeCarId=carId;
+  setActiveCarId(carId);
+  activeCars=lCars()||[];
+  runs=lRuns();
+  algoSettings=lAlgo();
+  tbAlgos=lTBAlgos();
+  tbActiveId='all';
+  renderCarSelector();
+  refreshDrops();
+  renderSS();
+  renderTable();
+  renderAlgoPerf();
+  renderPredictStats();
+  updatePoolNote();
+  renderAlgoTab();
+  renderTBAlgoBtns();
+  setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
+  const name=(lCars()||[]).find(c=>c.id===carId)?.name||carId;
+  toast('Switched to '+name);
+}
+// Gate log form behind car check
+function showLogFormOrPrompt(){
+  const cars=lCars()||[];
+  if(!cars.length){
+    openAddCarModal();
+    return;
+  }
+  showLogForm();
+}
+// Add Car
+function openAddCarModal(){
+  document.getElementById('new-car-name').value='';
+  document.getElementById('add-car-err').style.display='none';
+  document.getElementById('add-car-modal').style.display='block';
+  setTimeout(()=>document.getElementById('new-car-name').focus(),50);
+}
+function closeAddCarModal(){document.getElementById('add-car-modal').style.display='none';}
+function confirmAddCar(){
+  const name=document.getElementById('new-car-name').value.trim();
+  const errEl=document.getElementById('add-car-err');
+  if(!name){errEl.textContent='Please enter a car name.';errEl.style.display='block';return;}
+  const cars=lCars()||[];
+  if(cars.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    errEl.textContent='A car with that name already exists.';errEl.style.display='block';return;
+  }
+  const id=carSlug(name);
+  cars.push({id,name,created:new Date().toISOString()});
+  sCars(cars);
+  activeCars=cars;
+  closeAddCarModal();
+  switchCar(id);
+}
+// Rename Car
+function openRenameCarModal(){
+  const car=getActiveCar();
+  if(!car)return;
+  document.getElementById('rename-car-name').value=car.name;
+  document.getElementById('rename-car-err').style.display='none';
+  document.getElementById('rename-car-modal').style.display='block';
+  setTimeout(()=>document.getElementById('rename-car-name').focus(),50);
+}
+function closeRenameCarModal(){document.getElementById('rename-car-modal').style.display='none';}
+function confirmRenameCar(){
+  const name=document.getElementById('rename-car-name').value.trim();
+  const errEl=document.getElementById('rename-car-err');
+  if(!name){errEl.textContent='Please enter a name.';errEl.style.display='block';return;}
+  const cars=lCars()||[];
+  const other=cars.filter(c=>c.id!==activeCarId);
+  if(other.some(c=>c.name.toLowerCase()===name.toLowerCase())){
+    errEl.textContent='Another car already has that name.';errEl.style.display='block';return;
+  }
+  const car=cars.find(c=>c.id===activeCarId);
+  if(car){car.name=name;sCars(cars);activeCars=cars;}
+  closeRenameCarModal();
+  renderCarSelector();
+  toast('Car renamed to '+name);
+}
+
 function localDateStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 // ════════════════════════════════════════════════════════════════
 // INIT
@@ -2414,14 +2583,14 @@ try{
     if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
   }
 }catch(e){}
-refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();
 // Backfill predictions for all existing runs (runs without stored predictions)
 setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
 
 // ════════════════════════════════════════════════════════════════
 // NAMED ALGORITHMS (per-track scale constants)
 // ════════════════════════════════════════════════════════════════
-const TB_AK='dip_tbalgos';
+const TB_AK_BASE='dip_tbalgos';
 function lTBSoff(){return 0;}
 function sTBSoff(v){}
 
@@ -2432,8 +2601,8 @@ function defTBAlgos(){return[
   {id:'samoa',   name:'Samoa',      trackFilter:'Samoa',   DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
   {id:'firebird',name:'Firebird',   trackFilter:'Firebird',DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
 ];}
-function lTBAlgos(){try{const s=localStorage.getItem(TB_AK);return s?JSON.parse(s):defTBAlgos();}catch{return defTBAlgos();}}
-function sTBAlgos(a){try{localStorage.setItem(TB_AK,JSON.stringify(a));}catch{}}
+function lTBAlgos(){try{const s=localStorage.getItem(TB_AK_BASE+'_'+activeCarId);return s?JSON.parse(s):defTBAlgos();}catch{return defTBAlgos();}}
+function sTBAlgos(a){try{localStorage.setItem(TB_AK_BASE+'_'+activeCarId,JSON.stringify(a));}catch{}}
 
 
 let tbAlgos=lTBAlgos();
