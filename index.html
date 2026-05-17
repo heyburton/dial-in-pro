@@ -1866,7 +1866,7 @@ function getPredictedETForRun(r){
   const pf2=dist==='eighth'?'ft660':'ft1320';
   // Get the best ET for this run - prefer calcET for lifted runs
   const getET=x=>{
-    if(x.calcET!=null)return x.calcET;
+    if(x.distance===dist&&x.calcET!=null)return x.calcET;
     return x[pf2];
   };
   // Use All Out runs + runs with calcET as reference pool
@@ -1982,7 +1982,7 @@ function computeAndStorePreds(r){
   r.predHale=getPredHaleForRun(r,pool);
   r.predCarSpec=getPredCarSpecForRun(r,pool)||null;
   if(r.predCarSpec)r.predCarSpec=parseFloat(r.predCarSpec).toFixed(3);
-  r._predV=2;
+  r._predV=3;
 }
 
 // Backfill predictions for all runs — clear existing to force recompute after getET fix
@@ -1990,9 +1990,9 @@ function backfillPredictions(){
   let changed=false;
   runs.forEach(r=>{
     // Always recompute if any prediction is missing or if this is a fresh backfill
-    if(r.predIDW===undefined||r.predHale===undefined||r.predCarSpec===undefined||r._predV!==2){
+    if(r.predIDW===undefined||r.predHale===undefined||r.predCarSpec===undefined||r._predV!==3){
       computeAndStorePreds(r);
-      r._predV=2; // version stamp so we don't recompute every load
+      r._predV=3; // version stamp so we don't recompute every load
       changed=true;
     }
   });
@@ -2022,7 +2022,7 @@ function renderTable(){
     const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
     // Three predictions — highlight closest to actual ET in green
-    const actual=parseFloat(r.calcET||r.ft660||r.ft1320);
+    const actual=parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320));
     const pI=r.predIDW!=null?parseFloat(r.predIDW):null;
     const pH=r.predHale!=null?parseFloat(r.predHale):null;
     const pC=r.predCarSpec!=null?parseFloat(r.predCarSpec):null;
@@ -2079,14 +2079,14 @@ function renderAlgoPerf(){
   if(!block||!rowsEl)return;
   // Only include allout runs with an actual ET and at least one stored prediction
   const valid=runs.filter(r=>{
-    const actual=parseFloat(r.calcET||r.ft660||r.ft1320);
+    const actual=parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320));
     return !isNaN(actual)&&!r.exclude&&(r.predIDW!=null||r.predHale!=null||r.predCarSpec!=null);
   });
   if(valid.length<3){block.style.display='none';return;}
   const stats=(key,label)=>{
     const pts=valid.filter(r=>r[key]!=null);
     if(!pts.length)return null;
-    const errs=pts.map(r=>Math.abs(parseFloat(r[key])-(parseFloat(r.calcET||r.ft660||r.ft1320))));
+    const errs=pts.map(r=>Math.abs(parseFloat(r[key])-(parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320)))));
     const avg=errs.reduce((a,b)=>a+b,0)/errs.length;
     const best=Math.min(...errs),worst=Math.max(...errs);
     return{label,avg,best,worst,n:pts.length};
