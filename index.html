@@ -1913,7 +1913,7 @@ function getPredictedETForRun(r){
 function getPredHaleForRun(r,usePool){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  const getET=x=>(x.distance===dist&&x.calcET!=null)?x.calcET:x[pf2];
   if(!usePool||usePool.length<5)return null;
   const poolAvgTemp=usePool.reduce((s,x)=>s+(x.temp||0),0)/usePool.length;
   const poolAvgHum=usePool.reduce((s,x)=>s+(x.humidity||0),0)/usePool.length;
@@ -1936,7 +1936,7 @@ function getPredHaleForRun(r,usePool){
 function getPredCarSpecForRun(r,usePool){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  const getET=x=>(x.distance===dist&&x.calcET!=null)?x.calcET:x[pf2];
   if(!usePool||usePool.length<1)return null;
   const _th=getTrackHeading(r.track||'');
   const now=new Date(r.date||Date.now()).getTime();
@@ -1964,7 +1964,7 @@ function getPredCarSpecForRun(r,usePool){
 function buildPredPool(r){
   const dist=r.distance;
   const pf2=dist==='eighth'?'ft660':'ft1320';
-  const getET=x=>x.calcET!=null?x.calcET:x[pf2];
+  const getET=x=>(x.distance===dist&&x.calcET!=null)?x.calcET:x[pf2];
   const pool=runs.filter(x=>
     x.id!==r.id&&x.da&&getET(x)!=null&&
     !x.exclude&&
@@ -1982,14 +1982,17 @@ function computeAndStorePreds(r){
   r.predHale=getPredHaleForRun(r,pool);
   r.predCarSpec=getPredCarSpecForRun(r,pool)||null;
   if(r.predCarSpec)r.predCarSpec=parseFloat(r.predCarSpec).toFixed(3);
+  r._predV=2;
 }
 
-// ── Backfill predictions for all runs missing them ────────────
+// Backfill predictions for all runs — clear existing to force recompute after getET fix
 function backfillPredictions(){
   let changed=false;
   runs.forEach(r=>{
-    if(r.predIDW===undefined||r.predHale===undefined||r.predCarSpec===undefined){
+    // Always recompute if any prediction is missing or if this is a fresh backfill
+    if(r.predIDW===undefined||r.predHale===undefined||r.predCarSpec===undefined||r._predV!==2){
       computeAndStorePreds(r);
+      r._predV=2; // version stamp so we don't recompute every load
       changed=true;
     }
   });
