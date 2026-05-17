@@ -173,9 +173,9 @@ tr:hover td{background:var(--sf2)}
 .imp-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);gap:10px}
 .imp-lbl{font-family:var(--mo);font-size:.68rem;color:var(--tx);flex:1;min-width:120px}
 .imp-dots{display:flex;gap:10px}
-.imp-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--bd);cursor:pointer;background:transparent;display:inline-block;transition:background .12s,border-color .12s;flex-shrink:0}
-.imp-dot.sel{background:var(--ac);border-color:var(--ac)}
-.imp-dot:hover{border-color:var(--ac)}
+.imp-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--ac);cursor:pointer;background:transparent;display:inline-block;transition:background .12s,border-color .12s;flex-shrink:0;opacity:.35}
+.imp-dot.sel{background:var(--ac);border-color:var(--ac);opacity:1}
+.imp-dot:hover{border-color:var(--ac);opacity:.7}
 .pt-avg-err{font-family:var(--mo);font-size:.75rem;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pt-csp-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .pt-csp-lbl{font-family:var(--mo);font-size:.65rem;color:var(--mu);flex:1}
@@ -2655,6 +2655,8 @@ function selectPTTab(tab){
   document.getElementById('pt-panel-idw').style.display=tab==='idw'?'':'none';
   document.getElementById('pt-panel-csp').style.display=tab==='csp'?'':'none';
   document.getElementById('pt-suggest-btn').style.display=tab==='idw'?'':'none';
+  const sn=document.getElementById('pt-suggest-note');
+  if(sn)sn.style.display=tab==='idw'?'block':'none';
   benchPage_=0;
   renderBenchTable();
 }
@@ -2730,9 +2732,11 @@ function suggestIDW(){
   if(fd==='eighth')pool=pool.filter(r=>r.distance==='eighth');
   else if(fd==='quarter')pool=pool.filter(r=>r.distance==='quarter');
   if(pool.length<10){toast('Need 10+ qualifying runs to suggest settings.',true);return;}
-  const poolA=pool.map(r=>({...r,_et:r.distance===r.distance&&r.calcET!=null?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
+  const poolA=pool.map(r=>({...r,_et:r.calcET!=null&&r.distance===r.distance?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
   let bestMAE=Infinity,bestDA=ptIDWWork.idwDA,bestWS=ptIDWWork.idwWS;
-  [1,2,3,4].forEach(da=>{[1,2,3,4].forEach(ws=>{
+  // DA and WS constrained to Critical/High/Medium only — Low is physically wrong
+  // for these primary variables regardless of what the math says on historical data
+  [1,2,3].forEach(da=>{[1,2,3].forEach(ws=>{
     const sc={...ptIDWWork,idwDA:da,idwWS:ws};
     const scales=getIDWScales({...algoSettings,...sc});
     const errs=[];
@@ -2892,11 +2896,14 @@ function renderBenchTable(){
   const currScales=scalesFromImp(algoSettings);
   const adjScales=scalesFromImp(ptIDWWork);
 
-  // Reference pools for IDW
-  const att=arr=>arr.map(r=>({...r,_et:(r.distance===r.distance&&r.calcET!=null)?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
+  // Build reference pools — _et must use the correct distance-appropriate ET
+  // For rp8: use calcET only for 1/8 mile runs; 1/4 mile runs use ft660 split
+  // For rp4: use calcET only for 1/4 mile runs; 1/8 mile runs use ft1320 (will be null → excluded)
+  const att8=arr=>arr.map(r=>({...r,_et:(r.distance==='eighth'&&r.calcET!=null)?r.calcET:r.ft660}));
+  const att4=arr=>arr.map(r=>({...r,_et:(r.distance==='quarter'&&r.calcET!=null)?r.calcET:r.ft1320}));
   let rp8=runs.filter(r=>r.ft660!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
   let rp4=runs.filter(r=>r.ft1320!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
-  const rp8a=att(rp8),rp4a=att(rp4);
+  const rp8a=att8(rp8),rp4a=att4(rp4);
 
   // Calculate avg errors across all filtered runs for the header stat
   let currErrs=[],adjErrs=[];
@@ -3144,6 +3151,7 @@ function renderBenchTable(){
       <button class="bsm bgho" id="pt-suggest-btn" onclick="suggestIDW()">⚡ Suggest</button>
       <span id="pt-save-note" style="font-family:var(--mo);font-size:.65rem;color:var(--ok);display:none">✓ Saved.</span>
     </div>
+    <div id="pt-suggest-note" style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-top:8px;line-height:1.5;display:none">⚡ Suggest tests Critical/High/Medium for DA and Wind Speed against your logged runs. It's a starting point — DA and Wind should always be at least Medium.</div>
 
   </div>
 </div>
