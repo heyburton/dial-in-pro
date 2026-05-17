@@ -165,6 +165,21 @@ tr:hover td{background:var(--sf2)}
 .wind-arrow-svg{flex-shrink:0}
 .wind-arrow-info{font-family:var(--mo);font-size:.68rem;color:var(--tx);line-height:1.6}
 .wind-arrow-label{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:2px}
+/* Prediction Tuning modal */
+.pt-tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:2px solid var(--bd)}
+.pt-tab{flex:1;padding:10px 6px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--mu);font-family:var(--mo);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:color .15s}
+.pt-tab.active{color:var(--ac);border-bottom-color:var(--ac)}
+.imp-scale-hint{font-family:var(--mo);font-size:.6rem;color:var(--mu);display:flex;justify-content:space-between;margin-bottom:6px;padding:0 2px}
+.imp-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);gap:10px}
+.imp-lbl{font-family:var(--mo);font-size:.68rem;color:var(--tx);flex:1;min-width:120px}
+.imp-dots{display:flex;gap:10px}
+.imp-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--bd);cursor:pointer;background:transparent;display:inline-block;transition:background .12s,border-color .12s;flex-shrink:0}
+.imp-dot.sel{background:var(--ac);border-color:var(--ac)}
+.imp-dot:hover{border-color:var(--ac)}
+.pt-avg-err{font-family:var(--mo);font-size:.75rem;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pt-csp-row{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.pt-csp-lbl{font-family:var(--mo);font-size:.65rem;color:var(--mu);flex:1}
+.pt-csp-val{font-family:var(--mo);font-size:.85rem;min-width:44px;text-align:center;color:var(--tx)}
 </style>
 </head>
 <body>
@@ -225,7 +240,7 @@ tr:hover td{background:var(--sf2)}
     <div class="f"><label>Track</label>
       <div style="display:flex;gap:8px;align-items:center">
         <select id="p-track" onchange="onTrackChange()" style="flex:1"><option value="all">All Tracks (combined)</option></select>
-        <button class="btn-tb" onclick="openTuningBench()">⚙ Tune</button>
+        <button class="btn-tb" onclick="openTuningBench()">⚙ Prediction Tuning</button>
       </div>
     </div>
     <div class="f"><label>Distance</label>
@@ -555,62 +570,7 @@ tr:hover td{background:var(--sf2)}
       </div>
       <label class="tgl"><input type="checkbox" id="pm-carspecific" onchange="setPredMethod('carspecific',this.checked)"><span class="tgl-s"></span></label>
     </div>
-    <!-- Car-Specific Physics coefficient tuning -->
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">
-      <div style="font-family:var(--mo);font-size:.65rem;color:var(--ac);letter-spacing:.12em;margin-bottom:4px">CAR-SPECIFIC PHYSICS COEFFICIENTS</div>
-      <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu);margin-bottom:12px">Adjust the prediction tuning for the Car-Specific Physics model</div>
-      <!-- Anchor Runs above columns -->
-      <div style="margin-bottom:12px">
-        <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs <span style="color:var(--mu);font-weight:400">(2–5 most recent runs used as reference)</span></div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="bsm bgho" onclick="adjCS('csAnchor',-1)">−</button>
-          <span id="cs-anchor-val" style="font-family:var(--mo);font-size:.9rem;min-width:24px;text-align:center">3</span>
-          <button class="bsm bgho" onclick="adjCS('csAnchor',1)">+</button>
-        </div>
-      </div>
-      <!-- Two-column layout: 1/8 | 1/4 -->
-      <div class="fr" style="gap:16px;margin-bottom:12px">
-        <div style="flex:1">
-          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/8 MILE</div>
-          <div style="margin-bottom:10px">
-            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
-            <div style="display:flex;align-items:center;gap:4px">
-              <button class="bsm bgho" onclick="adjCS('csDA8',-1)">−</button>
-              <span id="cs-da8-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.018</span>
-              <button class="bsm bgho" onclick="adjCS('csDA8',1)">+</button>
-            </div>
-          </div>
-          <div>
-            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
-            <div style="display:flex;align-items:center;gap:4px">
-              <button class="bsm bgho" onclick="adjCS('csWind8',-1)">−</button>
-              <span id="cs-wind8-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.012</span>
-              <button class="bsm bgho" onclick="adjCS('csWind8',1)">+</button>
-            </div>
-          </div>
-        </div>
-        <div style="flex:1">
-          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/4 MILE</div>
-          <div style="margin-bottom:10px">
-            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
-            <div style="display:flex;align-items:center;gap:4px">
-              <button class="bsm bgho" onclick="adjCS('csDA4',-1)">−</button>
-              <span id="cs-da4-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.026</span>
-              <button class="bsm bgho" onclick="adjCS('csDA4',1)">+</button>
-            </div>
-          </div>
-          <div>
-            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
-            <div style="display:flex;align-items:center;gap:4px">
-              <button class="bsm bgho" onclick="adjCS('csWind4',-1)">−</button>
-              <span id="cs-wind4-val" style="font-family:var(--mo);font-size:.85rem;min-width:40px;text-align:center">0.008</span>
-              <button class="bsm bgho" onclick="adjCS('csWind4',1)">+</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <button class="bsm bgho" onclick="resetCSCoeffs()" style="font-size:.6rem">Reset to Defaults</button>
-    </div>
+    <!-- Car-Specific Physics coefficient tuning moved to Prediction Tuning (⚙ button on ET Predict tab) -->
   </div>
 
   <!-- PREDICTION ALGORITHM -->
@@ -771,16 +731,25 @@ function defRuns(){return [];}
 // IDW scale = how many units = "distance of 1.0" in that dimension
 // We set scale = Kyle's sensitivity * 3 so that 3x the threshold
 // feels like a significant difference to the engine (tunable multiplier)
-function getIDWScales(){
-  const a=algoSettings;
+// Importance level → internal scale value mapping
+const IMP_SCALES={
+  DA:  [300,600,1000,1600],
+  WS:  [5,10,18,30],
+  TEMP:[8,15,28,45],
+  HUM: [10,20,35,55],
+  WD:  [0.5,1.0,1.8,3.0],
+  SUN: [0.5,1.0,1.8,3.0]
+};
+function impToScale(key,imp){return IMP_SCALES[key][(Math.min(4,Math.max(1,imp||3)))-1];}
+function getIDWScales(settings){
+  const s=settings||algoSettings;
   return{
-    DA_SCALE  : 800,                    // DA handled separately, not in Kyle's notes
-    TEMP_SCALE: a.temp * 3,             // e.g. 2.1 * 3 = 6.3°F = dist 1.0
-    HUM_SCALE : a.hum  * 2,            // e.g. 14 * 2 = 28% = dist 1.0
-    BARO_SCALE: a.baro * 3 * 33.8639,  // convert inHg to hPa then scale
-    WS_SCALE  : 15,                     // wind speed — not in Kyle's notes, keep default
-    WD_SCALE  : 1.5,
-    SUN_SCALE : 1.5
+    DA_SCALE  :impToScale('DA',  s.idwDA  ||2),
+    WS_SCALE  :impToScale('WS',  s.idwWS  ||2),
+    TEMP_SCALE:impToScale('TEMP',s.idwTemp||3),
+    HUM_SCALE :impToScale('HUM', s.idwHum ||4),
+    WD_SCALE  :impToScale('WD',  s.idwWD  ||2),
+    SUN_SCALE :impToScale('SUN', s.idwSun ||3)
   };
 }
 const AK_BASE='dip_algo';
@@ -797,7 +766,14 @@ const ALGO_DEFAULTS={
   csDA4:0.026,    // DA sensitivity 1/4 mile: ET seconds per 500ft DA
   csWind8:0.012,  // Wind sensitivity 1/8 mile: ET seconds per 4.5mph
   csWind4:0.008,  // Wind sensitivity 1/4 mile: ET seconds per 4.5mph
-  csAnchor:3      // Number of anchor runs to use (2–5)
+  csAnchor:3,     // Number of anchor runs to use (2–5)
+  // IDW importance levels (1=Critical, 2=High, 3=Medium, 4=Low)
+  idwDA:2,    // High — DA is primary
+  idwWS:2,    // High — wind speed matters
+  idwTemp:3,  // Medium — temp partially captured by DA
+  idwHum:4,   // Low — humidity captured by DA/VP
+  idwWD:2,    // High — wind direction matters
+  idwSun:3    // Medium
 };
 function lAlgo(){
   try{const s=localStorage.getItem(AK_BASE+'_'+activeCarId);return s?{...ALGO_DEFAULTS,...JSON.parse(s)}:({...ALGO_DEFAULTS});}
@@ -813,33 +789,9 @@ function renderAlgoTab(){
   document.getElementById('algo-hum').value=algoSettings.hum;
   document.getElementById('algo-auto').checked=algoSettings.autoTune;
   document.getElementById('algo-suggest').checked=algoSettings.showSuggestions;
-  renderCSCoeffs();
   renderAlgoInsights();
 }
-function renderCSCoeffs(){
-  const set=(id,v,d)=>{const el=document.getElementById(id);if(el)el.textContent=(v??d).toFixed(id==='cs-anchor-val'?0:3);};
-  set('cs-da8-val',  algoSettings.csDA8,   ALGO_DEFAULTS.csDA8);
-  set('cs-da4-val',  algoSettings.csDA4,   ALGO_DEFAULTS.csDA4);
-  set('cs-wind8-val',algoSettings.csWind8, ALGO_DEFAULTS.csWind8);
-  set('cs-wind4-val',algoSettings.csWind4, ALGO_DEFAULTS.csWind4);
-  document.getElementById('cs-anchor-val').textContent=algoSettings.csAnchor||ALGO_DEFAULTS.csAnchor;
-}
-function adjCS(key,dir){
-  const STEP=key==='csAnchor'?1:0.002;
-  const MIN={'csDA8':0.004,'csDA4':0.004,'csWind8':0.002,'csWind4':0.002,'csAnchor':2}[key];
-  const MAX={'csDA8':0.060,'csDA4':0.060,'csWind8':0.030,'csWind4':0.030,'csAnchor':5}[key];
-  let val=(algoSettings[key]??ALGO_DEFAULTS[key])+dir*STEP;
-  val=Math.min(MAX,Math.max(MIN,parseFloat(val.toFixed(3))));
-  algoSettings[key]=val;
-  sAlgo(algoSettings);
-  renderCSCoeffs();
-}
-function resetCSCoeffs(){
-  ['csDA8','csDA4','csWind8','csWind4','csAnchor'].forEach(k=>{algoSettings[k]=ALGO_DEFAULTS[k];});
-  sAlgo(algoSettings);
-  renderCSCoeffs();
-  toast('Car-Specific coefficients reset to defaults');
-}
+function renderCSCoeffs(){} // coefficients now live in Prediction Tuning modal
 
 function setPredMethod(val,isOn){
   if(!isOn) val='idw';
@@ -1651,11 +1603,8 @@ function predict(){
   try{
     const _pool=getPool(tf,dist);
     if(_pool.length>=5){
-      const _scales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
-      if(typeof tbAlgos!=='undefined'){
-        const _ma=tbAlgos.find(a=>a.trackFilter===tf||a.id===tf);
-        if(_ma){_scales.DA=_ma.DA;_scales.WS=_ma.WS;_scales.TEMP=_ma.TEMP;_scales.HUM=_ma.HUM;_scales.WD=_ma.WD;_scales.SUN=_ma.SUN;}
-      }
+      const _scales=getIDWScales();
+      const _scalesObj={DA:_scales.DA_SCALE,WS:_scales.WS_SCALE,TEMP:_scales.TEMP_SCALE,HUM:_scales.HUM_SCALE,WD:_scales.WD_SCALE,SUN:_scales.SUN_SCALE};
       const _wdn=windDirNum(wd);
       const _sunQ=sunNum(sunRaw);
       const _pAvgT=_pool.reduce((s,r)=>s+(r.temp||0),0)/_pool.length;
@@ -1671,12 +1620,12 @@ function predict(){
       const _cth=getTrackHeading(tf);
       const _wts0=_pool.map((r,i)=>{
         const _rs=sunNum(r.sun);const _rsv=_rs!==null?_rs:_pAvgSun;
-        const _dDA=((r.da||0)-da)/_scales.DA;
-        const _dT=((r.temp||_pAvgT)-_qT)/_scales.TEMP;
-        const _dH=((r.humidity||_pAvgH)-_qH)/_scales.HUM;
-        const _dWS=((r.windSpeed||_pAvgWS)-ws)/_scales.WS;
-        const _dWD=(windDirNum(r.windDir||'',_cth)-_wdn)/_scales.WD;
-        const _dS=(_rsv-_qSun)/_scales.SUN;
+        const _dDA=((r.da||0)-da)/_scalesObj.DA;
+        const _dT=((r.temp||_pAvgT)-_qT)/_scalesObj.TEMP;
+        const _dH=((r.humidity||_pAvgH)-_qH)/_scalesObj.HUM;
+        const _dWS=((r.windSpeed||_pAvgWS)-ws)/_scalesObj.WS;
+        const _dWD=(windDirNum(r.windDir||'',_cth)-_wdn)/_scalesObj.WD;
+        const _dS=(_rsv-_qSun)/_scalesObj.SUN;
         const _d2=_dDA*_dDA+_dT*_dT+_dH*_dH+_dWS*_dWS+_dWD*_dWD+_dS*_dS;
         return _d2<1e-10?1e10:1/_d2;
       });
@@ -2569,7 +2518,6 @@ function switchCar(carId){
   activeCars=lCars()||[];
   runs=lRuns();
   algoSettings=lAlgo();
-  tbAlgos=lTBAlgos();
   tbActiveId='all';
   renderCarSelector();
   refreshDrops();
@@ -2579,7 +2527,6 @@ function switchCar(carId){
   renderPredictStats();
   updatePoolNote();
   renderAlgoTab();
-  renderTBAlgoBtns();
   setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
   const name=(lCars()||[]).find(c=>c.id===carId)?.name||carId;
   toast('Switched to '+name);
@@ -2668,36 +2615,149 @@ try{
     if(_changed){localStorage.setItem('dip_t4',JSON.stringify(_ts));tracks=_ts;}
   }
 }catch(e){}
-refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();renderCSCoeffs();
+refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();
 // Backfill predictions for all existing runs (runs without stored predictions)
 setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
 
 // ════════════════════════════════════════════════════════════════
 // NAMED ALGORITHMS (per-track scale constants)
 // ════════════════════════════════════════════════════════════════
-const TB_AK_BASE='dip_tbalgos';
-function lTBSoff(){return 0;}
-function sTBSoff(v){}
-
-function defTBAlgos(){return[
-  {id:'all',     name:'All Tracks', trackFilter:'all',     DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
-  {id:'redding', name:'Redding',    trackFilter:'Redding', DA:800,WS:10,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
-  {id:'sonoma',  name:'Sonoma',     trackFilter:'Sonoma',  DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
-  {id:'samoa',   name:'Samoa',      trackFilter:'Samoa',   DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
-  {id:'firebird',name:'Firebird',   trackFilter:'Firebird',DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5},
-];}
-function lTBAlgos(){try{const s=localStorage.getItem(TB_AK_BASE+'_'+activeCarId);return s?JSON.parse(s):defTBAlgos();}catch{return defTBAlgos();}}
-function sTBAlgos(a){try{localStorage.setItem(TB_AK_BASE+'_'+activeCarId,JSON.stringify(a));}catch{}}
-
-
-let tbAlgos=lTBAlgos();
-let tbActiveId='all';
-let tbScales={DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};
-
+// ════════════════════════════════════════════════════════════════
+// PREDICTION TUNING — replaces old per-track named algo system
+// ════════════════════════════════════════════════════════════════
+let ptTab='idw';
+let ptIDWWork={idwDA:2,idwWS:2,idwTemp:3,idwHum:4,idwWD:2,idwSun:3};
+let ptCSPWork={csDA8:0.018,csDA4:0.026,csWind8:0.012,csWind4:0.008,csAnchor:3};
 let benchPage_=0;
 const BENCH_PER=10;
 
-function getTBAlgo(id){return tbAlgos.find(a=>a.id===id)||tbAlgos[0];}
+function initPTWork(){
+  ptIDWWork={
+    idwDA:  algoSettings.idwDA  ||ALGO_DEFAULTS.idwDA,
+    idwWS:  algoSettings.idwWS  ||ALGO_DEFAULTS.idwWS,
+    idwTemp:algoSettings.idwTemp||ALGO_DEFAULTS.idwTemp,
+    idwHum: algoSettings.idwHum ||ALGO_DEFAULTS.idwHum,
+    idwWD:  algoSettings.idwWD  ||ALGO_DEFAULTS.idwWD,
+    idwSun: algoSettings.idwSun ||ALGO_DEFAULTS.idwSun
+  };
+  ptCSPWork={
+    csDA8:   algoSettings.csDA8   ||ALGO_DEFAULTS.csDA8,
+    csDA4:   algoSettings.csDA4   ||ALGO_DEFAULTS.csDA4,
+    csWind8: algoSettings.csWind8 ||ALGO_DEFAULTS.csWind8,
+    csWind4: algoSettings.csWind4 ||ALGO_DEFAULTS.csWind4,
+    csAnchor:algoSettings.csAnchor||ALGO_DEFAULTS.csAnchor
+  };
+}
+function selectPTTab(tab){
+  ptTab=tab;
+  document.getElementById('pt-tab-idw').classList.toggle('active',tab==='idw');
+  document.getElementById('pt-tab-csp').classList.toggle('active',tab==='csp');
+  document.getElementById('pt-panel-idw').style.display=tab==='idw'?'':'none';
+  document.getElementById('pt-panel-csp').style.display=tab==='csp'?'':'none';
+  document.getElementById('pt-suggest-btn').style.display=tab==='idw'?'':'none';
+  benchPage_=0;
+  renderBenchTable();
+}
+function renderIDWDots(){
+  const keys={DA:'idwDA',WS:'idwWS',TEMP:'idwTemp',HUM:'idwHum',WD:'idwWD',SUN:'idwSun'};
+  Object.entries(keys).forEach(([k,prop])=>{
+    const val=ptIDWWork[prop]||3;
+    const container=document.getElementById('imp-dots-'+k);
+    if(!container)return;
+    [...container.children].forEach((dot,i)=>{
+      dot.classList.toggle('sel',(i+1)===val);
+    });
+  });
+}
+function setIDWImp(key,val){
+  const props={DA:'idwDA',WS:'idwWS',TEMP:'idwTemp',HUM:'idwHum',WD:'idwWD',SUN:'idwSun'};
+  ptIDWWork[props[key]]=val;
+  renderIDWDots();
+  renderBenchTable();
+}
+function renderPTCSP(){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=typeof v==='number'&&v%1!==0?v.toFixed(3):v;};
+  set('pt-csp-da8', ptCSPWork.csDA8);
+  set('pt-csp-da4', ptCSPWork.csDA4);
+  set('pt-csp-w8',  ptCSPWork.csWind8);
+  set('pt-csp-w4',  ptCSPWork.csWind4);
+  set('pt-csp-anc', ptCSPWork.csAnchor);
+}
+function ptAdjCS(key,dir){
+  const step=key==='csAnchor'?1:0.002;
+  const min={'csDA8':0.004,'csDA4':0.004,'csWind8':0.002,'csWind4':0.002,'csAnchor':2}[key];
+  const max={'csDA8':0.060,'csDA4':0.060,'csWind8':0.030,'csWind4':0.030,'csAnchor':5}[key];
+  ptCSPWork[key]=parseFloat(Math.min(max,Math.max(min,(ptCSPWork[key]||0)+dir*step)).toFixed(3));
+  renderPTCSP();
+  renderBenchTable();
+}
+function savePTSettings(){
+  if(ptTab==='idw'){
+    Object.assign(algoSettings,ptIDWWork);
+    sAlgo(algoSettings);
+    // Clear stored IDW predictions so they recompute with new settings
+    runs.forEach(r=>{r.predIDW=undefined;r._predV=undefined;});
+    sRuns(runs);
+    setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
+    toast('IDW importance settings saved');
+  }else{
+    Object.assign(algoSettings,ptCSPWork);
+    sAlgo(algoSettings);
+    // Also update Settings page display if open
+    renderCSCoeffs();
+    runs.forEach(r=>{r.predCarSpec=undefined;r._predV=undefined;});
+    sRuns(runs);
+    setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
+    toast('Car-Specific Physics coefficients saved');
+  }
+  document.getElementById('pt-save-note').style.display='inline';
+  setTimeout(()=>document.getElementById('pt-save-note').style.display='none',2500);
+}
+function resetPT(){
+  initPTWork();
+  renderIDWDots();
+  renderPTCSP();
+  renderBenchTable();
+}
+function suggestIDW(){
+  const ft=document.getElementById('tb-ftrack')?.value||'all';
+  const fd=document.getElementById('tb-fdist')?.value||'all';
+  let pool=runs.filter(r=>{
+    const et=r.distance==='eighth'?r.ft660:r.ft1320;
+    return et!=null&&(r.quality==='allout'||!r.quality)&&r.da;
+  });
+  if(ft!=='all')pool=pool.filter(r=>r.track===ft);
+  if(fd==='eighth')pool=pool.filter(r=>r.distance==='eighth');
+  else if(fd==='quarter')pool=pool.filter(r=>r.distance==='quarter');
+  if(pool.length<10){toast('Need 10+ qualifying runs to suggest settings.',true);return;}
+  const poolA=pool.map(r=>({...r,_et:r.distance===r.distance&&r.calcET!=null?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
+  let bestMAE=Infinity,bestDA=ptIDWWork.idwDA,bestWS=ptIDWWork.idwWS;
+  [1,2,3,4].forEach(da=>{[1,2,3,4].forEach(ws=>{
+    const sc={...ptIDWWork,idwDA:da,idwWS:ws};
+    const scales=getIDWScales({...algoSettings,...sc});
+    const errs=[];
+    poolA.forEach(r=>{
+      try{
+        const dist=r.distance;
+        const rp=poolA.filter(x=>x.id!==r.id&&(dist==='eighth'?x.ft660:x.ft1320)!=null);
+        if(rp.length<5)return;
+        const{et}=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,r.windSpeed||0,windDirNum(r.windDir||''),sunNum(r.sun),
+          {DA:scales.DA_SCALE,WS:scales.WS_SCALE,TEMP:scales.TEMP_SCALE,HUM:scales.HUM_SCALE,WD:scales.WD_SCALE,SUN:scales.SUN_SCALE});
+        errs.push(Math.abs(r._et-et));
+      }catch{}
+    });
+    const m=errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:Infinity;
+    if(m<bestMAE){bestMAE=m;bestDA=da;bestWS=ws;}
+  });});
+  ptIDWWork.idwDA=bestDA;ptIDWWork.idwWS=bestWS;
+  renderIDWDots();renderBenchTable();
+  const labels=['Critical','High','Medium','Low'];
+  toast(`Suggested: DA=${labels[bestDA-1]}, Wind=${labels[bestWS-1]} · Avg Error ${bestMAE.toFixed(4)}`);
+}
+// backward compat stubs (called from switchCar etc)
+function renderTBAlgoBtns(){}
+function getTBAlgo(){return{DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5};}
+let tbAlgos=[];let tbActiveId='all';
 
 // ── Open / Close ──────────────────────────────────────────────
 function openTuningBench(){
@@ -2717,70 +2777,6 @@ function openTuningBench(){
   renderBenchTable();
 }
 function closeTuningBench(){document.getElementById('tb-overlay').classList.remove('open');}
-
-// ── Algorithm buttons ─────────────────────────────────────────
-function renderTBAlgoBtns(){
-  document.getElementById('tb-algo-btns').innerHTML=
-    tbAlgos.map(a=>`<button class="algo-btn${a.id===tbActiveId?' active':''}" onclick="selectTBAlgo('${a.id}')">${a.name}</button>`).join('');
-}
-function selectTBAlgo(id){
-  tbActiveId=id;
-  renderTBAlgoBtns();
-  loadAlgoToSliders(id);
-  benchPage_=0;
-  renderBenchTable();
-}
-function loadAlgoToSliders(id){
-  const a=getTBAlgo(id);
-  tbScales={DA:a.DA,WS:a.WS,TEMP:a.TEMP,HUM:a.HUM,WD:a.WD,SUN:a.SUN};
-  document.getElementById('sl-da').value=a.DA;    document.getElementById('sv-da').textContent=a.DA;
-  document.getElementById('sl-ws').value=a.WS;    document.getElementById('sv-ws').textContent=a.WS;
-  document.getElementById('sl-temp').value=a.TEMP; document.getElementById('sv-temp').textContent=a.TEMP;
-  document.getElementById('sl-hum').value=a.HUM;  document.getElementById('sv-hum').textContent=a.HUM;
-  document.getElementById('sl-wd').value=a.WD;    document.getElementById('sv-wd').textContent=a.WD;
-  document.getElementById('sl-sun').value=a.SUN;  document.getElementById('sv-sun').textContent=a.SUN;
-  document.getElementById('tb-save-note').style.display='none';
-}
-function onSlider(key){
-  const map={da:'DA',ws:'WS',temp:'TEMP',hum:'HUM',wd:'WD',sun:'SUN'};
-  const K=map[key];
-  const val=parseFloat(document.getElementById('sl-'+key).value);
-  tbScales[K]=val;
-  document.getElementById('sv-'+key).textContent=val;
-  renderBenchTable();
-}
-function resetSliders(){loadAlgoToSliders(tbActiveId);}
-function saveAlgoScales(){
-  const idx=tbAlgos.findIndex(a=>a.id===tbActiveId);
-  if(idx<0)return;
-  tbAlgos[idx]={...tbAlgos[idx],...tbScales};
-  sTBAlgos(tbAlgos);
-  document.getElementById('tb-save-note').style.display='inline';
-  toast(`Algorithm "${tbAlgos[idx].name}" saved.`);
-}
-function createAlgo(){
-  const name=document.getElementById('tb-new-algo-name').value.trim();
-  const track=document.getElementById('tb-new-algo-track').value;
-  if(!name){toast('Enter a name.',true);return;}
-  const id='algo_'+Date.now();
-  tbAlgos.push({id,name,trackFilter:track,DA:800,WS:15,TEMP:25,HUM:30,WD:1.5,SUN:1.5});
-  sTBAlgos(tbAlgos);
-  document.getElementById('tb-new-algo-name').value='';
-  renderTBAlgoBtns();
-  selectTBAlgo(id);
-  toast(`"${name}" created.`);
-}
-function deleteAlgo(){
-  const a=getTBAlgo(tbActiveId);
-  const builtIn=['all','redding','sonoma','samoa','firebird'];
-  if(builtIn.includes(tbActiveId)){toast('Cannot delete built-in algorithms.',true);return;}
-  if(!a||!confirm(`Delete "${a.name}"?`))return;
-  tbAlgos=tbAlgos.filter(x=>x.id!==tbActiveId);
-  sTBAlgos(tbAlgos);
-  tbActiveId=tbAlgos[0].id;
-  renderTBAlgoBtns();loadAlgoToSliders(tbActiveId);renderBenchTable();
-  toast('Deleted.');
-}
 
 // ── Session offset ────────────────────────────────────────────
 
@@ -2808,7 +2804,6 @@ function calcIDW(pool,distance,da,temp,hum,ws,wdn,sunQ,scales){
     return d2<1e-10?1e10:1/d2;
   });
   const tw=wts.reduce((a,b)=>a+b,0);
-  // Use _et (effective ET) if present, otherwise use pf field
   const et=pool.reduce((s,r,i)=>s+(r._et!=null?r._et:r[pf])*wts[i],0)/tw;
   return{et,weights:wts,tw};
 }
@@ -2827,21 +2822,64 @@ function computeConfidence(pool,weights,tw,et,distance,ws){
   return{lo:et-range*0.4,hi:et+range*0.6,range,level,pct,effN:Math.round(effN)};
 }
 
+// ── Open / Close ──────────────────────────────────────────────
+function openTuningBench(){
+  initPTWork();
+  document.getElementById('tb-overlay').classList.add('open');
+  // Populate track filter
+  const bsel=document.getElementById('tb-ftrack');
+  const bcur=bsel?.value||'all';
+  if(bsel){
+    bsel.innerHTML='<option value="all">All Tracks</option>';
+    tracks.forEach(t=>{const o=document.createElement('option');o.value=t.name;o.textContent=t.name;bsel.appendChild(o);});
+    if([...bsel.options].some(o=>o.value===bcur))bsel.value=bcur;
+  }
+  selectPTTab('idw');
+  renderIDWDots();
+  renderPTCSP();
+}
+function closeTuningBench(){document.getElementById('tb-overlay').classList.remove('open');}
+
 // ── Bench table ───────────────────────────────────────────────
 function benchPage(dir){
   benchPage_=Math.max(0,benchPage_+dir);
   renderBenchTable();
 }
+
+// Helper: scales object from an importance settings object
+function scalesFromImp(imp){
+  const s=getIDWScales({...algoSettings,...imp});
+  return{DA:s.DA_SCALE,WS:s.WS_SCALE,TEMP:s.TEMP_SCALE,HUM:s.HUM_SCALE,WD:s.WD_SCALE,SUN:s.SUN_SCALE};
+}
+// Helper: CSP prediction with custom settings
+function cspWith(r,anchors,settings){
+  if(!anchors||!anchors.length)return null;
+  const anchWts=anchors.map((_,i)=>Math.pow(0.5,i));
+  const tw=anchWts.reduce((a,b)=>a+b,0);
+  const anchET=anchors.reduce((s,x,i)=>s+(x.calcET!=null&&x.distance===r.distance?x.calcET:(x.distance==='eighth'?x.ft660:x.ft1320))*anchWts[i],0)/tw;
+  const anchDA=anchors.reduce((s,x,i)=>s+(x.da||0)*anchWts[i],0)/tw;
+  const anchWS=anchors.reduce((s,x,i)=>s+(x.windSpeed||0)*anchWts[i],0)/tw;
+  const isQ=r.distance==='quarter';
+  const DA_SENS=isQ?(settings.csDA4||0.026)/500:(settings.csDA8||0.018)/500;
+  const WN_SENS=isQ?(settings.csWind4||0.008)/4.5:(settings.csWind8||0.012)/4.5;
+  return anchET+(r.da-anchDA)*DA_SENS-((r.windSpeed||0)-anchWS)*WN_SENS;
+}
+
 function renderBenchTable(){
   const ft=document.getElementById('tb-ftrack')?.value||'all';
   const fd=document.getElementById('tb-fdist')?.value||'all';
-  const algo=getTBAlgo(tbActiveId);
-  const origScales={DA:algo.DA,WS:algo.WS,TEMP:algo.TEMP,HUM:algo.HUM,WD:algo.WD,SUN:algo.SUN};
-  let pool=runs.filter(r=>r.ft660||r.ft1320);
+  const isIDW=ptTab==='idw';
+
+  // Build pool
+  let pool=runs.filter(r=>{
+    const et=r.distance==='eighth'?r.ft660:r.ft1320;
+    return et!=null&&r.da;
+  });
   if(ft!=='all')pool=pool.filter(r=>r.track===ft);
-  if(fd==='eighth')pool=pool.filter(r=>r.ft660!=null);
-  else if(fd==='quarter')pool=pool.filter(r=>r.ft1320!=null);
-  pool=[...pool].sort((a,b)=>{const da=a.date||'';const db=b.date||'';const ta=a.time||'';const tb2=b.time||'';return(db+tb2).localeCompare(da+ta);});
+  if(fd==='eighth')pool=pool.filter(r=>r.distance==='eighth');
+  else if(fd==='quarter')pool=pool.filter(r=>r.distance==='quarter');
+  pool=[...pool].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+
   const total=pool.length;
   const start=benchPage_*BENCH_PER;
   const end=Math.min(start+BENCH_PER,total);
@@ -2849,172 +2887,243 @@ function renderBenchTable(){
   document.getElementById('pg-info').textContent=total?`${start+1}–${end} of ${total}`:'0 runs';
   document.getElementById('pg-prev').disabled=benchPage_===0;
   document.getElementById('pg-next').disabled=end>=total;
-  // Build ref pools
-  const tF=algo.trackFilter;
+
+  // Current scales (saved settings) and adjusted scales (working values)
+  const currScales=scalesFromImp(algoSettings);
+  const adjScales=scalesFromImp(ptIDWWork);
+
+  // Reference pools for IDW
+  const att=arr=>arr.map(r=>({...r,_et:(r.distance===r.distance&&r.calcET!=null)?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
   let rp8=runs.filter(r=>r.ft660!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
   let rp4=runs.filter(r=>r.ft1320!=null&&(r.quality==='allout'||!r.quality||r.calcET!=null));
-  if(tF!=='all'){rp8=rp8.filter(r=>r.track===tF);rp4=rp4.filter(r=>r.track===tF);}
-  // Attach _et
-  const att=arr=>arr.map(r=>({...r,_et:r.calcET!=null?r.calcET:(r.ft1320||r.ft660)}));
   const rp8a=att(rp8),rp4a=att(rp4);
-  // Summary MAE over all filtered runs
-  let origErrs=[],newErrs=[];
+
+  // Calculate avg errors across all filtered runs for the header stat
+  let currErrs=[],adjErrs=[];
   pool.forEach(r=>{
-    const isE=r.ft660!=null&&fd!=='quarter';
-    const dist=isE?'eighth':'quarter';
-    const rp=isE?rp8a:rp4a;
-    const actual=isE?r.ft660:r.ft1320;
-    if(!actual||rp.length<5)return;
-    const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
+    const dist=r.distance;
+    const actual=parseFloat(r.calcET||(dist==='eighth'?r.ft660:r.ft1320));
+    if(isNaN(actual))return;
     try{
-      const o=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,origScales);
-      const n=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,tbScales);
-      origErrs.push(Math.abs(actual-o.et));
-      newErrs.push(Math.abs(actual-n.et));
+      if(isIDW){
+        const rp=dist==='eighth'?rp8a.filter(x=>x.id!==r.id):rp4a.filter(x=>x.id!==r.id);
+        if(rp.length<5)return;
+        const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
+        const cET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,currScales).et;
+        const aET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,adjScales).et;
+        currErrs.push(Math.abs(actual-cET));
+        adjErrs.push(Math.abs(actual-aET));
+      }else{
+        const now=new Date(r.date||Date.now()).getTime();
+        const prevRuns=runs.filter(x=>x.id!==r.id&&x.distance===dist&&!x.exclude&&(x.quality==='allout'||x.calcET!=null)&&new Date(x.date||'2020').getTime()<now+60000);
+        const prevSorted=[...prevRuns].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+        const anchors=prevSorted.slice(0,algoSettings.csAnchor||3);
+        const adjAnchors=prevSorted.slice(0,ptCSPWork.csAnchor||3);
+        if(!anchors.length)return;
+        const cET=cspWith(r,anchors,algoSettings);
+        const aET=cspWith(r,adjAnchors,ptCSPWork);
+        if(cET!=null)currErrs.push(Math.abs(actual-cET));
+        if(aET!=null)adjErrs.push(Math.abs(actual-aET));
+      }
     }catch{}
   });
   const mae=arr=>arr.length?(arr.reduce((a,b)=>a+b,0)/arr.length):null;
-  const oMAE=mae(origErrs),nMAE=mae(newErrs);
-  document.getElementById('bs-mae-orig').textContent=oMAE!=null?oMAE.toFixed(4):'—';
-  document.getElementById('bs-mae-new').textContent=nMAE!=null?nMAE.toFixed(4):'—';
-  const imp=oMAE!=null&&nMAE!=null?oMAE-nMAE:null;
-  const impEl=document.getElementById('bs-delta');
-  if(imp!=null){impEl.textContent=(imp>=0?'+':'')+imp.toFixed(4);impEl.style.color=imp>=0?'var(--ok)':'var(--er)';}
-  else{impEl.textContent='—';impEl.style.color='var(--mu)';}
-  // Page rows
+  const cMAE=mae(currErrs),aMAE=mae(adjErrs);
+  const errEl=document.getElementById('pt-avg-err');
+  if(errEl){
+    if(cMAE!=null&&aMAE!=null){
+      const imp=cMAE-aMAE;
+      const dir=imp>0.0002?` <span style="color:var(--ok)">↓ Improving</span>`:imp<-0.0002?` <span style="color:var(--er)">↑ Getting worse</span>`:'';
+      errEl.innerHTML=`<span style="color:var(--mu)">Avg Error:</span> <span style="color:var(--tx)">Current ±${cMAE.toFixed(3)}</span> → <span style="color:var(--ac)">Adjusted ±${aMAE.toFixed(3)}</span>${dir}`;
+    }else{
+      errEl.textContent='Not enough data to calculate avg error';
+    }
+  }
+
+  // Render page rows
+  const colPred=(et,actual)=>{
+    if(et==null||isNaN(et))return`<td style="color:var(--mu)">—</td>`;
+    const err=Math.abs(et-actual);
+    const col=err<=0.010?'var(--ok)':err<=0.025?'var(--ac)':'var(--er)';
+    return`<td style="color:${col};font-weight:${err<=0.010?700:400}">${et.toFixed(3)}</td>`;
+  };
   const page=pool.slice(start,end);
   const tbody=document.getElementById('bench-tbody');
   tbody.innerHTML=page.map(r=>{
-    const isE=r.ft660!=null&&fd!=='quarter';
-    const dist=isE?'eighth':'quarter';
-    const rp=isE?rp8a:rp4a;
-    const actual=isE?r.ft660:r.ft1320;
-    if(!actual||rp.length<5)return`<tr><td colspan="10" style="color:var(--mu)">—</td></tr>`;
-    const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
-    let oET='—',nET='—',oDN=null,nDN=null;
-    try{
-      const o=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,origScales);
-      const n=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,tbScales);
-      oET=o.et.toFixed(3);nET=n.et.toFixed(3);
-      oDN=actual-o.et;nDN=actual-n.et;
-    }catch{}
+    const dist=r.distance;
+    const actual=parseFloat(r.calcET||(dist==='eighth'?r.ft660:r.ft1320));
     const db=dist==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
-    const fd2=(d)=>{
-      if(d===null)return'<td>—</td>';
-      const abs=Math.abs(d),col=abs<.01?'var(--ok)':abs<.025?'var(--ac)':'var(--er)';
-      const bw=Math.min(Math.round(abs*700),56);
-      return`<td><div class="dbar-cell"><div class="dbar ${d>0?'dbar-pos':'dbar-neg'}" style="width:${bw}px"></div><span style="color:${col}">${d>=0?'+':''}${d.toFixed(4)}</span></div></td>`;
-    };
     const wind=r.windSpeed?`${r.windSpeed} ${r.windDir||''}`.trim():'calm';
-    const newBetter=nDN!==null&&oDN!==null&&Math.abs(nDN)<Math.abs(oDN);
+    if(isNaN(actual))return`<tr><td colspan="7" style="color:var(--mu)">—</td></tr>`;
+    let cET=null,aET=null;
+    try{
+      if(isIDW){
+        const rp=dist==='eighth'?rp8a.filter(x=>x.id!==r.id):rp4a.filter(x=>x.id!==r.id);
+        if(rp.length>=5){
+          const ws=r.windSpeed||0,wdn=windDirNum(r.windDir||''),sunQ=sunNum(r.sun);
+          cET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,currScales).et;
+          aET=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,ws,wdn,sunQ,adjScales).et;
+        }
+      }else{
+        const now=new Date(r.date||Date.now()).getTime();
+        const prev=[...runs].filter(x=>x.id!==r.id&&x.distance===dist&&!x.exclude&&(x.quality==='allout'||x.calcET!=null)&&new Date(x.date||'2020').getTime()<now+60000).sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
+        cET=cspWith(r,prev.slice(0,algoSettings.csAnchor||3),algoSettings);
+        aET=cspWith(r,prev.slice(0,ptCSPWork.csAnchor||3),ptCSPWork);
+      }
+    }catch{}
     return`<tr>
       <td>${r.date||'—'}</td><td>${r.track||'—'}</td><td>${db}</td>
       <td>${Math.round(r.da||0)}</td><td>${wind}</td>
-      <td style="color:var(--ac)">${actual.toFixed(3)}</td>
-      <td>${oET}</td>${fd2(oDN)}
-      <td style="color:${newBetter?'var(--ok)':'var(--tx)'}">${nET}</td>${fd2(nDN)}
+      <td style="color:var(--ac);font-weight:700">${actual.toFixed(3)}</td>
+      ${colPred(cET,actual)}${colPred(aET,actual)}
     </tr>`;
   }).join('');
 }
 
-function suggestScales(){
-  const ft=document.getElementById('tb-ftrack')?.value||'all';
-  let pool=runs.filter(r=>r.ft660!=null&&(r.quality==='allout'||!r.quality));
-  if(ft!=='all')pool=pool.filter(r=>r.track===ft);
-  if(pool.length<10){toast('Need 10+ runs to suggest scales.',true);return;}
-  const poolA=pool.map(r=>({...r,_et:r.calcET!=null?r.calcET:r.ft660}));
-  let bestMAE=Infinity,bestDA=tbScales.DA,bestWS=tbScales.WS;
-  [200,400,600,800,1000,1400,1800].forEach(da=>{
-    [4,6,8,10,12,15,20,25].forEach(ws=>{
-      const sc={...tbScales,DA:da,WS:ws};
-      const errs=[];
-      poolA.forEach(r=>{
-        try{const{et}=calcIDW(poolA,'eighth',r.da,r.temp||0,r.humidity||0,r.windSpeed||0,windDirNum(r.windDir||''),sunNum(r.sun),sc);
-          errs.push(Math.abs(r._et-et));}catch{}
-      });
-      const m=errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:Infinity;
-      if(m<bestMAE){bestMAE=m;bestDA=da;bestWS=ws;}
-    });
-  });
-  tbScales.DA=bestDA;tbScales.WS=bestWS;
-  document.getElementById('sl-da').value=bestDA;document.getElementById('sv-da').textContent=bestDA;
-  document.getElementById('sl-ws').value=bestWS;document.getElementById('sv-ws').textContent=bestWS;
-  renderBenchTable();
-  toast(`Suggested: DA=${bestDA}, WS=${bestWS} · MAE ${bestMAE.toFixed(4)}`);
-}
 </script>
 
 <!-- ══════════════════════════════════════════════════════════
-     TUNING BENCH MODAL
+     PREDICTION TUNING MODAL
 ══════════════════════════════════════════════════════════ -->
 <div class="tb-overlay" id="tb-overlay">
 <div class="tb-modal">
   <div class="tb-header">
-    <span class="tb-title">⚙ Tuning Bench</span>
+    <span class="tb-title">⚙ Prediction Tuning</span>
     <button class="tb-close" onclick="closeTuningBench()">✕</button>
   </div>
   <div class="tb-body">
 
-    <div class="tb-section">Algorithm — Track Filter</div>
-    <div class="algo-pick-row" id="tb-algo-btns"></div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <input type="text" id="tb-new-algo-name" placeholder="New algorithm name…" style="flex:1;max-width:200px">
-      <select id="tb-new-algo-track" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px">
-        <option value="all">All Tracks</option>
-      </select>
-      <button class="bsm bsec" onclick="createAlgo()">+ Create</button>
-      <button class="bsm bdng" onclick="deleteAlgo()">Delete</button>
+    <!-- Model tabs -->
+    <div class="pt-tabs">
+      <button class="pt-tab active" id="pt-tab-idw" onclick="selectPTTab('idw')">Similar Runs (IDW)</button>
+      <button class="pt-tab" id="pt-tab-csp" onclick="selectPTTab('csp')">Car-Specific Physics</button>
     </div>
 
-    <div class="tb-section">Scale Constants <span style="color:var(--mu);font-weight:400;letter-spacing:0;text-transform:none;font-size:.58rem"> — smaller value = more influence on prediction</span></div>
-    <div class="slider-grid">
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">DA Scale</span><span class="slider-val" id="sv-da">800</span></div>
-        <input type="range" id="sl-da" min="100" max="2000" step="50" value="800" oninput="onSlider('da')" style="width:100%">
-        <div class="slider-hint">Primary axis. Lower = DA matters more.</div>
+    <!-- IDW Panel -->
+    <div id="pt-panel-idw">
+      <div class="ib" style="margin-bottom:12px">Controls how much each weather variable influences which past runs IDW uses as reference. More impact = the model requires a closer match on that variable.</div>
+      <div class="imp-scale-hint"><span>← More Impact</span><span>Less Impact →</span></div>
+      <div class="imp-row">
+        <span class="imp-lbl">Density Altitude</span>
+        <div class="imp-dots" id="imp-dots-DA">
+          <span class="imp-dot" onclick="setIDWImp('DA',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('DA',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('DA',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('DA',4)"></span>
+        </div>
       </div>
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">Wind Speed Scale</span><span class="slider-val" id="sv-ws">15</span></div>
-        <input type="range" id="sl-ws" min="2" max="50" step="1" value="15" oninput="onSlider('ws')" style="width:100%">
-        <div class="slider-hint">4.5mph wind ≈ .01 ET. Lower = wind speed matters more.</div>
+      <div class="imp-row">
+        <span class="imp-lbl">Wind Speed</span>
+        <div class="imp-dots" id="imp-dots-WS">
+          <span class="imp-dot" onclick="setIDWImp('WS',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WS',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WS',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WS',4)"></span>
+        </div>
       </div>
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">Temp Scale</span><span class="slider-val" id="sv-temp">25</span></div>
-        <input type="range" id="sl-temp" min="5" max="60" step="5" value="25" oninput="onSlider('temp')" style="width:100%">
-        <div class="slider-hint">°F difference = distance 1.0. Lower = temp matters more.</div>
+      <div class="imp-row">
+        <span class="imp-lbl">Wind Direction</span>
+        <div class="imp-dots" id="imp-dots-WD">
+          <span class="imp-dot" onclick="setIDWImp('WD',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WD',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WD',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('WD',4)"></span>
+        </div>
       </div>
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">Humidity Scale</span><span class="slider-val" id="sv-hum">30</span></div>
-        <input type="range" id="sl-hum" min="5" max="80" step="5" value="30" oninput="onSlider('hum')" style="width:100%">
-        <div class="slider-hint">% RH difference = distance 1.0.</div>
+      <div class="imp-row">
+        <span class="imp-lbl">Temperature</span>
+        <div class="imp-dots" id="imp-dots-TEMP">
+          <span class="imp-dot" onclick="setIDWImp('TEMP',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('TEMP',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('TEMP',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('TEMP',4)"></span>
+        </div>
       </div>
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">Wind Dir Scale</span><span class="slider-val" id="sv-wd">1.5</span></div>
-        <input type="range" id="sl-wd" min="0.2" max="4" step="0.1" value="1.5" oninput="onSlider('wd')" style="width:100%">
-        <div class="slider-hint">Headwind/tailwind discrimination.</div>
+      <div class="imp-row">
+        <span class="imp-lbl">Humidity</span>
+        <div class="imp-dots" id="imp-dots-HUM">
+          <span class="imp-dot" onclick="setIDWImp('HUM',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('HUM',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('HUM',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('HUM',4)"></span>
+        </div>
       </div>
-      <div class="slider-row">
-        <div class="slider-top"><span class="slider-name">Sun Scale</span><span class="slider-val" id="sv-sun">1.5</span></div>
-        <input type="range" id="sl-sun" min="0.2" max="4" step="0.1" value="1.5" oninput="onSlider('sun')" style="width:100%">
-        <div class="slider-hint">Sun condition discrimination.</div>
+      <div class="imp-row" style="border-bottom:none">
+        <span class="imp-lbl">Sun / Shade</span>
+        <div class="imp-dots" id="imp-dots-SUN">
+          <span class="imp-dot" onclick="setIDWImp('SUN',1)"></span>
+          <span class="imp-dot" onclick="setIDWImp('SUN',2)"></span>
+          <span class="imp-dot" onclick="setIDWImp('SUN',3)"></span>
+          <span class="imp-dot" onclick="setIDWImp('SUN',4)"></span>
+        </div>
       </div>
     </div>
 
-    <div class="tb-section">Run Comparison — Live Recalculation</div>
+    <!-- CSP Panel -->
+    <div id="pt-panel-csp" style="display:none">
+      <div class="ib" style="margin-bottom:14px">Defines how much your car's ET changes per unit of DA and wind delta from the anchor run. Adjust until the Adjusted predictions track closely with Actual ET below.</div>
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs <span style="font-weight:400">(2–5 most recent runs used as reference)</span></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="bsm bgho" onclick="ptAdjCS('csAnchor',-1)">−</button>
+          <span id="pt-csp-anc" class="pt-csp-val">3</span>
+          <button class="bsm bgho" onclick="ptAdjCS('csAnchor',1)">+</button>
+        </div>
+      </div>
+      <div class="fr" style="gap:16px;margin-bottom:10px">
+        <div style="flex:1">
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/8 MILE</div>
+          <div style="margin-bottom:10px">
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="ptAdjCS('csDA8',-1)">−</button>
+              <span id="pt-csp-da8" class="pt-csp-val">0.018</span>
+              <button class="bsm bgho" onclick="ptAdjCS('csDA8',1)">+</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="ptAdjCS('csWind8',-1)">−</button>
+              <span id="pt-csp-w8" class="pt-csp-val">0.012</span>
+              <button class="bsm bgho" onclick="ptAdjCS('csWind8',1)">+</button>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--mo);font-size:.62rem;color:var(--ac);letter-spacing:.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--bd)">1/4 MILE</div>
+          <div style="margin-bottom:10px">
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">DA per 500ft</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="ptAdjCS('csDA4',-1)">−</button>
+              <span id="pt-csp-da4" class="pt-csp-val">0.026</span>
+              <button class="bsm bgho" onclick="ptAdjCS('csDA4',1)">+</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Wind per 4.5mph</div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="bsm bgho" onclick="ptAdjCS('csWind4',-1)">−</button>
+              <span id="pt-csp-w4" class="pt-csp-val">0.008</span>
+              <button class="bsm bgho" onclick="ptAdjCS('csWind4',1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared run comparison -->
+    <div class="tb-section" style="margin-top:18px">Run Comparison — Live Recalculation</div>
     <div class="bench-filters">
-      <select id="tb-ftrack" onchange="benchPage_=0;renderBenchTable()" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px"><option value="all">All Tracks</option></select>
-      <select id="tb-fdist" onchange="benchPage_=0;renderBenchTable()" style="width:auto;font-family:var(--di);font-size:.76rem;padding:4px 8px">
+      <select id="tb-ftrack" onchange="benchPage_=0;renderBenchTable()"><option value="all">All Tracks</option></select>
+      <select id="tb-fdist" onchange="benchPage_=0;renderBenchTable()">
         <option value="all">All Distances</option>
         <option value="eighth">1/8 Mile</option>
         <option value="quarter">1/4 Mile</option>
       </select>
       <span style="font-family:var(--mo);font-size:.65rem;color:var(--mu)" id="tb-showing"></span>
     </div>
-    <div class="bench-summary">
-      <div class="bsm-card"><div class="bsm-val" id="bs-mae-orig">—</div><div class="bsm-lbl">Orig MAE</div></div>
-      <div class="bsm-card"><div class="bsm-val" id="bs-mae-new">—</div><div class="bsm-lbl">New MAE</div></div>
-      <div class="bsm-card"><div class="bsm-val" id="bs-delta" style="color:var(--mu)">—</div><div class="bsm-lbl">Improvement</div></div>
-    </div>
+    <div class="pt-avg-err" id="pt-avg-err">—</div>
     <div class="pg-row">
       <button class="pg-btn" id="pg-prev" onclick="benchPage(-1)">◀</button>
       <span id="pg-info">—</span>
@@ -3023,17 +3132,17 @@ function suggestScales(){
     <div class="bench-table-wrap">
       <table class="bench-table">
         <thead><tr>
-          <th>Date</th><th>Track</th><th>Dist</th><th>DA</th><th>Wind</th><th>Actual ET</th>
-          <th>Orig Pred</th><th>Orig Δ</th><th>New Pred</th><th>New Δ</th>
+          <th>Date</th><th>Track</th><th>Dist</th><th>DA</th><th>Wind</th>
+          <th>Actual ET</th><th>Current Pred</th><th>Adjusted Pred</th>
         </tr></thead>
         <tbody id="bench-tbody"></tbody>
       </table>
     </div>
     <div class="bench-actions">
-      <button class="btn btn-p" style="width:auto;margin-top:0" onclick="saveAlgoScales()">Save to Algorithm</button>
-      <button class="bsm bsec" onclick="resetSliders()">Reset Sliders</button>
-      <button class="bsm bgho" onclick="suggestScales()">⚡ Suggest Scales</button>
-      <span id="tb-save-note" style="font-family:var(--mo);font-size:.65rem;color:var(--ok);display:none">✓ Saved.</span>
+      <button class="btn btn-p" style="width:auto;margin-top:0" onclick="savePTSettings()">Save Settings</button>
+      <button class="bsm bsec" onclick="resetPT()">Reset</button>
+      <button class="bsm bgho" id="pt-suggest-btn" onclick="suggestIDW()">⚡ Suggest</button>
+      <span id="pt-save-note" style="font-family:var(--mo);font-size:.65rem;color:var(--ok);display:none">✓ Saved.</span>
     </div>
 
   </div>
