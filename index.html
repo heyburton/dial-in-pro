@@ -2616,6 +2616,10 @@ try{
   }
 }catch(e){}
 refreshDrops();renderSS();renderTable();renderPredictStats();updatePoolNote();initPredMethodUI();initTableScroll();renderCarSelector();
+// Reload algoSettings now that activeCarId is properly set (fixes TDZ init bug)
+algoSettings=lAlgo();
+renderAlgoTab();
+initPredMethodUI();
 // Backfill predictions for all existing runs (runs without stored predictions)
 setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},50);
 
