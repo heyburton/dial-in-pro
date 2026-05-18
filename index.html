@@ -183,13 +183,8 @@ tr:hover td{background:var(--sf2)}
 </style>
 </head>
 <body>
-<header style="padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<header style="padding:10px 20px">
   <img src="Dial-In_Pro_Logo.png" alt="Dial-In Pro" style="height:48px;width:auto;display:block">
-  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-    <select id="car-select" onchange="onCarSelect(this.value)" style="background:var(--sf2);color:var(--tx);border:1px solid var(--bd);padding:5px 8px;font-family:var(--mo);font-size:.72rem;border-radius:4px;max-width:160px"></select>
-    <button class="bsm bgho" onclick="openRenameCarModal()" title="Rename this car">✎</button>
-    <button class="bsm bgho" onclick="openAddCarModal()" title="Add a new car">+ Car</button>
-  </div>
 </header>
 
 <!-- Add Car Modal -->
@@ -236,18 +231,20 @@ tr:hover td{background:var(--sf2)}
 <div class="g2">
 <div>
   <div class="card">
-    <div class="ct">// Race Setup</div>
-    <div class="f"><label>Track</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="p-track" onchange="onTrackChange()" style="flex:1"><option value="all">All Tracks (combined)</option></select>
-        <button class="btn-tb" onclick="openTuningBench()">⚙ Prediction Tuning</button>
-      </div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd)">
+      <span style="font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac)">// Race Setup</span>
+      <span id="active-car-label" style="font-family:var(--mo);font-size:.65rem;color:var(--mu)"></span>
     </div>
-    <div class="f"><label>Distance</label>
-      <select id="p-dist">
-        <option value="eighth">1/8 Mile (660')</option>
-        <option value="quarter">1/4 Mile (1,320')</option>
-      </select>
+    <div class="fr">
+      <div class="f"><label>Track</label>
+        <select id="p-track" onchange="onTrackChange()"><option value="all">All Tracks (combined)</option></select>
+      </div>
+      <div class="f"><label>Distance</label>
+        <select id="p-dist">
+          <option value="eighth">1/8 Mile (660')</option>
+          <option value="quarter">1/4 Mile (1,320')</option>
+        </select>
+      </div>
     </div>
     <div class="f"><label>Prediction Method</label>
       <select id="p-method" onchange="savePredMethodFromDropdown(this.value)">
@@ -256,9 +253,13 @@ tr:hover td{background:var(--sf2)}
         <option value="carspecific">Car-Specific Physics</option>
       </select>
     </div>
+    <div style="margin-top:8px">
+      <button class="btn-tb" style="width:100%;text-align:center" onclick="openTuningBench()">⚙ Prediction Tuning</button>
+    </div>
   </div>
   <div class="card">
     <div class="ct">// Conditions</div>
+    <div style="font-family:var(--mo);font-size:.62rem;color:var(--mu);margin-top:-8px;margin-bottom:12px">Fields auto-populate when weather is fetched — or enter manually</div>
     <div class="wxb">
       <span class="wxs" id="wxs">Select a track to fetch live weather</span>
       <button class="wxr" onclick="doFetch(true)">&#8635; Refresh</button>
@@ -266,41 +267,34 @@ tr:hover td{background:var(--sf2)}
     <div id="wx-timer-bar" style="display:none;font-family:var(--mo);font-size:.58rem;color:var(--mu);padding:3px 10px 4px;letter-spacing:.05em">
       Next update in <span id="wx-countdown">—</span>
     </div>
-    <div class="f">
-      <label>Density Altitude (ft) <span style="color:var(--ac);font-size:.6rem">&#9679; AUTO-CALCULATED — or enter manually</span></label>
-      <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')">
+    <!-- DA — full width, enlarged -->
+    <div class="f" style="margin-bottom:14px">
+      <label style="font-size:.78rem;letter-spacing:.12em">Density Altitude <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(ft)</span></label>
+      <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')" style="font-size:1.1rem;padding:10px 12px">
     </div>
+    <!-- Wind Speed + Wind Direction -->
     <div class="fr">
-      <div class="f"><label>Temp (°F)</label><input type="number" id="p-temp" placeholder="—" oninput="ov('p-temp')"></div>
-      <div class="f"><label>Humidity (%)</label><input type="number" id="p-hum" placeholder="—" oninput="ov('p-hum')"></div>
-    </div>
-    <div class="fr">
-      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="p-baro" placeholder="—"></div>
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')"></div>
-    </div>
-    <div class="fr">
       <div class="f"><label>Wind Direction</label>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:6px">
           <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0">
-                <option value="">—</option>
-                <option value="calm">Calm</option>
-                <option value="headwind">↓ Headwind</option>
-                <option value="tailwind">↑ Tailwind</option>
-                <option value="crosswind">← → Crosswind (side unknown)</option>
-                <option value="crosswind-left">← Left crosswind</option>
-                <option value="crosswind-right">→ Right crosswind</option>
-                <option value="front-left">↙ Front-left quarter</option>
-                <option value="front-right">↘ Front-right</option>
-                <option value="rear-left">↖ Rear-left</option>
-                <option value="rear-right">↗ Rear-right</option>
-              </select>
+            <option value="">—</option>
+            <option value="calm">Calm</option>
+            <option value="headwind">↓ Headwind</option>
+            <option value="tailwind">↑ Tailwind</option>
+            <option value="crosswind">← → Crosswind</option>
+            <option value="crosswind-left">← Left crosswind</option>
+            <option value="crosswind-right">→ Right crosswind</option>
+            <option value="front-left">↙ Front-left quarter</option>
+            <option value="front-right">↘ Front-right</option>
+            <option value="rear-left">↖ Rear-left</option>
+            <option value="rear-right">↗ Rear-right</option>
+          </select>
           <div id="wind-arrow-wrap" style="display:none;flex-shrink:0" title="">
-            <svg id="wind-arrow-svg" width="36" height="36" viewBox="0 0 44 44">
+            <svg id="wind-arrow-svg" width="28" height="28" viewBox="0 0 44 44">
               <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#333" stroke-width="1"/>
-              <!-- Car icon facing up -->
               <rect x="17" y="14" width="10" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.2"/>
               <rect x="19" y="12" width="6" height="5" rx="1" fill="none" stroke="#555" stroke-width="1"/>
-              <!-- Wind arrow — direction relative to car, not compass -->
               <g id="wind-arrow-g">
                 <polygon points="22,4 18,14 22,11 26,14" fill="#fef8d5"/>
                 <line x1="22" y1="11" x2="22" y2="22" stroke="#fef8d5" stroke-width="2"/>
@@ -309,26 +303,27 @@ tr:hover td{background:var(--sf2)}
           </div>
         </div>
       </div>
-      <div class="f"><label>Sun on Track</label>
-        <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
-      </div>
     </div>
-    <div class="g3" id="p-derived-row" style="display:none">
-      <div class="f">
-        <label>Water Grains <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(gr/lb)</span>
-          <span id="p-grains-flag" style="font-family:var(--mo);font-size:.6rem;display:none;margin-left:6px"></span>
-        </label>
-        <input type="number" id="p-grains" readonly>
-      </div>
-      <div class="f">
-        <label>Rel. Air Density <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(%)</span></label>
-        <input type="number" id="p-rad" readonly>
-      </div>
+    <!-- Temp + Humidity -->
+    <div class="fr">
+      <div class="f"><label>Temp (°F)</label><input type="number" id="p-temp" placeholder="—" oninput="ov('p-temp')"></div>
+      <div class="f"><label>Humidity (%)</label><input type="number" id="p-hum" placeholder="—" oninput="ov('p-hum')"></div>
+    </div>
+    <!-- Barometer + Vapor Pressure -->
+    <div class="fr">
+      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="p-baro" placeholder="—"></div>
       <div class="f">
         <label>Vapor Pressure <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(inHg)</span></label>
-        <input type="number" id="p-vp" readonly>
+        <input type="number" id="p-vp" readonly placeholder="—">
       </div>
     </div>
+    <!-- Sun on Track — full width -->
+    <div class="f">
+      <label>Sun on Track</label>
+      <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
+    </div>
+    <!-- Hidden grains field for prediction bias calculation -->
+    <input type="hidden" id="p-grains" value="0">
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
   </div>
   </div>
@@ -544,6 +539,17 @@ tr:hover td{background:var(--sf2)}
 <!-- SETTINGS -->
 <div id="pg-settings" class="page">
 <div style="max-width:680px;margin:0 auto">
+
+  <!-- CAR MANAGEMENT -->
+  <div class="card">
+    <div class="ct">// Car Management</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <select id="car-select" onchange="onCarSelect(this.value)" style="background:var(--sf2);color:var(--tx);border:1px solid var(--bd);padding:6px 10px;font-family:var(--mo);font-size:.75rem;border-radius:4px;flex:1"></select>
+      <button class="bsm bgho" onclick="openRenameCarModal()">✎ Rename</button>
+      <button class="bsm bgho" onclick="openAddCarModal()">+ Add Car</button>
+    </div>
+    <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);line-height:1.6">Each car has its own run log and algorithm settings. Tracks are shared. Switch cars here before logging runs or generating predictions.</div>
+  </div>
 
   <!-- PREDICTION METHOD -->
   <div class="card">
@@ -1147,21 +1153,17 @@ function updateDerivedWeather(){
   const tf=parseFloat(document.getElementById('p-temp').value);
   const rh=parseFloat(document.getElementById('p-hum').value);
   const baro=parseFloat(document.getElementById('p-baro').value);
-  if(isNaN(tf)||isNaN(rh)||isNaN(baro)){document.getElementById('p-derived-row').style.display='none';return;}
-  const phpa=baro/0.02953;
+  if(isNaN(tf)||isNaN(rh)||isNaN(baro))return;
   const grains=calcGrains(tf,rh,baro);
-  const rad=calcRAD(tf,rh,phpa);
   const tc2=(tf-32)*5/9;
   const es2=6.1078*Math.pow(10,(7.5*tc2)/(237.3+tc2));
   const vp=(rh/100)*es2*0.02953;
-  document.getElementById('p-grains').value=grains.toFixed(1);
-  document.getElementById('p-rad').value=rad.toFixed(1);
-  document.getElementById('p-vp').value=vp.toFixed(3);
-  document.getElementById('p-derived-row').style.display='grid';
-  const flag=document.getElementById('p-grains-flag');
-  if(grains>100){flag.textContent='⚠ HIGH';flag.style.color='var(--er)';flag.style.display='inline';}
-  else if(grains>80){flag.textContent='↑ ELEVATED';flag.style.color='var(--ac2)';flag.style.display='inline';}
-  else{flag.style.display='none';}
+  // Store grains in hidden field for prediction bias calculation
+  const gEl=document.getElementById('p-grains');
+  if(gEl)gEl.value=grains.toFixed(1);
+  // Display VP inline
+  const vpEl=document.getElementById('p-vp');
+  if(vpEl)vpEl.value=vp.toFixed(3);
 }
 function bearingToWind(wd,th){
   let d=((wd-th)+360)%360;if(d>180)d=360-d;
@@ -2507,6 +2509,10 @@ function renderCarSelector(){
   if(!sel)return;
   const cars=lCars()||[];
   sel.innerHTML=cars.map(c=>`<option value="${c.id}"${c.id===activeCarId?' selected':''}>${c.name}</option>`).join('');
+  // Update the small label on ET Predict page
+  const lbl=document.getElementById('active-car-label');
+  const car=cars.find(c=>c.id===activeCarId);
+  if(lbl&&car)lbl.textContent=car.name;
 }
 function onCarSelect(carId){
   if(carId===activeCarId)return;
