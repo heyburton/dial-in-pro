@@ -253,9 +253,6 @@ tr:hover td{background:var(--sf2)}
         <option value="carspecific">Car-Specific Physics</option>
       </select>
     </div>
-    <div style="margin-top:8px">
-      <button class="btn-tb" style="width:100%;text-align:center" onclick="openTuningBench()">⚙ Prediction Tuning</button>
-    </div>
   </div>
   <div class="card">
     <div class="ct">// Conditions</div>
@@ -272,36 +269,26 @@ tr:hover td{background:var(--sf2)}
       <label style="font-size:.78rem;letter-spacing:.12em">Density Altitude <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(ft)</span></label>
       <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')" style="font-size:1.1rem;padding:10px 12px">
     </div>
-    <!-- Wind Speed + Wind Direction -->
-    <div class="fr">
-      <div class="f"><label>Wind Speed (mph)</label><input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')"></div>
-      <div class="f"><label>Wind Direction</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <select id="p-wd" onchange="updateWindArrow()" style="flex:1;min-width:0">
-            <option value="">—</option>
-            <option value="calm">Calm</option>
-            <option value="headwind">↓ Headwind</option>
-            <option value="tailwind">↑ Tailwind</option>
-            <option value="crosswind">← → Crosswind</option>
-            <option value="crosswind-left">← Left crosswind</option>
-            <option value="crosswind-right">→ Right crosswind</option>
-            <option value="front-left">↙ Front-left quarter</option>
-            <option value="front-right">↘ Front-right</option>
-            <option value="rear-left">↖ Rear-left</option>
-            <option value="rear-right">↗ Rear-right</option>
-          </select>
-          <div id="wind-arrow-wrap" style="display:none;flex-shrink:0" title="">
-            <svg id="wind-arrow-svg" width="28" height="28" viewBox="0 0 44 44">
-              <circle cx="22" cy="22" r="20" fill="rgba(255,255,255,0.04)" stroke="#333" stroke-width="1"/>
-              <rect x="17" y="14" width="10" height="16" rx="2" fill="none" stroke="#555" stroke-width="1.2"/>
-              <rect x="19" y="12" width="6" height="5" rx="1" fill="none" stroke="#555" stroke-width="1"/>
-              <g id="wind-arrow-g">
-                <polygon points="22,4 18,14 22,11 26,14" fill="#fef8d5"/>
-                <line x1="22" y1="11" x2="22" y2="22" stroke="#fef8d5" stroke-width="2"/>
-              </g>
-            </svg>
-          </div>
-        </div>
+    <!-- Wind Speed + Wind Direction — enlarged like DA -->
+    <div class="fr" style="margin-bottom:14px">
+      <div class="f">
+        <label style="font-size:.78rem;letter-spacing:.12em">Wind Speed <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(mph)</span></label>
+        <input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')" style="font-size:1.1rem;padding:10px 12px">
+      </div>
+      <div class="f">
+        <label style="font-size:.78rem;letter-spacing:.12em">Wind Direction</label>
+        <select id="p-wd" onchange="updateWindArrow()" style="font-size:1rem;padding:10px 8px">
+          <option value="">—</option>
+          <option value="calm">Calm</option>
+          <option value="headwind">↓ Headwind</option>
+          <option value="tailwind">↑ Tailwind</option>
+          <option value="crosswind-left">← Left crosswind</option>
+          <option value="crosswind-right">→ Right crosswind</option>
+          <option value="front-left">↙ Front-left quarter</option>
+          <option value="front-right">↘ Front-right quarter</option>
+          <option value="rear-left">↖ Rear-left quarter</option>
+          <option value="rear-right">↗ Rear-right quarter</option>
+        </select>
       </div>
     </div>
     <!-- Temp + Humidity -->
@@ -324,6 +311,10 @@ tr:hover td{background:var(--sf2)}
     </div>
     <!-- Hidden grains field for prediction bias calculation -->
     <input type="hidden" id="p-grains" value="0">
+    <!-- Prediction Tuning button — above Generate Prediction -->
+    <div style="margin-bottom:10px">
+      <button class="btn-tb" style="width:100%;text-align:center" onclick="openTuningBench()">⚙ Prediction Tuning</button>
+    </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
   </div>
   </div>
@@ -401,18 +392,17 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
       <div class="f"><label>Wind Direction</label>
         <select id="l-wd">
-              <option value="">— Unknown —</option>
-              <option value="calm">Calm / No wind</option>
-              <option value="headwind">↓ Headwind — straight into front</option>
-              <option value="tailwind">↑ Tailwind — straight from behind</option>
-              <option value="crosswind">← → Crosswind (side unknown)</option>
-              <option value="crosswind-left">← Left crosswind</option>
-              <option value="crosswind-right">→ Right crosswind</option>
-              <option value="front-left">↙ Front-left quarter</option>
-              <option value="front-right">↘ Front-right quarter</option>
-              <option value="rear-left">↖ Rear-left quarter</option>
-              <option value="rear-right">↗ Rear-right quarter</option>
-            </select>
+          <option value="">— Unknown —</option>
+          <option value="calm">Calm / No wind</option>
+          <option value="headwind">↓ Headwind — straight into front</option>
+          <option value="tailwind">↑ Tailwind — straight from behind</option>
+          <option value="crosswind-left">← Left crosswind</option>
+          <option value="crosswind-right">→ Right crosswind</option>
+          <option value="front-left">↙ Front-left quarter</option>
+          <option value="front-right">↘ Front-right quarter</option>
+          <option value="rear-left">↖ Rear-left quarter</option>
+          <option value="rear-right">↗ Rear-right quarter</option>
+        </select>
       </div>
       <div class="f"><label>Sun</label>
         <select id="l-sun"><option value="full">Full Sun</option><option value="partial">Partial</option><option value="shade">Shade/Night</option></select>
@@ -1166,38 +1156,13 @@ function updateDerivedWeather(){
   if(vpEl)vpEl.value=vp.toFixed(3);
 }
 function bearingToWind(wd,th){
-  let d=((wd-th)+360)%360;if(d>180)d=360-d;
-  if(d<=45)return'headwind';if(d>=135)return'tailwind';return'crosswind';
+  let d=((wd-th)+360)%360;
+  if(d<=45||d>=315)return'headwind';
+  if(d>=135&&d<=225)return'tailwind';
+  if(d>45&&d<135)return'crosswind-right'; // wind from right side of car
+  return'crosswind-left'; // wind from left side of car (225-315)
 }
-function updateWindArrow(){
-  const wd=document.getElementById('p-wd').value;
-  const wrap=document.getElementById('wind-arrow-wrap');
-  if(!wd||wd===''){wrap.style.display='none';return;}
-  wrap.style.display='inline-block';
-  // Car always faces UP on screen. Arrow shows where wind comes FROM.
-  // Tailwind: wind from behind → arrow points UP (0°)
-  // Headwind: wind from ahead → arrow points DOWN (180°)
-  // Crosswind: wind from side → arrow points sideways (90°)
-  const labels={
-    headwind:'Headwind — wind from ahead',
-    tailwind:'Tailwind — wind from behind',
-    crosswind:'Crosswind — wind from the side',
-    calm:'Calm — no significant wind'
-  };
-  let arrowDeg=0;
-  if(wd==='headwind') arrowDeg=180;
-  else if(wd==='tailwind') arrowDeg=0;
-  else if(wd==='crosswind') arrowDeg=90;
-  else if(wd==='front-left') arrowDeg=225;
-  else if(wd==='front-right') arrowDeg=135;
-  else if(wd==='rear-left') arrowDeg=315;
-  else if(wd==='rear-right') arrowDeg=45;
-  else if(wd==='crosswind-left') arrowDeg=270;  // arrow points right = wind from left
-  else if(wd==='crosswind-right') arrowDeg=90;  // arrow points left = wind from right
-  else arrowDeg=0;
-  document.getElementById('wind-arrow-g').setAttribute('transform',`rotate(${arrowDeg},22,22)`);
-  if(wrap)wrap.title=labels[wd]||'';
-}
+function updateWindArrow(){} // graphic removed — direction shown in dropdown text
 function gDist(a,b,c,d){const R=3958.8,dl=(c-a)*Math.PI/180,dn=(d-b)*Math.PI/180,x=Math.sin(dl/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function setWxSt(m,c){const e=document.getElementById('wxs');e.textContent=m;e.className='wxs'+(c?' '+c:'');}
 function ov(id){if(['p-temp','p-hum','p-baro'].includes(id))updateDerivedWeather();}
