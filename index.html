@@ -218,7 +218,35 @@ tr:hover td{background:var(--sf2)}
   </div>
 </div>
 
-<!-- Rename Car Modal -->
+<!-- Import Mode Modal -->
+<div id="import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;overflow-y:auto">
+  <div style="background:var(--sf2);border:1px solid var(--bd);max-width:360px;margin:80px auto;padding:24px;border-radius:4px">
+    <div class="ct">// Import CSV</div>
+    <div style="font-family:var(--mo);font-size:.72rem;color:var(--tx);margin-bottom:16px;line-height:1.7">How should this import be handled?</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+      <button class="btn btn-p" style="margin-top:0" onclick="confirmImport('replace')">
+        Replace — overwrite all current runs
+      </button>
+      <button class="bsm bsec" style="padding:12px" onclick="confirmImport('add')">
+        Add — append to existing runs
+      </button>
+    </div>
+    <button class="bsm bgho" onclick="closeImportModal()" style="width:100%">Cancel</button>
+  </div>
+</div>
+
+<!-- Import Replace Confirmation Modal -->
+<div id="import-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:910;overflow-y:auto">
+  <div style="background:var(--sf2);border:1px solid var(--er);max-width:360px;margin:80px auto;padding:24px;border-radius:4px">
+    <div class="ct" style="color:var(--er)">// Confirm Replace</div>
+    <div style="font-family:var(--mo);font-size:.72rem;color:var(--tx);margin-bottom:8px;line-height:1.7">This will permanently delete all <span id="import-run-count" style="color:var(--er);font-weight:700"></span> logged runs for this car and replace them with the imported data.</div>
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:20px;line-height:1.6">This cannot be undone. Make sure you have an exported backup before proceeding.</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1;margin-top:0;background:var(--er);color:#fff;border-color:var(--er)" onclick="executeImport('replace')">Yes, Replace All Runs</button>
+      <button class="bsm bgho" onclick="closeImportConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
 <div id="rename-car-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;overflow-y:auto">
   <div style="background:var(--sf2);border:1px solid var(--bd);max-width:360px;margin:80px auto;padding:24px;border-radius:4px">
     <div class="ct">// Rename Car</div>
@@ -321,7 +349,7 @@ tr:hover td{background:var(--sf2)}
     <!-- Sun on Track — full width -->
     <div class="f">
       <label>Sun on Track</label>
-      <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun</option><option value="partial">Partial / Overcast</option><option value="shade">Shade / Night</option></select>
+      <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun — Hot Track</option><option value="partial">Partial Sun — Warm Track</option><option value="shade">Shade / Night — Cool Track</option></select>
     </div>
     <!-- Hidden grains field for prediction bias calculation -->
     <input type="hidden" id="p-grains" value="0">
@@ -419,7 +447,7 @@ tr:hover td{background:var(--sf2)}
         </select>
       </div>
       <div class="f"><label>Sun</label>
-        <select id="l-sun"><option value="full">Full Sun</option><option value="partial">Partial</option><option value="shade">Shade/Night</option></select>
+        <select id="l-sun"><option value="full">Full Sun — Hot Track</option><option value="partial">Partial Sun — Warm Track</option><option value="shade">Shade / Night — Cool Track</option></select>
       </div>
     </div>
     <div class="sl">Performance</div>
@@ -499,7 +527,7 @@ tr:hover td{background:var(--sf2)}
       <select id="fd" onchange="renderTable()"><option value="all">All Distances</option><option value="eighth">1/8 Mile</option><option value="quarter">1/4 Mile</option></select>
       <button class="bsm btn-p" onclick="showLogFormOrPrompt()">+ Log New Run</button>
       <button class="bsm bsec" onclick="expCSV()">Export CSV</button>
-      <button class="bsm bsec" onclick="document.getElementById('cfi').click()">Import CSV</button>
+      <button class="bsm bsec" onclick="openImportModal()">Import CSV</button>
     </div>
   </div>
   <div class="tw">
@@ -2278,8 +2306,43 @@ function dlFile(name,content,type){const a=document.createElement('a');a.href=UR
 function doDragOver(e){e.preventDefault();document.getElementById('iz').classList.add('over');}
 function doDragLeave(){document.getElementById('iz').classList.remove('over');}
 function doDrop(e){e.preventDefault();document.getElementById('iz').classList.remove('over');parseCSV(e.dataTransfer.files[0]);}
-function doFileSel(e){parseCSV(e.target.files[0]);}
-function parseCSV(file){
+let _importMode='add'; // 'add' or 'replace'
+let _pendingImportFile=null;
+
+function openImportModal(){
+  _pendingImportFile=null;
+  document.getElementById('import-modal').style.display='block';
+}
+function closeImportModal(){
+  document.getElementById('import-modal').style.display='none';
+  // Reset file input so same file can be re-selected
+  document.getElementById('cfi').value='';
+}
+function closeImportConfirm(){
+  document.getElementById('import-confirm-modal').style.display='none';
+  closeImportModal();
+}
+function confirmImport(mode){
+  _importMode=mode;
+  document.getElementById('import-modal').style.display='none';
+  if(mode==='replace'){
+    // Show confirmation with run count before proceeding
+    document.getElementById('import-run-count').textContent=runs.length+' run'+(runs.length!==1?'s':'');
+    document.getElementById('import-confirm-modal').style.display='block';
+  }else{
+    // Add mode — go straight to file picker
+    document.getElementById('cfi').click();
+  }
+}
+function executeImport(mode){
+  document.getElementById('import-confirm-modal').style.display='none';
+  document.getElementById('cfi').click();
+}
+function doFileSel(e){
+  _pendingImportFile=e.target.files[0];
+  parseCSV(_pendingImportFile,_importMode);
+}
+function parseCSV(file,mode){
   if(!file)return;
   const rd=new FileReader();
   rd.onload=e=>{
@@ -2319,9 +2382,17 @@ function parseCSV(file){
         notes:row.notes||''
       });
     }
-    runs=[...runs,...nr];sRuns(runs);
-    document.getElementById('imp-out').innerHTML=`<div style="font-family:var(--mo);font-size:.78rem;color:var(--ok);padding:12px;border:1px solid var(--ok);background:rgba(0,255,136,.05);margin-top:12px">✓ Imported ${nr.length} runs${sk.length?` (${sk.length} skipped — missing DA)`:''}. Total: ${runs.length}</div>`;
-    toast(`Imported ${nr.length} runs!`);
+    if(mode==='replace'){
+      runs=nr;
+    }else{
+      runs=[...runs,...nr];
+    }
+    sRuns(runs);
+    renderTable();renderSS();renderAlgoPerf();
+    setTimeout(()=>{backfillPredictions();renderAlgoPerf();renderTable();},100);
+    const modeNote=mode==='replace'?' (replaced all existing runs)':sk.length?` (${sk.length} skipped — missing DA)`:'';
+    toast(`Imported ${nr.length} runs${modeNote}`);
+    document.getElementById('cfi').value='';
   };
   rd.readAsText(file);
 }
