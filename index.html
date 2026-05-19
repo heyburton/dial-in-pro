@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dial-In Pro</title>
+<script>
+// Prevent double-tap zoom while preserving pinch-zoom
+(function(){
+  var last=0;
+  document.addEventListener('touchend',function(e){
+    var now=Date.now();
+    if(now-last<=300&&e.target.tagName!=='INPUT'&&e.target.tagName!=='SELECT'&&e.target.tagName!=='TEXTAREA'){
+      e.preventDefault();
+    }
+    last=now;
+  },false);
+})();
+</script>
 <link rel="apple-touch-icon" href="icon-512.png">
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -158,7 +171,7 @@ tr:hover td{background:var(--sf2)}
 .conf-bar-wrap{height:5px;background:var(--bd);margin:7px 0;position:relative}
 .conf-bar{height:100%;transition:width .4s}
 .conf-bar.high{background:var(--ok)}.conf-bar.med{background:var(--ac)}.conf-bar.low{background:var(--er)}
-.conf-note{font-family:var(--mo);font-size:.6rem;color:var(--mu);line-height:1.5;margin-top:5px}
+.conf-note{font-family:var(--mo);font-size:.6rem;color:var(--mu);line-height:1.5;margin-top:5px;white-space:pre-line}
 
 /* Wind arrow indicator */
 .wind-arrow-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;padding:6px 10px;background:var(--sf2);border:1px solid var(--bd)}
@@ -183,8 +196,9 @@ tr:hover td{background:var(--sf2)}
 </style>
 </head>
 <body>
-<header style="padding:10px 20px">
+<header style="padding:10px 20px;display:flex;align-items:center;gap:10px">
   <img src="Dial-In_Pro_Logo.png" alt="Dial-In Pro" style="height:48px;width:auto;display:block">
+  <span style="font-family:var(--mo);font-size:.6rem;font-weight:700;letter-spacing:.12em;color:var(--bg);background:var(--mu);padding:3px 7px;border-radius:3px;align-self:center">BETA</span>
 </header>
 
 <!-- Add Car Modal -->
@@ -266,18 +280,18 @@ tr:hover td{background:var(--sf2)}
     </div>
     <!-- DA — full width, enlarged -->
     <div class="f" style="margin-bottom:14px">
-      <label style="font-size:.78rem;letter-spacing:.12em">Density Altitude <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(ft)</span></label>
-      <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')" style="font-size:1.1rem;padding:10px 12px">
+      <label style="font-size:.78rem;letter-spacing:.12em;color:var(--tx)">Density Altitude <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(ft)</span></label>
+      <input type="number" id="p-da" placeholder="Fetching… or enter manually" oninput="ov('p-da')" style="font-size:1.15rem;padding:10px 12px;font-weight:700">
     </div>
     <!-- Wind Speed + Wind Direction — enlarged like DA -->
     <div class="fr" style="margin-bottom:14px">
       <div class="f">
-        <label style="font-size:.78rem;letter-spacing:.12em">Wind Speed <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(mph)</span></label>
-        <input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')" style="font-size:1.1rem;padding:10px 12px">
+        <label style="font-size:.78rem;letter-spacing:.12em;color:var(--tx)">Wind Speed <span style="font-family:var(--mo);font-weight:400;font-size:.6rem;text-transform:none;letter-spacing:0">(mph)</span></label>
+        <input type="number" id="p-ws" placeholder="—" oninput="ov('p-ws')" style="font-size:1.15rem;padding:10px 12px;font-weight:700">
       </div>
       <div class="f">
-        <label style="font-size:.78rem;letter-spacing:.12em">Wind Direction</label>
-        <select id="p-wd" onchange="updateWindArrow()" style="font-size:1rem;padding:10px 8px">
+        <label style="font-size:.78rem;letter-spacing:.12em;color:var(--tx)">Wind Direction</label>
+        <select id="p-wd" onchange="updateWindArrow()" style="font-size:1rem;padding:10px 8px;font-weight:600">
           <option value="">—</option>
           <option value="calm">Calm</option>
           <option value="headwind">↓ Headwind</option>
@@ -541,46 +555,10 @@ tr:hover td{background:var(--sf2)}
     <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);line-height:1.6">Each car has its own run log and algorithm settings. Tracks are shared. Switch cars here before logging runs or generating predictions.</div>
   </div>
 
-  <!-- PREDICTION METHOD -->
-  <div class="card">
-    <div class="ct">// Prediction Method</div>
-    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:14px">Choose how ET predictions are calculated. Only one method active at a time. Logged runs always shown as reference.</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Similar Runs (IDW)</div>
-        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Finds your most similar logged runs, weighted by conditions. Best with 20+ runs.</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="pm-idw" onchange="setPredMethod('idw',this.checked)"><span class="tgl-s"></span></label>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Patrick Hale Standard Atmosphere</div>
-        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Physics-first method used by Dr. Dial-In. Good for new tracks or fewer logged runs.</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="pm-hale" onchange="setPredMethod('hale',this.checked)"><span class="tgl-s"></span></label>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Car-Specific Physics</div>
-        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Anchors to recent runs, then adjusts for DA and wind delta. Best after 20+ runs.</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="pm-carspecific" onchange="setPredMethod('carspecific',this.checked)"><span class="tgl-s"></span></label>
-    </div>
-    <!-- Car-Specific Physics coefficient tuning moved to Prediction Tuning (⚙ button on ET Predict tab) -->
-  </div>
-
   <!-- PREDICTION ALGORITHM -->
   <div class="card">
     <div class="ct">// Prediction Algorithm</div>
-
-    <!-- Tuning Mode toggles -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
-      <div>
-        <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Auto-Tune</div>
-        <div style="font-family:var(--mo);font-size:.63rem;color:var(--mu);margin-top:2px">Automatically adjusts values after each All Out run</div>
-      </div>
-      <label class="tgl"><input type="checkbox" id="algo-auto" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
-    </div>
+    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:14px">These coefficients are used by the Patrick Hale weather correction model. Each value represents how much that variable must change to affect ET by .01 seconds:</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bd)">
       <div>
         <div style="font-weight:700;font-size:.9rem;letter-spacing:.05em">Show Suggestions</div>
@@ -588,9 +566,6 @@ tr:hover td{background:var(--sf2)}
       </div>
       <label class="tgl"><input type="checkbox" id="algo-suggest" onchange="saveAlgoSettings()"><span class="tgl-s"></span></label>
     </div>
-
-    <!-- Algorithm values -->
-    <div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);margin-bottom:12px">Each value represents how much that variable must change to affect ET by .01 seconds:</div>
     <div class="algo-row">
       <span class="algo-lbl">Every</span>
       <input type="number" class="algo-inp" id="algo-temp" step="0.1" min="0.1">
@@ -642,22 +617,8 @@ tr:hover td{background:var(--sf2)}
       <div><span style="color:var(--ac)">Humidity ↑</span> → more water vapor → air less dense → ET <span style="color:var(--er)">↑ increases</span></div>
     </div>
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);font-family:var(--mo);font-size:.65rem;color:var(--mu);line-height:1.7">
-      Default values are based on empirical data from bracket racing at Northern California tracks. Your car may respond differently — use Auto-Tune or adjust manually.
+      Default values are based on empirical data from bracket racing at Northern California tracks. Your car may respond differently — adjust manually and use the Prediction Tuning bench to validate.
     </div>
-  </div>
-
-  <!-- UPLOAD / IMPORT -->
-  <div class="card">
-    <div class="ct">// Upload Run Data</div>
-    <div class="ib">Import runs from a CSV file. Download the template to see the required column format. <span style="color:var(--ac)">The template includes two example rows — delete them before adding your own data.</span></div>
-    <button class="tl" onclick="dlTpl()">&#8595; Download CSV Template</button>
-    <div style="height:12px"></div>
-    <div class="iz" id="iz" onclick="document.getElementById('cfi').click()" ondrop="doDrop(event)" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)">
-      <p><strong>Click to browse</strong> or drag &amp; drop CSV here</p>
-      <p style="margin-top:4px;font-size:.7rem">Accepted: .csv only</p>
-    </div>
-    <input type="file" id="cfi" accept=".csv" onchange="doFileSel(event)">
-    <div id="imp-out"></div>
   </div>
 
   <!-- APP NOTES -->
@@ -783,7 +744,6 @@ function renderAlgoTab(){
   document.getElementById('algo-baro').value=algoSettings.baro;
   document.getElementById('algo-vp').value=algoSettings.vp;
   document.getElementById('algo-hum').value=algoSettings.hum;
-  document.getElementById('algo-auto').checked=algoSettings.autoTune;
   document.getElementById('algo-suggest').checked=algoSettings.showSuggestions;
   renderAlgoInsights();
 }
@@ -827,7 +787,6 @@ function saveAlgo(){
 }
 
 function saveAlgoSettings(){
-  algoSettings.autoTune=document.getElementById('algo-auto').checked;
   algoSettings.showSuggestions=document.getElementById('algo-suggest').checked;
   sAlgo(algoSettings);
 }
@@ -924,26 +883,8 @@ function applySuggestion(field, value){
   toast(`${field} updated to ${value} ✓`);
 }
 
-function runAutoTune(newRun){
-  if(!algoSettings.autoTune)return;
-  if(newRun.quality!=='allout'&&newRun.quality!==undefined)return;
+function runAutoTune(newRun){return;} // Auto-Tune redesign pending
 
-  const pred=getPredictedETForRun(newRun);
-  if(!pred)return;
-
-  const actual=newRun.calcET||newRun.ft1320||newRun.ft660;
-  if(!actual)return;
-
-  const error=parseFloat(pred)-actual;
-  if(Math.abs(error)<0.005)return; // close enough, no adjustment needed
-
-  // Nudge temperature coefficient slightly in the right direction
-  // Small adjustment — 5% nudge toward correcting the bias
-  const direction=error>0?0.95:1.05;
-  algoSettings.temp=Math.round(algoSettings.temp*direction*10)/10;
-  algoSettings.temp=Math.max(0.5,Math.min(10,algoSettings.temp));
-  sAlgo(algoSettings);
-}
 // ════════════════════════════════════════════════════════════════
 // CAR MANAGEMENT — storage and migration
 // ════════════════════════════════════════════════════════════════
@@ -1521,6 +1462,7 @@ function predict(){
   // Store pool+weights globally for top runs display
   window._lastPool=pool;window._lastWts=wts;window._lastTw=tw;window._lastPf=pf;
   document.getElementById('top-runs-btn').style.display='';
+  document.getElementById('top-runs-btn').textContent='▶ Show Top Reference Runs';
   document.getElementById('top-runs-panel').style.display='none';
   document.getElementById('r-dist').textContent=dist==='eighth'?'1/8 MILE — 660 FT':'1/4 MILE — 1,320 FT';
   const corrSign=algoCorrection>=0?'+':'';
@@ -1649,14 +1591,14 @@ function predict(){
       const _calmNote=ws<=2?' Calm wind — higher variance.':'';
       const _grainsNote=_grains>100?` ⚠ High grains (${_grains.toFixed(0)}) — slow bias applied.`:_grains>80?` Grains elevated (${_grains.toFixed(0)}).`:'';
       const _nOut=_wStd0>0?_poolETs.filter(e=>Math.abs(e-_wMean)>2*_wStd0).length:0;
-      const _outNote=_nOut>0?` ${_nOut} run${_nOut>1?'s':''} far from average.`:'';
+      const _outNote=_nOut>0?`\n${_nOut} run${_nOut>1?'s':''} far from average.`:'';
       document.getElementById('conf-range').textContent=`${_lo} – ${_hi}`;
       document.getElementById('conf-dial').textContent=_sugDial;
       const _bar=document.getElementById('conf-bar');
       _bar.style.width=_pct+'%';_bar.className='conf-bar '+_lvl;
       const _daGap=window._lastDAGap||0;
       const _extNote=_daGap>800?` ⚠ Extrapolated ${Math.round(_daGap)}ft beyond data.`:_daGap>300?` Beyond data by ${Math.round(_daGap)}ft.`:'';
-      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_outNote}${_extNote}${_calmNote}${_grainsNote}`;
+      document.getElementById('conf-note').textContent=`${_lvlTxt[_lvl]} · ${Math.round(_effN)} ref runs · ±${_range.toFixed(3)}${_extNote}${_calmNote}${_grainsNote}${_outNote}`;
       document.getElementById('conf-block').style.display='block';
     }
   }catch(_e){console.error('Conf error:',_e);document.getElementById('conf-block').style.display='none';}
@@ -2707,31 +2649,46 @@ function suggestIDW(){
   if(fd==='eighth')pool=pool.filter(r=>r.distance==='eighth');
   else if(fd==='quarter')pool=pool.filter(r=>r.distance==='quarter');
   if(pool.length<10){toast('Need 10+ qualifying runs to suggest settings.',true);return;}
-  const poolA=pool.map(r=>({...r,_et:r.calcET!=null&&r.distance===r.distance?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
-  let bestMAE=Infinity,bestDA=ptIDWWork.idwDA,bestWS=ptIDWWork.idwWS;
-  // DA and WS constrained to Critical/High/Medium only — Low is physically wrong
-  // for these primary variables regardless of what the math says on historical data
-  [1,2,3].forEach(da=>{[1,2,3].forEach(ws=>{
-    const sc={...ptIDWWork,idwDA:da,idwWS:ws};
-    const scales=getIDWScales({...algoSettings,...sc});
+  // Sample up to 80 most recent runs for speed
+  const sample=[...pool].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||'')).slice(0,80);
+  const sampleA=sample.map(r=>({...r,_et:(r.distance===r.distance&&r.calcET!=null&&r.distance===(r.distance==='eighth'?'eighth':'quarter'))?r.calcET:(r.distance==='eighth'?r.ft660:r.ft1320)}));
+  const calcMAE=(imp)=>{
+    const scales=getIDWScales({...algoSettings,...imp});
+    const sc={DA:scales.DA_SCALE,WS:scales.WS_SCALE,TEMP:scales.TEMP_SCALE,HUM:scales.HUM_SCALE,WD:scales.WD_SCALE,SUN:scales.SUN_SCALE};
     const errs=[];
-    poolA.forEach(r=>{
+    sampleA.forEach(r=>{
       try{
         const dist=r.distance;
-        const rp=poolA.filter(x=>x.id!==r.id&&(dist==='eighth'?x.ft660:x.ft1320)!=null);
+        const rp=sampleA.filter(x=>x.id!==r.id&&(dist==='eighth'?x.ft660:x.ft1320)!=null);
         if(rp.length<5)return;
-        const{et}=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,r.windSpeed||0,windDirNum(r.windDir||''),sunNum(r.sun),
-          {DA:scales.DA_SCALE,WS:scales.WS_SCALE,TEMP:scales.TEMP_SCALE,HUM:scales.HUM_SCALE,WD:scales.WD_SCALE,SUN:scales.SUN_SCALE});
+        const{et}=calcIDW(rp,dist,r.da,r.temp||0,r.humidity||0,r.windSpeed||0,windDirNum(r.windDir||''),sunNum(r.sun),sc);
         errs.push(Math.abs(r._et-et));
       }catch{}
     });
-    const m=errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:Infinity;
-    if(m<bestMAE){bestMAE=m;bestDA=da;bestWS=ws;}
-  });});
-  ptIDWWork.idwDA=bestDA;ptIDWWork.idwWS=bestWS;
+    return errs.length?errs.reduce((a,b)=>a+b,0)/errs.length:Infinity;
+  };
+  // Coordinate descent — optimize one variable at a time, repeat until no improvement
+  const keys=['idwDA','idwWS','idwWD','idwTemp','idwHum','idwSun'];
+  // DA and WS constrained to 1-3 (never Low), others 1-4
+  const maxVal={idwDA:3,idwWS:3,idwWD:4,idwTemp:4,idwHum:4,idwSun:4};
+  let best={...ptIDWWork};
+  let bestMAE=calcMAE(best);
+  let improved=true;
+  let passes=0;
+  while(improved&&passes<4){
+    improved=false;passes++;
+    for(const key of keys){
+      for(let v=1;v<=maxVal[key];v++){
+        const candidate={...best,[key]:v};
+        const mae=calcMAE(candidate);
+        if(mae<bestMAE-0.0001){bestMAE=mae;best={...candidate};improved=true;}
+      }
+    }
+  }
+  Object.assign(ptIDWWork,best);
   renderIDWDots();renderBenchTable();
   const labels=['Critical','High','Medium','Low'];
-  toast(`Suggested: DA=${labels[bestDA-1]}, Wind=${labels[bestWS-1]} · Avg Error ${bestMAE.toFixed(4)}`);
+  toast(`Suggested · DA:${labels[best.idwDA-1]} WS:${labels[best.idwWS-1]} WD:${labels[best.idwWD-1]} · Avg Error ${bestMAE.toFixed(4)}`);
 }
 // backward compat stubs (called from switchCar etc)
 function renderTBAlgoBtns(){}
@@ -2975,7 +2932,10 @@ function renderBenchTable(){
     <!-- IDW Panel -->
     <div id="pt-panel-idw">
       <div class="ib" style="margin-bottom:12px">Controls how much each weather variable influences which past runs IDW uses as reference. More impact = the model requires a closer match on that variable.</div>
-      <div class="imp-scale-hint"><span>← More Impact</span><span>Less Impact →</span></div>
+      <div style="display:flex;justify-content:flex-end;gap:60px;margin-bottom:6px;padding-right:2px;font-family:var(--mo);font-size:.55rem;color:var(--mu);text-align:center">
+        <div>More<br>Impact</div>
+        <div style="margin-right:0">Less<br>Impact</div>
+      </div>
       <div class="imp-row">
         <span class="imp-lbl">Density Altitude</span>
         <div class="imp-dots" id="imp-dots-DA">
@@ -3036,7 +2996,7 @@ function renderBenchTable(){
     <div id="pt-panel-csp" style="display:none">
       <div class="ib" style="margin-bottom:14px">Defines how much your car's ET changes per unit of DA and wind delta from the anchor run. Adjust until the Adjusted predictions track closely with Actual ET below.</div>
       <div style="margin-bottom:12px">
-        <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs <span style="font-weight:400">(2–5 most recent runs used as reference)</span></div>
+        <div style="font-family:var(--mo);font-size:.6rem;color:var(--mu);margin-bottom:4px">Anchor Runs <span style="font-weight:400">(2–5 most recent runs used as reference, weighted most heavily toward the most recent)</span></div>
         <div style="display:flex;align-items:center;gap:6px">
           <button class="bsm bgho" onclick="ptAdjCS('csAnchor',-1)">−</button>
           <span id="pt-csp-anc" class="pt-csp-val">3</span>
