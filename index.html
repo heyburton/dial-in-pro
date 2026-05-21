@@ -527,7 +527,8 @@ tr:hover td{background:var(--sf2)}
       <select id="fd" onchange="renderTable()"><option value="all">All Distances</option><option value="eighth">1/8 Mile</option><option value="quarter">1/4 Mile</option></select>
       <button class="bsm btn-p" onclick="showLogFormOrPrompt()">+ Log New Run</button>
       <button class="bsm bsec" onclick="expCSV()">Export CSV</button>
-      <button class="bsm bsec" onclick="openImportModal()">Import CSV</button>
+      <label for="cfi" class="bsm bsec" style="cursor:pointer;display:inline-flex;align-items:center">Import CSV</label>
+      <input type="file" id="cfi" accept=".csv" onchange="doFileSel(event)" style="display:none">
     </div>
   </div>
   <div class="tw">
@@ -2310,9 +2311,8 @@ let _importMode='add';
 let _pendingImportFile=null;
 
 function openImportModal(){
-  // Go straight to file picker — ask Replace/Add after file is chosen
+  // Called only programmatically if needed — file picker opened via label
   _pendingImportFile=null;
-  document.getElementById('cfi').click();
 }
 function closeImportModal(){
   document.getElementById('import-modal').style.display='none';
