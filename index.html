@@ -324,12 +324,12 @@ tr:hover td{background:var(--sf2)}
           <option value="calm">Calm</option>
           <option value="headwind">↓ Headwind</option>
           <option value="tailwind">↑ Tailwind</option>
-          <option value="crosswind-left">← Left crosswind</option>
-          <option value="crosswind-right">→ Right crosswind</option>
-          <option value="front-left">↙ Front-left quarter</option>
-          <option value="front-right">↘ Front-right quarter</option>
-          <option value="rear-left">↖ Rear-left quarter</option>
-          <option value="rear-right">↗ Rear-right quarter</option>
+          <option value="crosswind-left">→ Left crosswind</option>
+          <option value="crosswind-right">← Right crosswind</option>
+          <option value="front-left">↘ Front-left quarter</option>
+          <option value="front-right">↙ Front-right quarter</option>
+          <option value="rear-left">↗ Rear-left quarter</option>
+          <option value="rear-right">↖ Rear-right quarter</option>
         </select>
       </div>
     </div>
@@ -438,12 +438,12 @@ tr:hover td{background:var(--sf2)}
           <option value="calm">Calm / No wind</option>
           <option value="headwind">↓ Headwind — straight into front</option>
           <option value="tailwind">↑ Tailwind — straight from behind</option>
-          <option value="crosswind-left">← Left crosswind</option>
-          <option value="crosswind-right">→ Right crosswind</option>
-          <option value="front-left">↙ Front-left quarter</option>
-          <option value="front-right">↘ Front-right quarter</option>
-          <option value="rear-left">↖ Rear-left quarter</option>
-          <option value="rear-right">↗ Rear-right quarter</option>
+          <option value="crosswind-left">→ Left crosswind</option>
+          <option value="crosswind-right">← Right crosswind</option>
+          <option value="front-left">↘ Front-left quarter</option>
+          <option value="front-right">↙ Front-right quarter</option>
+          <option value="rear-left">↗ Rear-left quarter</option>
+          <option value="rear-right">↖ Rear-right quarter</option>
         </select>
       </div>
       <div class="f"><label>Sun</label>
@@ -462,7 +462,7 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>1320' ET</label><input type="number" step=".001" id="l-1320"></div>
       <div class="f"><label>1320' MPH</label><input type="number" step=".01" id="l-1320m"></div>
       <div class="f"><label>Result</label>
-        <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option></select>
+        <select id="l-res"><option value="">— Optional —</option><option value="win">Win</option><option value="loss">Loss</option><option value="bye">Bye Run</option><option value="timeonly">Time Only</option></select>
       </div>
       <div class="f"><label>Lane</label>
         <select id="l-lane"><option value="">— Optional —</option><option value="left">Left</option><option value="right">Right</option></select>
@@ -2065,7 +2065,7 @@ function renderTable(){
   es.style.display='none';
   const n=v=>v!=null?v:'—';
   tb.innerHTML=rows.map((r,i)=>{
-    const rb=r.result==='win'?`<span class="bw">WIN</span>`:r.result==='loss'?`<span class="bl">LOSS</span>`:r.result==='bye'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">BYE</span>`:'';
+    const rb=r.result==='win'?`<span class="bw">WIN</span>`:r.result==='loss'?`<span class="bl">LOSS</span>`:r.result==='bye'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">BYE</span>`:r.result==='timeonly'?`<span style="color:var(--mu);font-family:var(--di);font-size:.6rem">TIME</span>`:'';
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
@@ -2306,41 +2306,43 @@ function dlFile(name,content,type){const a=document.createElement('a');a.href=UR
 function doDragOver(e){e.preventDefault();document.getElementById('iz').classList.add('over');}
 function doDragLeave(){document.getElementById('iz').classList.remove('over');}
 function doDrop(e){e.preventDefault();document.getElementById('iz').classList.remove('over');parseCSV(e.dataTransfer.files[0]);}
-let _importMode='add'; // 'add' or 'replace'
+let _importMode='add';
 let _pendingImportFile=null;
 
 function openImportModal(){
+  // Go straight to file picker — ask Replace/Add after file is chosen
   _pendingImportFile=null;
-  document.getElementById('import-modal').style.display='block';
+  document.getElementById('cfi').click();
 }
 function closeImportModal(){
   document.getElementById('import-modal').style.display='none';
-  // Reset file input so same file can be re-selected
   document.getElementById('cfi').value='';
 }
 function closeImportConfirm(){
   document.getElementById('import-confirm-modal').style.display='none';
-  closeImportModal();
+  document.getElementById('cfi').value='';
 }
 function confirmImport(mode){
   _importMode=mode;
   document.getElementById('import-modal').style.display='none';
   if(mode==='replace'){
-    // Show confirmation with run count before proceeding
     document.getElementById('import-run-count').textContent=runs.length+' run'+(runs.length!==1?'s':'');
     document.getElementById('import-confirm-modal').style.display='block';
   }else{
-    // Add mode — go straight to file picker
-    document.getElementById('cfi').click();
+    // Add mode — parse immediately
+    parseCSV(_pendingImportFile,'add');
   }
 }
 function executeImport(mode){
   document.getElementById('import-confirm-modal').style.display='none';
-  document.getElementById('cfi').click();
+  parseCSV(_pendingImportFile,'replace');
 }
 function doFileSel(e){
-  _pendingImportFile=e.target.files[0];
-  parseCSV(_pendingImportFile,_importMode);
+  const file=e.target.files[0];
+  if(!file)return;
+  _pendingImportFile=file;
+  // Show Replace/Add modal now that we have the file
+  document.getElementById('import-modal').style.display='block';
 }
 function parseCSV(file,mode){
   if(!file)return;
@@ -2708,6 +2710,22 @@ function resetPT(){
   renderIDWDots();
   renderPTCSP();
   renderBenchTable();
+}
+function resetPTToDefaults(){
+  ptIDWWork={
+    idwDA:ALGO_DEFAULTS.idwDA,idwWS:ALGO_DEFAULTS.idwWS,
+    idwTemp:ALGO_DEFAULTS.idwTemp,idwHum:ALGO_DEFAULTS.idwHum,
+    idwWD:ALGO_DEFAULTS.idwWD,idwSun:ALGO_DEFAULTS.idwSun
+  };
+  ptCSPWork={
+    csDA8:ALGO_DEFAULTS.csDA8,csDA4:ALGO_DEFAULTS.csDA4,
+    csWind8:ALGO_DEFAULTS.csWind8,csWind4:ALGO_DEFAULTS.csWind4,
+    csAnchor:ALGO_DEFAULTS.csAnchor
+  };
+  renderIDWDots();
+  renderPTCSP();
+  renderBenchTable();
+  toast('Reset to app defaults — press Save Settings to apply');
 }
 function suggestIDW(){
   const ft=document.getElementById('tb-ftrack')?.value||'all';
@@ -3145,6 +3163,7 @@ function renderBenchTable(){
     <div class="bench-actions">
       <button class="btn btn-p" style="width:auto;margin-top:0" onclick="savePTSettings()">Save Settings</button>
       <button class="bsm bsec" onclick="resetPT()">Reset</button>
+      <button class="bsm bgho" onclick="resetPTToDefaults()">Reset to App Defaults</button>
       <button class="bsm bgho" id="pt-suggest-btn" onclick="suggestIDW()">⚡ Suggest</button>
       <span id="pt-save-note" style="font-family:var(--mo);font-size:.65rem;color:var(--ok);display:none">✓ Saved.</span>
     </div>
