@@ -72,7 +72,7 @@ select option{background:var(--bg)}
 .ovn{font-family:var(--mo);font-size:.63rem;color:var(--ac2);margin-top:3px}
 /* result */
 .rbox{margin-top:14px;background:var(--sf);border:2px solid var(--ac);padding:22px;text-align:center;display:none}
-.rlb{font-size:.63rem;letter-spacing:.25em;text-transform:uppercase;color:var(--mu);margin-bottom:5px}
+.rlb{font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ac);margin-bottom:5px}
 .rdi{font-size:.78rem;letter-spacing:.18em;color:var(--ac2);text-transform:uppercase;margin-bottom:3px;font-weight:700}
 .ret{font-family:var(--mo);font-size:3.6rem;color:var(--ac);line-height:1;letter-spacing:-.02em}
 .rsu{font-family:var(--mo);font-size:.72rem;color:var(--mu);margin-top:7px;line-height:1.5}
@@ -288,13 +288,6 @@ tr:hover td{background:var(--sf2)}
         </select>
       </div>
     </div>
-    <div class="f"><label>Prediction Method</label>
-      <select id="p-method" onchange="savePredMethodFromDropdown(this.value)">
-        <option value="idw">Similar Runs (IDW)</option>
-        <option value="hale">Patrick Hale Standard Atmosphere</option>
-        <option value="carspecific">Car-Specific Physics</option>
-      </select>
-    </div>
   </div>
   <div class="card">
     <div class="ct">// Conditions</div>
@@ -353,8 +346,18 @@ tr:hover td{background:var(--sf2)}
     </div>
     <!-- Hidden grains field for prediction bias calculation -->
     <input type="hidden" id="p-grains" value="0">
-    <!-- Prediction Tuning button — above Generate Prediction -->
-    <div style="margin-bottom:10px">
+  </div>
+  <!-- Prediction card -->
+  <div class="card">
+    <div class="ct">// Prediction</div>
+    <div class="f"><label>Method</label>
+      <select id="p-method" onchange="savePredMethodFromDropdown(this.value)">
+        <option value="idw">Similar Runs (IDW)</option>
+        <option value="hale">Patrick Hale Standard Atmosphere</option>
+        <option value="carspecific">Car-Specific Physics</option>
+      </select>
+    </div>
+    <div style="margin-top:8px;margin-bottom:8px">
       <button class="btn-tb" style="width:100%;text-align:center" onclick="openTuningBench()">⚙ Prediction Tuning</button>
     </div>
     <button class="btn btn-p" onclick="predict()">Generate Prediction</button>
@@ -533,7 +536,9 @@ tr:hover td{background:var(--sf2)}
   </div>
   <div class="tw">
     <table><thead style="position:sticky;top:0;z-index:10;background:var(--bg)"><tr>
-      <th>#</th><th>Date</th><th>Time</th><th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
+      <th style="position:sticky;left:0;z-index:2;background:var(--bg)">#</th>
+      <th style="position:sticky;left:28px;z-index:2;background:var(--bg)">Date / Time</th>
+      <th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
       <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>IDW</th><th>Hale</th><th>CS</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
     </tr></thead><tbody id="tbody"></tbody></table>
@@ -1399,12 +1404,11 @@ function predict(){
   if(_predMethod==='hale'){
     // Patrick Hale: use standard atmosphere correction applied to best reference ET
     const _bestRef=pool.reduce((best,r,i)=>wts[i]>wts[best.i]?{r,i}:{r:best.r,i:best.i},{r:pool[0],i:0}).r;
+    window._lastHaleRef=_bestRef; // store for reference runs display
     const _refET=_bestRef._et||idwBase;
     const _haleCorr=haleCorrection(temp||poolAvgTemp,hum||poolAvgHum,todayBaro||30.0);
     const _refHale=haleCorrection(_bestRef.temp||poolAvgTemp,_bestRef.humidity||poolAvgHum,_bestRef.pressure||30.0);
     const _haleBase=_refET*(_haleCorr/_refHale);
-    // Add empirical wind correction derived from your logged runs (.012s per 4.5mph)
-    // Hale's formula handles atmospheric physics but not wind — this fills that gap
     const _refWS=_bestRef.windSpeed||0;
     const _haleWindBenefit=-((ws||0)-_refWS)*(0.012/4.5);
     final=_haleBase+_haleWindBenefit;
@@ -1415,25 +1419,23 @@ function predict(){
       return _am<=12&&r._et;
     }).sort((a,b)=>new Date(b.date)-new Date(a.date)||((b.time||'').localeCompare(a.time||'')));
     if(_recentRuns.length>0){
-      // Prefer current-event runs (within 4 days) so anchor adapts mid-event
-      // rather than mixing in older runs from previous events
       const _eventCutoff=Date.now()-4*24*60*60*1000;
       const _eventRuns=_recentRuns.filter(r=>new Date(r.date||'2020').getTime()>=_eventCutoff);
       const _histRuns=_recentRuns.filter(r=>new Date(r.date||'2020').getTime()<_eventCutoff);
-      // 3+ event runs → use only those; fewer → fill remaining slots with historical
       const _anchorPool=_eventRuns.length>=3?_eventRuns:[..._eventRuns,..._histRuns];
-      // Use configurable anchor count (default 3), recency-weighted
       const _anchorCount=Math.min(algoSettings.csAnchor||3,_anchorPool.length);
       const _anchors=_anchorPool.slice(0,_anchorCount);
-      const _anchorWts=_anchors.map((_,i)=>Math.pow(0.5,i)); // 1, 0.5, 0.25
+      window._lastCSPAnchors=_anchors; // store for reference runs display
+      const _anchorWts=_anchors.map((_,i)=>Math.pow(0.5,i));
       const _anchorTW=_anchorWts.reduce((a,b)=>a+b,0);
       const _anchorET=_anchors.reduce((s,r,i)=>s+r._et*_anchorWts[i],0)/_anchorTW;
       const _anchorDA=_anchors.reduce((s,r,i)=>s+(r.da||0)*_anchorWts[i],0)/_anchorTW;
       const _anchorWS=_anchors.reduce((s,r,i)=>s+(r.windSpeed||0)*_anchorWts[i],0)/_anchorTW;
-      const _anchorWDN=windDirNum(_anchors[0].windDir||'',_th); // use most recent for direction
+      const _anchorWDN=windDirNum(_anchors[0].windDir||'',_th);
       final=carSpecificPrediction(da,ws,qWDN,_anchorET,_anchorDA,_anchorWS,_anchorWDN,dist);
     }else{
-      final=idwBase+algoCorrection; // fallback to IDW
+      window._lastCSPAnchors=[];
+      final=idwBase+algoCorrection;
     }
   }else{
     final=idwBase+algoCorrection; // IDW (default)
@@ -2081,10 +2083,12 @@ function renderTable(){
       bestKey=Object.keys(errs).reduce((a,b)=>errs[a]<errs[b]?a:b);
     }
     const fmtP=(v,key)=>v!=null?`<span style="color:${bestKey===key?'var(--ok)':'var(--mu)'};font-weight:${bestKey===key?'700':'400'}">${v}</span>`:'—';
+    const _dateRaw=r.date||'';
+    const _dateParts=_dateRaw.split('-');
+    const _dateFmt=_dateParts.length===3?`${_dateParts[2]}-${_dateParts[1]}-${_dateParts[0].slice(2)}`:_dateRaw;
     return`<tr style="${r.exclude?'opacity:0.45;':''}">
-      <td style="color:var(--mu)">${i+1}</td>
-      <td>${r.date||'—'}</td>
-      <td style="color:var(--mu)">${r.time||'—'}</td>
+      <td style="color:var(--mu);position:sticky;left:0;z-index:1;background:var(--bg)">${i+1}</td>
+      <td style="position:sticky;left:28px;z-index:1;background:var(--bg);white-space:nowrap">${_dateFmt}<br><span style="color:var(--mu);font-size:.6rem">${r.time||''}</span></td>
       <td>${r.track||'—'}</td><td>${db}</td>
       <td>${n(r.da)}</td><td>${n(r.temp)}</td><td>${n(r.humidity)}</td>
       <td>${r.windSpeed?r.windSpeed+' '+r.windDir:'—'}</td>
@@ -2402,38 +2406,76 @@ function parseCSV(file,mode){
 // ════════════════════════════════════════════════════════════════
 // NAV + TOAST
 // ════════════════════════════════════════════════════════════════
+function fmtRefDate(dateStr,timeStr){
+  // Format: DD-MM-YY with time stacked below
+  if(!dateStr)return'—';
+  const p=dateStr.split('-');
+  if(p.length!==3)return dateStr;
+  const dd=p[2],mm=p[1],yy=p[0].slice(2);
+  const datePart=`${dd}-${mm}-${yy}`;
+  const timePart=timeStr?`<br><span style="color:var(--mu);font-size:.58rem">${timeStr}</span>`:'';
+  return datePart+timePart;
+}
 function showTopRuns(){
-  const pool=window._lastPool||[];
-  const wts=window._lastWts||[];
-  const tw=window._lastTw||1;
-  const pf=window._lastPf||'ft660';
-  if(!pool.length){return;}
-  // Sort by weight descending, take top 5
-  const ranked=[...pool.map((r,i)=>({r,w:wts[i],pct:Math.round(wts[i]/tw*100)}))].sort((a,b)=>b.w-a.w).slice(0,5);
   const btn=document.getElementById('top-runs-btn');
   const panel=document.getElementById('top-runs-panel');
   if(panel.style.display!=='none'){panel.style.display='none';btn.textContent='▶ Show Top Reference Runs';return;}
+  const method=algoSettings.predMethod||'idw';
   const list=document.getElementById('top-runs-list');
-  list.innerHTML=ranked.map((x,i)=>{
-    const r=x.r;
-    const et=r._et!=null?r._et.toFixed(3):'—';
-    const _rth2=getTrackHeading(r.track||'');
-    const _classified=windDirNum(r.windDir||'',_rth2);
-    const _classMap={'1':'headwind','-1':'tailwind','0':'crosswind'};
-    const _classLabel=_classMap[String(_classified)]||'calm';
-    const _rawLabel=r.windDir&&r.windDir!=='calm'&&r.windDir!=='headwind'&&r.windDir!=='tailwind'&&r.windDir!=='crosswind'?` (${r.windDir})`:'';
-    const wind=r.windSpeed?`${r.windSpeed}mph ${_classLabel}${_rawLabel}`:'calm';
-    return`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 60px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:.65rem">
-      <span style="color:var(--mu)">#${i+1}</span>
-      <span>${r.date||'—'}</span>
-      <span>DA ${Math.round(r.da||0)}</span>
-      <span>${wind}</span>
-      <span style="display:flex;align-items:center;gap:4px">
-        <span style="color:var(--ac)">${et}</span>
-        <span style="font-size:.55rem;color:var(--mu)">${x.pct}%</span>
-      </span>
-    </div>`;
-  }).join('');
+  const titleEl=document.querySelector('#top-runs-panel div');
+  const pool=window._lastPool||[];
+  const wts=window._lastWts||[];
+  const tw=window._lastTw||1;
+  function windLabel(r){
+    const _rth=getTrackHeading(r.track||'');
+    const _dn=windDirNum(r.windDir||'',_rth);
+    const _map={'1':'headwind','-1':'tailwind','0':'crosswind'};
+    const _cl=_map[String(_dn)]||'calm';
+    const _raw=r.windDir&&!['calm','headwind','tailwind','crosswind'].includes(r.windDir)?` (${r.windDir})`:'';
+    return r.windSpeed?`${r.windSpeed}mph ${_cl}${_raw}`:'calm';
+  }
+  if(method==='carspecific'){
+    const anchors=window._lastCSPAnchors||[];
+    if(titleEl)titleEl.textContent=`CSP Anchor Runs (${anchors.length})`;
+    const wts=[1,0.5,0.25];
+    list.innerHTML=anchors.length?anchors.map((r,i)=>{
+      const et=r._et!=null?r._et.toFixed(3):'—';
+      const wtPct=Math.round(wts[i]/(wts.slice(0,anchors.length).reduce((a,b)=>a+b,0))*100);
+      return`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 50px;gap:6px;align-items:start;padding:5px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:.65rem">
+        <span style="color:var(--mu)">#${i+1}</span>
+        <span>${fmtRefDate(r.date,r.time)}</span>
+        <span>DA ${Math.round(r.da||0)}</span>
+        <span>${windLabel(r)}</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="color:var(--ac)">${et}</span><span style="font-size:.55rem;color:var(--mu)">${wtPct}%</span></span>
+      </div>`;
+    }).join(''):`<div style="font-family:var(--mo);font-size:.65rem;color:var(--mu)">No anchor runs available</div>`;
+  }else if(method==='hale'){
+    const ref=window._lastHaleRef;
+    if(titleEl)titleEl.textContent='Hale Reference Run';
+    list.innerHTML=ref?`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 50px;gap:6px;align-items:start;padding:5px 0;font-family:var(--mo);font-size:.65rem">
+      <span style="color:var(--mu)">#1</span>
+      <span>${fmtRefDate(ref.date,ref.time)}</span>
+      <span>DA ${Math.round(ref.da||0)}</span>
+      <span>${windLabel(ref)}</span>
+      <span style="color:var(--ac)">${ref._et!=null?ref._et.toFixed(3):'—'}</span>
+    </div>`:`<div style="font-family:var(--mo);font-size:.65rem;color:var(--mu)">No reference run available</div>`;
+  }else{
+    // IDW — top 5 by weight
+    if(titleEl)titleEl.textContent='Top Weighted Reference Runs';
+    if(!pool.length){return;}
+    const ranked=[...pool.map((r,i)=>({r,w:wts[i],pct:Math.round(wts[i]/tw*100)}))].sort((a,b)=>b.w-a.w).slice(0,5);
+    list.innerHTML=ranked.map((x,i)=>{
+      const r=x.r;
+      const et=r._et!=null?r._et.toFixed(3):'—';
+      return`<div style="display:grid;grid-template-columns:24px 1fr 1fr 1fr 50px;gap:6px;align-items:start;padding:5px 0;border-bottom:1px solid var(--bd);font-family:var(--mo);font-size:.65rem">
+        <span style="color:var(--mu)">#${i+1}</span>
+        <span>${fmtRefDate(r.date,r.time)}</span>
+        <span>DA ${Math.round(r.da||0)}</span>
+        <span>${windLabel(r)}</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="color:var(--ac)">${et}</span><span style="font-size:.55rem;color:var(--mu)">${x.pct}%</span></span>
+      </div>`;
+    }).join('');
+  }
   panel.style.display='block';
   btn.textContent='▲ Hide Reference Runs';
 }
