@@ -351,7 +351,7 @@ tr:hover td{background:var(--sf2)}
   <div class="card">
     <div class="ct">// Prediction</div>
     <div class="f"><label>Method</label>
-      <select id="p-method" onchange="savePredMethodFromDropdown(this.value)">
+      <select id="p-method" onchange="savePredMethodFromDropdown(this.value)" style="border-color:var(--ac);border-width:2px">
         <option value="idw">Similar Runs (IDW)</option>
         <option value="hale">Patrick Hale Standard Atmosphere</option>
         <option value="carspecific">Car-Specific Physics</option>
@@ -2085,7 +2085,7 @@ function renderTable(){
     const fmtP=(v,key)=>v!=null?`<span style="color:${bestKey===key?'var(--ok)':'var(--mu)'};font-weight:${bestKey===key?'700':'400'}">${v}</span>`:'—';
     const _dateRaw=r.date||'';
     const _dateParts=_dateRaw.split('-');
-    const _dateFmt=_dateParts.length===3?`${_dateParts[2]}-${_dateParts[1]}-${_dateParts[0].slice(2)}`:_dateRaw;
+    const _dateFmt=_dateParts.length===3?`${_dateParts[1]}-${_dateParts[2]}-${_dateParts[0].slice(2)}`:_dateRaw;
     return`<tr style="${r.exclude?'opacity:0.45;':''}">
       <td style="color:var(--mu);position:sticky;left:0;z-index:1;background:var(--bg)">${i+1}</td>
       <td style="position:sticky;left:28px;z-index:1;background:var(--bg);white-space:nowrap">${_dateFmt}<br><span style="color:var(--mu);font-size:.6rem">${r.time||''}</span></td>
@@ -2407,12 +2407,12 @@ function parseCSV(file,mode){
 // NAV + TOAST
 // ════════════════════════════════════════════════════════════════
 function fmtRefDate(dateStr,timeStr){
-  // Format: DD-MM-YY with time stacked below
+  // Format: MM-DD-YY with time stacked below
   if(!dateStr)return'—';
   const p=dateStr.split('-');
   if(p.length!==3)return dateStr;
-  const dd=p[2],mm=p[1],yy=p[0].slice(2);
-  const datePart=`${dd}-${mm}-${yy}`;
+  const mm=p[1],dd=p[2],yy=p[0].slice(2);
+  const datePart=`${mm}-${dd}-${yy}`;
   const timePart=timeStr?`<br><span style="color:var(--mu);font-size:.58rem">${timeStr}</span>`:'';
   return datePart+timePart;
 }
