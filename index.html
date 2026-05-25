@@ -1264,7 +1264,13 @@ function predict(){
   const pool=getPool(tf,dist);
   const pf=dist==='eighth'?'ft660':'ft1320';
 
-  if(pool.length<5){
+  const _predMethodCheck=algoSettings.predMethod||'idw';
+  if(pool.length<5&&_predMethodCheck!=='carspecific'){
+    document.getElementById('ndm').style.display='block';
+    updatePoolNote();
+    return;
+  }
+  if(pool.length<1){
     document.getElementById('ndm').style.display='block';
     updatePoolNote();
     return;
@@ -1416,7 +1422,7 @@ function predict(){
     // Car-specific: anchor to most recent best run within reasonable DA range
     const _recentRuns=pool.filter(r=>{
       const _am=(Date.now()-new Date(r.date||'2020').getTime())/(1000*60*60*24*30.4);
-      return _am<=12&&r._et;
+      return _am<=24&&r._et;
     }).sort((a,b)=>new Date(b.date)-new Date(a.date)||((b.time||'').localeCompare(a.time||'')));
     if(_recentRuns.length>0){
       const _eventCutoff=Date.now()-4*24*60*60*1000;
@@ -1435,6 +1441,16 @@ function predict(){
       final=carSpecificPrediction(da,ws,qWDN,_anchorET,_anchorDA,_anchorWS,_anchorWDN,dist);
     }else{
       window._lastCSPAnchors=[];
+      // Diagnostics — store why no anchors were found
+      const _diagTotal=pool.length;
+      const _diagWithET=pool.filter(r=>r._et).length;
+      const _diagInRange=pool.filter(r=>{
+        const _am=(Date.now()-new Date(r.date||'2020').getTime())/(1000*60*60*24*30.4);
+        return _am<=24;
+      }).length;
+      const _diagOldest=pool.length?pool.reduce((a,b)=>a.date<b.date?a:b).date:'none';
+      const _diagNewest=pool.length?pool.reduce((a,b)=>a.date>b.date?a:b).date:'none';
+      window._lastCSPDiag={total:_diagTotal,withET:_diagWithET,inRange:_diagInRange,oldest:_diagOldest,newest:_diagNewest};
       final=idwBase+algoCorrection;
     }
   }else{
@@ -1992,7 +2008,7 @@ function getPredCarSpecForRun(r,usePool){
   const now=new Date(r.date||Date.now()).getTime();
   const recent=usePool.filter(x=>{
     const am=(now-new Date(x.date||'2020').getTime())/(1000*60*60*24*30.4);
-    return am<=12&&getET(x)!=null;
+    return am<=24&&getET(x)!=null;
   }).sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
   if(!recent.length)return null;
   const eventCut=now-4*24*60*60*1000;
@@ -2448,7 +2464,14 @@ function showTopRuns(){
         <span>${windLabel(r)}</span>
         <span style="display:flex;align-items:center;gap:3px"><span style="color:var(--ac)">${et}</span><span style="font-size:.55rem;color:var(--mu)">${wtPct}%</span></span>
       </div>`;
-    }).join(''):`<div style="font-family:var(--mo);font-size:.65rem;color:var(--mu)">No anchor runs available</div>`;
+    }).join(''):(()=>{
+      const d=window._lastCSPDiag||{};
+      return`<div style="font-family:var(--mo);font-size:.65rem;color:var(--mu);line-height:1.8">
+        No anchor runs found.<br>
+        Pool: ${d.total||0} runs · With ET: ${d.withET||0} · In 24mo range: ${d.inRange||0}<br>
+        Newest: ${d.newest||'—'} · Oldest: ${d.oldest||'—'}
+      </div>`;
+    })();
   }else if(method==='hale'){
     const ref=window._lastHaleRef;
     if(titleEl)titleEl.textContent='Hale Reference Run';
