@@ -21,7 +21,7 @@
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0a;--sf:#111;--sf2:#1a1a1a;--bd:#2a2a2a;--ac:#fef8d5;--ac2:#ff6b00;--tx:#f0f0f0;--mu:#999;--ok:#00ff88;--er:#ff3333;--mo:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--di:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{--bg:#0a0a0a;--sf:#111;--sf2:#1a1a1a;--bd:#2a2a2a;--ac:#fef8d5;--ac2:#ff6b00;--tx:#f0f0f0;--mu:#999;--ok:#00ff88;--er:#ff3333;--warn:#f5c518;--mo:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--di:'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:var(--di);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:1000}
@@ -523,6 +523,14 @@ tr:hover td{background:var(--sf2)}
     <div class="card" style="margin-bottom:0">
       <div class="ct">// Algorithm Performance</div>
       <div id="algo-perf-rows" style="font-family:var(--mo);font-size:.72rem"></div>
+      <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--bd)">
+        <div style="font-family:var(--mo);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-bottom:6px">Prediction Color Key</div>
+        <div style="font-family:var(--mo);font-size:.65rem;line-height:2">
+          <span style="color:var(--ok);font-weight:700">Green</span><span style="color:var(--mu)"> — within .010 of actual ET</span><br>
+          <span style="color:var(--warn);font-weight:700">Yellow</span><span style="color:var(--mu)"> — within .011–.025 of actual ET</span><br>
+          <span style="color:var(--tx);font-weight:700">White</span><span style="color:var(--mu)"> — closest prediction when none within .025</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2152,7 +2160,7 @@ function renderTable(){
     const fmtP=(v,err)=>{
       if(v==null)return'—';
       const isClosest=!anyWithin025&&err===minErr;
-      const col=err<=0.010?'var(--ok)':err<=0.025?'var(--ac)':isClosest?'var(--tx)':'var(--mu)';
+      const col=err<=0.010?'var(--ok)':err<=0.025?'var(--warn)':isClosest?'var(--tx)':'var(--mu)';
       const bold=err<=0.025||isClosest;
       return`<span style="color:${col};font-weight:${bold?700:400}">${v}</span>`;
     };
