@@ -371,6 +371,11 @@ tr:hover td{background:var(--sf2)}
     <div class="ret" id="r-et">-.---</div>
     <div class="rsu" id="r-sub"></div>
     <div id="r-method-badge" style="display:none;text-align:center;font-family:var(--mo);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-top:2px"></div>
+    <div id="r-ensemble" style="display:none;margin-top:14px;padding:12px;background:var(--sf2);border:1px solid var(--bd);text-align:center">
+      <div style="font-family:var(--mo);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:4px">Average Across Models</div>
+      <div id="r-ensemble-avg" style="font-family:var(--mo);font-size:1.6rem;color:var(--ac);letter-spacing:-.01em;margin-bottom:4px">—.—</div>
+      <div id="r-ensemble-breakdown" style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">—</div>
+    </div>
     <div id="da-delta-block" style="display:none;margin-top:10px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);font-family:var(--mo);font-size:.7rem">
       <div style="font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:6px">Since Your Last Run</div>
       <div style="font-size:.63rem;color:var(--mu);margin-bottom:6px" id="da-delta-ref"></div>
@@ -1258,6 +1263,8 @@ function predict(){
 
   document.getElementById('rbox').style.display='none';
   document.getElementById('ndm').style.display='none';
+  const _ensReset=document.getElementById('r-ensemble');
+  if(_ensReset)_ensReset.style.display='none';
 
   if(isNaN(da)){toast('Enter Density Altitude or fetch weather first.',true);return;}
 
@@ -1406,6 +1413,42 @@ function predict(){
   const kyleWeight=Math.min(daResidual/500,1.0)*0.4;
   const algoCorrection=physicsDA*physicsWeight+kyleResidual*kyleWeight+(window._lastWindBenefit||0);
   let final;
+  // ── Compute all three models for ensemble average ─────────
+  // IDW prediction
+  const _ensIDW = idwBase + algoCorrection;
+  // Hale prediction
+  let _ensHale = _ensIDW;
+  try {
+    const _bRef=pool.reduce((best,r,i)=>wts[i]>wts[best.i]?{r,i}:{r:best.r,i:best.i},{r:pool[0],i:0}).r;
+    const _hc=haleCorrection(temp||poolAvgTemp,hum||poolAvgHum,todayBaro||30.0);
+    const _rh=haleCorrection(_bRef.temp||poolAvgTemp,_bRef.humidity||poolAvgHum,_bRef.pressure||30.0);
+    _ensHale=(_bRef._et||idwBase)*(_hc/_rh)-(((ws||0)-(_bRef.windSpeed||0))*(0.012/4.5));
+  } catch(e){}
+  // CSP prediction
+  let _ensCSP = _ensIDW;
+  try {
+    const _rr=pool.filter(r=>{
+      const _a=(Date.now()-new Date(r.date||'2020').getTime())/(1000*60*60*24*30.4);
+      return _a<=24&&r._et;
+    }).sort((a,b)=>new Date(b.date)-new Date(a.date)||((b.time||'').localeCompare(a.time||'')));
+    if(_rr.length>0){
+      const _ec=Date.now()-4*24*60*60*1000;
+      const _ev=_rr.filter(r=>new Date(r.date||'2020').getTime()>=_ec);
+      const _hi=_rr.filter(r=>new Date(r.date||'2020').getTime()<_ec);
+      const _ap=_ev.length>=3?_ev:[..._ev,..._hi];
+      const _an=_ap.slice(0,Math.min(algoSettings.csAnchor||3,_ap.length));
+      const _aw=_an.map((_,i)=>Math.pow(0.5,i));
+      const _at=_aw.reduce((a,b)=>a+b,0);
+      _ensCSP=carSpecificPrediction(da,ws,qWDN,
+        _an.reduce((s,r,i)=>s+r._et*_aw[i],0)/_at,
+        _an.reduce((s,r,i)=>s+(r.da||0)*_aw[i],0)/_at,
+        _an.reduce((s,r,i)=>s+(r.windSpeed||0)*_aw[i],0)/_at,
+        windDirNum(_an[0].windDir||'',_th),dist);
+    }
+  } catch(e){}
+  const _ensAvg = (_ensIDW + _ensHale + _ensCSP) / 3;
+  window._lastEnsemble = {idw:_ensIDW, hale:_ensHale, csp:_ensCSP, avg:_ensAvg};
+
   const _predMethod=algoSettings.predMethod||'idw';
   if(_predMethod==='hale'){
     // Patrick Hale: use standard atmosphere correction applied to best reference ET
@@ -1506,6 +1549,14 @@ function predict(){
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
   const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
   document.getElementById('r-et').textContent=final.toFixed(3);
+  // Ensemble average display
+  const _ens=window._lastEnsemble;
+  const _ensEl=document.getElementById('r-ensemble');
+  if(_ens&&_ensEl){
+    document.getElementById('r-ensemble-avg').textContent=_ens.avg.toFixed(3);
+    document.getElementById('r-ensemble-breakdown').textContent=`IDW ${_ens.idw.toFixed(3)} · CSP ${_ens.csp.toFixed(3)} · Hale ${_ens.hale.toFixed(3)}`;
+    _ensEl.style.display='block';
+  }
   // Store pool+weights globally for top runs display
   window._lastPool=pool;window._lastWts=wts;window._lastTw=tw;window._lastPf=pf;
   document.getElementById('top-runs-btn').style.display='';
@@ -2088,17 +2139,23 @@ function renderTable(){
     const db=r.distance==='eighth'?`<span class="be">1/8</span>`:`<span class="bq">1/4</span>`;
     const qLabel={'allout':'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>','lifted':'<span style="color:var(--ac2);font-size:.6rem">LIFTED</span>','spun':'<span style="color:var(--er);font-size:.6rem">SPUN</span>','issue':'<span style="color:var(--mu);font-size:.6rem">ISSUE</span>'}[r.quality||'allout']||'<span style="color:var(--ok);font-size:.6rem">ALL OUT</span>';
     const calcETVal=r.calcET!=null?`<span style="color:var(--ac2)">${r.calcET}</span>`:'—';
-    // Three predictions — highlight closest to actual ET in green
+    // Three predictions — new coloring: green ≤.010, amber ≤.025, bold white for closest if none qualify
     const actual=parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320));
     const pI=r.predIDW!=null?parseFloat(r.predIDW):null;
     const pH=r.predHale!=null?parseFloat(r.predHale):null;
     const pC=r.predCarSpec!=null?parseFloat(r.predCarSpec):null;
-    let bestKey=null;
-    if(!isNaN(actual)&&(pI||pH||pC)){
-      const errs={idw:pI!=null?Math.abs(pI-actual):Infinity,hale:pH!=null?Math.abs(pH-actual):Infinity,cs:pC!=null?Math.abs(pC-actual):Infinity};
-      bestKey=Object.keys(errs).reduce((a,b)=>errs[a]<errs[b]?a:b);
-    }
-    const fmtP=(v,key)=>v!=null?`<span style="color:${bestKey===key?'var(--ok)':'var(--mu)'};font-weight:${bestKey===key?'700':'400'}">${v}</span>`:'—';
+    const errI=pI!=null&&!isNaN(actual)?Math.abs(pI-actual):Infinity;
+    const errH=pH!=null&&!isNaN(actual)?Math.abs(pH-actual):Infinity;
+    const errC=pC!=null&&!isNaN(actual)?Math.abs(pC-actual):Infinity;
+    const anyWithin025=errI<=0.025||errH<=0.025||errC<=0.025;
+    const minErr=Math.min(errI,errH,errC);
+    const fmtP=(v,err)=>{
+      if(v==null)return'—';
+      const isClosest=!anyWithin025&&err===minErr;
+      const col=err<=0.010?'var(--ok)':err<=0.025?'var(--ac)':isClosest?'var(--tx)':'var(--mu)';
+      const bold=err<=0.025||isClosest;
+      return`<span style="color:${col};font-weight:${bold?700:400}">${v}</span>`;
+    };
     const _dateRaw=r.date||'';
     const _dateParts=_dateRaw.split('-');
     const _dateFmt=_dateParts.length===3?`${_dateParts[1]}-${_dateParts[2]}-${_dateParts[0].slice(2)}`:_dateRaw;
@@ -2113,9 +2170,9 @@ function renderTable(){
       <td>${n(r.ft1000)}</td>
       <td style="color:var(--ac2)">${n(r.ft1320)}</td>
       <td>${calcETVal}</td>
-      <td>${fmtP(r.predIDW,'idw')}</td>
-      <td>${fmtP(r.predHale,'hale')}</td>
-      <td>${fmtP(r.predCarSpec,'cs')}</td>
+      <td>${fmtP(r.predIDW,errI)}</td>
+      <td>${fmtP(r.predHale,errH)}</td>
+      <td>${fmtP(r.predCarSpec,errC)}</td>
       <td>${n(r.mph1320)}</td><td>${rb}</td>
       <td style="color:var(--mu);font-size:.65rem">${r.lane?r.lane.charAt(0).toUpperCase()+r.lane.slice(1):'—'}</td>
       <td>${qLabel}</td>
