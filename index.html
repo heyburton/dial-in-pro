@@ -2250,21 +2250,37 @@ function renderAlgoPerf(){
     const bestErr=Math.min(...errs.map(e=>e.err));
     return{label,avg,best:bestErr,worst:worstObj.err,worstRun:worstObj.r,worstPred:worstObj.pred,worstActual:worstObj.actual,n:pts.length};
   };
-  const models=[
+  // Average prediction stats — computed from the three stored predictions
+  const avgStats=(()=>{
+    const pts=valid.filter(r=>r.predIDW!=null&&r.predHale!=null&&r.predCarSpec!=null);
+    if(!pts.length)return null;
+    const getActual=r=>parseFloat(r.calcET||(r.distance==='eighth'?r.ft660:r.ft1320));
+    const errs=pts.map(r=>{
+      const avg=(parseFloat(r.predIDW)+parseFloat(r.predHale)+parseFloat(r.predCarSpec))/3;
+      return{err:Math.abs(avg-getActual(r)),r,pred:avg,actual:getActual(r)};
+    });
+    const avg=errs.reduce((a,b)=>a+b.err,0)/errs.length;
+    const worstObj=errs.reduce((a,b)=>b.err>a.err?b:a);
+    const bestErr=Math.min(...errs.map(e=>e.err));
+    return{label:'Average Across Models',avg,best:bestErr,worst:worstObj.err,worstRun:worstObj.r,worstPred:worstObj.pred,worstActual:worstObj.actual,n:pts.length,isAvg:true};
+  })();
+  const allModels=[
     stats('predIDW','Similar Runs (IDW)'),
     stats('predHale','Patrick Hale'),
-    stats('predCarSpec','Car-Specific Physics')
+    stats('predCarSpec','Car-Specific Physics'),
+    avgStats
   ].filter(Boolean).sort((a,b)=>a.avg-b.avg);
-  if(!models.length){block.style.display='none';return;}
+  if(!allModels.length){block.style.display='none';return;}
   block.style.display='block';
-  rowsEl.innerHTML=models.map((m,i)=>{
+  rowsEl.innerHTML=allModels.map((m,i)=>{
     const isB=i===0;
-    const col=isB?'var(--ok)':'var(--mu)';
+    const col=isB?(m.isAvg?'var(--warn)':'var(--ok)'):'var(--mu)';
+    const trophy=isB?(m.isAvg?'★ ':'🏆 '):'';
     const wr=m.worstRun;
     const worstDetail=wr?`${wr.date} ${wr.track} ${wr.distance==='eighth'?'1/8':'1/4'} · pred ${m.worstPred.toFixed(3)} vs actual ${m.worstActual.toFixed(3)}`:'';
     return`<div style="padding:7px 0;border-bottom:1px solid var(--bd)">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span style="color:${col};font-weight:${isB?700:400};min-width:180px">${isB?'🏆 ':''}${m.label}</span>
+        <span style="color:${col};font-weight:${isB?700:400};min-width:180px">${trophy}${m.label}</span>
         <span style="color:${col}">avg ±${m.avg.toFixed(3)}</span>
         <span style="color:var(--mu);font-size:.65rem">best ${m.best.toFixed(3)} · worst ${m.worst.toFixed(3)} · ${m.n} run${m.n!==1?'s':''}</span>
       </div>
