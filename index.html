@@ -341,8 +341,8 @@ tr:hover td{background:var(--sf2)}
     </div>
     <!-- Sun on Track — full width -->
     <div class="f">
-      <label>Sun on Track</label>
-      <select id="p-sun"><option value="">— Unknown —</option><option value="full">Full Sun — Hot Track</option><option value="partial">Partial Sun — Warm Track</option><option value="shade">Shade / Night — Cool Track</option></select>
+      <label>Track Temperature</label>
+      <select id="p-sun"><option value="">— Unknown —</option><option value="full">Hot Track (80°F+)</option><option value="partial">Warm Track (65–75°F)</option><option value="shade">Cool Track (below 60°F)</option></select>
     </div>
     <!-- Hidden grains field for prediction bias calculation -->
     <input type="hidden" id="p-grains" value="0">
@@ -454,8 +454,8 @@ tr:hover td{background:var(--sf2)}
           <option value="rear-right">↖ Rear-right quarter</option>
         </select>
       </div>
-      <div class="f"><label>Sun</label>
-        <select id="l-sun"><option value="full">Full Sun — Hot Track</option><option value="partial">Partial Sun — Warm Track</option><option value="shade">Shade / Night — Cool Track</option></select>
+      <div class="f"><label>Track Temp</label>
+        <select id="l-sun"><option value="full">Hot Track (80°F+)</option><option value="partial">Warm Track (65–75°F)</option><option value="shade">Cool Track (below 60°F)</option></select>
       </div>
     </div>
     <div class="sl">Performance</div>
@@ -508,6 +508,8 @@ tr:hover td{background:var(--sf2)}
         <div style="font-size:.6rem;letter-spacing:.2em;color:var(--mu);margin-bottom:3px">ESTIMATED ALL-OUT ET</div>
         <div id="poe-et" style="font-size:2rem;color:var(--ac2)">-.---</div>
         <div id="poe-note" style="font-size:.65rem;color:var(--mu);margin-top:4px;line-height:1.5"></div>
+        <button class="bsm" style="margin-top:8px;background:var(--ac2);color:#000;border:none;width:100%;touch-action:manipulation" onclick="useCalcET()">✓ Use This Calculated ET</button>
+        <div style="font-family:var(--mo);font-size:.58rem;color:var(--mu);margin-top:6px">If this looks right, tap above to log it. Otherwise ignore it — it won't be saved.</div>
       </div>
     </div>
 
@@ -553,7 +555,17 @@ tr:hover td{background:var(--sf2)}
       <th style="position:sticky;left:28px;z-index:2;background:var(--bg)">Date / Time</th>
       <th>Track</th><th>Dist</th><th>DA</th><th>Temp</th><th>Hum%</th><th>Wind</th>
       <th>Dial</th><th>RT</th><th>60'</th><th>330'</th><th>660'ET</th><th>660MPH</th>
-      <th>1000'</th><th>1320'ET</th><th>Calc ET</th><th>IDW</th><th>Hale</th><th>CS</th><th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
+      <th>1000'</th><th>1320'ET</th><th>Calc ET</th>
+      <th colspan="4" style="text-align:center;border-bottom:1px solid var(--bd);color:var(--mu);font-size:.58rem;letter-spacing:.1em">PREDICTIONS</th>
+      <th>1320MPH</th><th>Result</th><th>Lane</th><th>Quality</th><th>Ignore</th><th>Edit</th><th>Del</th>
+    </tr><tr>
+      <th style="position:sticky;left:0;z-index:2;background:var(--bg)"></th>
+      <th style="position:sticky;left:28px;z-index:2;background:var(--bg)"></th>
+      <th></th><th></th><th></th><th></th><th></th><th></th>
+      <th></th><th></th><th></th><th></th><th></th><th></th>
+      <th></th><th></th><th></th>
+      <th>IDW</th><th>Hale</th><th>CSP</th><th>Avg</th>
+      <th></th><th></th><th></th><th></th><th></th><th></th><th></th>
     </tr></thead><tbody id="tbody"></tbody></table>
   </div>
   <div class="es" id="es" style="display:none"><div style="font-size:2.5rem;opacity:.12">&#127937;</div><p>No runs yet. Hit "+ Log New Run" to get started.</p></div>
@@ -1555,7 +1567,7 @@ function predict(){
   if(_badge){_badge.textContent=`Method: ${_methodBadgeText}`;_badge.style.display='';}
   const srcNote=dist==='eighth'?`All runs w/ 660' data:`:`Runs with 1320' data:`;
   const windNote=ws>0&&wd?` • Wind: ${ws}mph ${wd}`:'';
-  const sunNote=sunRaw?` • ${sunRaw==='full'?'Full sun':sunRaw==='partial'?'Partial sun':'Shade/night'}`:'';
+  const sunNote=sunRaw?` • ${sunRaw==='full'?'Hot track':sunRaw==='partial'?'Warm track':'Cool track'}`:'';
   document.getElementById('r-et').textContent=final.toFixed(3);
   // Ensemble average display
   const _ens=window._lastEnsemble;
@@ -1842,6 +1854,7 @@ function clearLogForm(){
   document.getElementById('l-lane').value='';
   document.getElementById('l-quality').value='allout';
   document.getElementById('l-date').value=localDateStr();
+  window._pendingCalcET=null;
   document.getElementById('poe-result').style.display='none';
   document.getElementById('poe-et').textContent='-.---';
   document.getElementById('l-wxs').textContent='Select a track and date/time to auto-fetch historical weather';
@@ -1977,10 +1990,17 @@ function calcPedalOff(){
   const poolNote=usePool===trackPool?`${trackPool.length} ${track} runs`:`${pool.length} all-track runs (not enough ${track} data)`;
 
   document.getElementById('poe-et').textContent=final.toFixed(3);
-  document.getElementById('poe-note').textContent=`Based on ${poolNote}. Saved as Calc ET with this run.`;
+  document.getElementById('poe-note').textContent=`Based on ${poolNote}. Tap "Use This Calculated ET" to apply it to this run.`;
   document.getElementById('poe-result').style.display='block';
-  // Auto-save to the hidden field immediately
-  document.getElementById('l-calc-et').value=final.toFixed(3);
+  // Don't auto-save — user must confirm with Use button
+  window._pendingCalcET=final.toFixed(3);
+}
+
+function useCalcET(){
+  if(!window._pendingCalcET)return;
+  document.getElementById('l-calc-et').value=window._pendingCalcET;
+  document.getElementById('poe-note').textContent=`✓ Calculated ET ${window._pendingCalcET} will be saved with this run.`;
+  toast(`Calc ET ${window._pendingCalcET} applied`);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2155,8 +2175,10 @@ function renderTable(){
     const errI=pI!=null&&!isNaN(actual)?Math.abs(pI-actual):Infinity;
     const errH=pH!=null&&!isNaN(actual)?Math.abs(pH-actual):Infinity;
     const errC=pC!=null&&!isNaN(actual)?Math.abs(pC-actual):Infinity;
-    const anyWithin025=errI<=0.025||errH<=0.025||errC<=0.025;
-    const minErr=Math.min(errI,errH,errC);
+    const pAvg=(pI!=null&&pH!=null&&pC!=null)?((pI+pH+pC)/3):null;
+    const errAvg=pAvg!=null&&!isNaN(actual)?Math.abs(pAvg-actual):Infinity;
+    const anyWithin025=errI<=0.025||errH<=0.025||errC<=0.025||errAvg<=0.025;
+    const minErr=Math.min(errI,errH,errC,errAvg);
     const fmtP=(v,err)=>{
       if(v==null)return'—';
       const isClosest=!anyWithin025&&err===minErr;
@@ -2181,6 +2203,7 @@ function renderTable(){
       <td>${fmtP(r.predIDW,errI)}</td>
       <td>${fmtP(r.predHale,errH)}</td>
       <td>${fmtP(r.predCarSpec,errC)}</td>
+      <td>${fmtP(pAvg!=null?pAvg.toFixed(3):null,errAvg)}</td>
       <td>${n(r.mph1320)}</td><td>${rb}</td>
       <td style="color:var(--mu);font-size:.65rem">${r.lane?r.lane.charAt(0).toUpperCase()+r.lane.slice(1):'—'}</td>
       <td>${qLabel}</td>
