@@ -372,9 +372,9 @@ tr:hover td{background:var(--sf2)}
     <div class="rsu" id="r-sub"></div>
     <div id="r-method-badge" style="display:none;text-align:center;font-family:var(--mo);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);margin-top:2px"></div>
     <div id="r-ensemble" style="display:none;margin-top:14px;padding:12px;background:var(--sf2);border:1px solid var(--bd);text-align:center">
-      <div style="font-family:var(--mo);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:4px">Average Across Models</div>
-      <div id="r-ensemble-avg" style="font-family:var(--mo);font-size:1.6rem;color:var(--ac);letter-spacing:-.01em;margin-bottom:4px">—.—</div>
-      <div id="r-ensemble-breakdown" style="font-family:var(--mo);font-size:.62rem;color:var(--mu)">—</div>
+      <div style="font-family:var(--mo);font-size:.6rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:4px">Average Across Models</div>
+      <div id="r-ensemble-avg" style="font-family:var(--mo);font-size:1.6rem;font-weight:700;color:var(--ac);letter-spacing:-.01em;margin-bottom:4px">—.—</div>
+      <div id="r-ensemble-breakdown" style="font-family:var(--mo);font-size:.62rem;font-weight:700;color:var(--mu)">—</div>
     </div>
     <div id="da-delta-block" style="display:none;margin-top:10px;padding:10px 12px;background:var(--sf2);border:1px solid var(--bd);font-family:var(--mo);font-size:.7rem">
       <div style="font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--mu);margin-bottom:6px">Since Your Last Run</div>
@@ -2416,7 +2416,7 @@ function refreshDrops(){
 // ════════════════════════════════════════════════════════════════
 function expCSV(){
   if(!runs.length){toast('No runs to export.',true);return;}
-  const H=['date','time','track','distance','da','temp','humidity','pressure','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','calcET','result','quality','lane','notes'];
+  const H=['date','time','track','distance','da','temp','humidity','pressure','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','calcET','result','quality','lane','notes','predIDW','predHale','predCarSpec','exclude'];
   const rows=runs.map(r=>H.map(h=>r[h]??'').join(','));
   dlFile('dialin-pro-runs.csv',[H.join(','),...rows].join('\n'),'text/csv');
   toast(`Exported ${runs.length} runs.`);
