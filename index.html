@@ -441,7 +441,7 @@ tr:hover td{background:var(--sf2)}
       <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
       <div class="f"><label>Wind Direction</label>
-        <select id="l-wd">
+        <select id="l-wd" onchange="if(this.value==='calm'){document.getElementById('l-ws').value=0;}">
           <option value="">— Unknown —</option>
           <option value="calm">Calm / No wind</option>
           <option value="headwind">↓ Headwind — straight into front</option>
@@ -988,6 +988,34 @@ function lRuns(){try{const s=localStorage.getItem(RK_BASE+'_'+activeCarId);retur
 function lTracks(){try{const s=localStorage.getItem(TK);return s?JSON.parse(s):defTracks();}catch{return defTracks();}}
 function sRuns(r){try{localStorage.setItem(RK_BASE+'_'+activeCarId,JSON.stringify(r));}catch{}}
 function sTracks(t){try{localStorage.setItem(TK,JSON.stringify(t));}catch{}}
+// ── One-time migration: calm runs with blank/null windSpeed → 0 ──
+// v2: re-running because the CSV import path had the same falsy-zero bug
+// (parseFloat(x)||null dropped legitimate 0 values), which kept re-breaking
+// data the v1 migration had already fixed on every PC→mobile CSV re-import.
+(function migrateCalmWind(){
+  const FLAG='dip_calmwind_migrated_v2';
+  try{
+    if(localStorage.getItem(FLAG))return;
+    const carIds=(lCars()||[]).map(c=>c.id);
+    if(!carIds.includes('mycar'))carIds.push('mycar'); // default car store
+    let fixed=0;
+    carIds.forEach(cid=>{
+      const key=RK_BASE+'_'+cid;
+      const raw=localStorage.getItem(key);
+      if(!raw)return;
+      let arr;try{arr=JSON.parse(raw);}catch{return;}
+      if(!Array.isArray(arr))return;
+      let touched=false;
+      arr.forEach(r=>{
+        if(r&&r.windDir==='calm'&&(r.windSpeed==null||r.windSpeed==='')){r.windSpeed=0;fixed++;touched=true;}
+      });
+      if(touched)localStorage.setItem(key,JSON.stringify(arr));
+    });
+    localStorage.setItem(FLAG,'1');
+    if(fixed>0)console.log('[dip] calm-wind migration: set '+fixed+' run(s) to 0 mph');
+  }catch(e){/* non-fatal */}
+})();
+
 let runs=lRuns(),tracks=lTracks(),ovSet=new Set();
 
 // ════════════════════════════════════════════════════════════════
@@ -1796,7 +1824,7 @@ function editRun(id){
   document.getElementById('l-da').value=r.da||'';
   document.getElementById('l-temp').value=r.temp||'';
   document.getElementById('l-hum').value=r.humidity||'';
-  document.getElementById('l-ws').value=r.windSpeed||'';
+  document.getElementById('l-ws').value=(r.windSpeed!=null)?r.windSpeed:'';
   document.getElementById('l-baro').value=r.pressure||'';
   document.getElementById('l-wd').value=r.windDir||'calm';
   document.getElementById('l-sun').value=r.sun||'full';
@@ -2194,7 +2222,7 @@ function renderTable(){
       <td style="position:sticky;left:28px;z-index:1;background:var(--bg);white-space:nowrap">${_dateFmt}<br><span style="color:var(--mu);font-size:.6rem">${r.time||''}</span></td>
       <td>${r.track||'—'}</td><td>${db}</td>
       <td>${n(r.da)}</td><td>${n(r.temp)}</td><td>${n(r.humidity)}</td>
-      <td>${r.windSpeed?r.windSpeed+' '+r.windDir:'—'}</td>
+      <td>${(r.windSpeed!=null)?r.windSpeed+' '+r.windDir:'—'}</td>
       <td>${n(r.dialin)}</td><td>${n(r.rt)}</td><td>${n(r.ft60)}</td><td>${n(r.ft330)}</td>
       <td style="color:var(--ac)">${n(r.ft660)}</td><td>${n(r.mph660)}</td>
       <td>${n(r.ft1000)}</td>
@@ -2489,7 +2517,7 @@ function parseCSV(file,mode){
         temp:parseFloat(row.temp)||null,
         humidity:parseFloat(row.humidity)||null,
         pressure:parseFloat(row.pressure)||null,
-        windSpeed:parseFloat(row.windSpeed)||null,
+        windSpeed:(row.windSpeed===''||row.windSpeed==null)?null:(isNaN(parseFloat(row.windSpeed))?null:parseFloat(row.windSpeed)),
         windDir:row.windDir||'calm',
         sun:row.sun||'full',
         dialin:parseFloat(row.dialin)||null,
