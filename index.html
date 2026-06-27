@@ -436,9 +436,10 @@ tr:hover td{background:var(--sf2)}
     </div>
     <div class="g3">
       <div class="f"><label>DA (ft)</label><input type="number" id="l-da"></div>
-      <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp"></div>
-      <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum"></div>
-      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro"></div>
+      <div class="f"><label>Temp (°F)</label><input type="number" id="l-temp" oninput="calcLogVP()"></div>
+      <div class="f"><label>Humidity (%)</label><input type="number" id="l-hum" oninput="calcLogVP()"></div>
+      <div class="f"><label>Barometer (inHg)</label><input type="number" step=".01" id="l-baro" oninput="calcLogVP()"></div>
+      <div class="f"><label>Vapor Pressure <span style="font-family:var(--mo);font-size:.58rem;color:var(--mu);text-transform:none;letter-spacing:0;font-weight:400">(inHg)</span></label><input type="number" step=".001" id="l-vp" placeholder="auto"></div>
       <div class="f"><label>Wind Speed (mph)</label><input type="number" id="l-ws"></div>
       <div class="f"><label>Wind Direction</label>
         <select id="l-wd" onchange="if(this.value==='calm'){document.getElementById('l-ws').value=0;}">
@@ -1152,6 +1153,16 @@ function carSpecificPrediction(da, ws, wdNum, bestRefET, bestRefDA, bestRefWS, b
   const windEffect=-dWS*WIND_SENS;
   return bestRefET+daEffect+windEffect;
 }
+function calcLogVP(){
+  const tf=parseFloat(document.getElementById('l-temp')?.value);
+  const rh=parseFloat(document.getElementById('l-hum')?.value);
+  if(isNaN(tf)||isNaN(rh))return;
+  const tc=(tf-32)*5/9;
+  const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
+  const vp=(rh/100)*es*0.02953;
+  const vpEl=document.getElementById('l-vp');
+  if(vpEl&&vpEl.value==='')vpEl.value=vp.toFixed(3);
+}
 function calcGrains(tf,rh,baroInHg){
   const tc=(tf-32)*5/9;
   const es=6.1078*Math.pow(10,(7.5*tc)/(237.3+tc));
@@ -1786,7 +1797,7 @@ function saveRun(){
     distance:dist,
     da,
     temp:pf('l-temp'),humidity:pf('l-hum'),windSpeed:pf('l-ws'),
-    pressure:pf('l-baro'),
+    pressure:pf('l-baro'),vp:pf('l-vp'),
     windDir:document.getElementById('l-wd').value,
     sun:document.getElementById('l-sun').value,
     dialin:pf('l-di'),rt:pf('l-rt'),
@@ -1826,6 +1837,7 @@ function editRun(id){
   document.getElementById('l-hum').value=r.humidity||'';
   document.getElementById('l-ws').value=(r.windSpeed!=null)?r.windSpeed:'';
   document.getElementById('l-baro').value=r.pressure||'';
+  document.getElementById('l-vp').value=r.vp!=null?r.vp:'';
   document.getElementById('l-wd').value=r.windDir||'calm';
   document.getElementById('l-sun').value=r.sun||'full';
   document.getElementById('l-di').value=r.dialin||'';
@@ -1876,7 +1888,7 @@ function clearLogForm(){
   document.getElementById('log-title').textContent='// Log a Run';
   document.getElementById('l-edit-id').value='';
   document.getElementById('log-form-wrap').style.display='none';
-  ['l-da','l-temp','l-hum','l-ws','l-baro','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et',
+  ['l-da','l-temp','l-hum','l-ws','l-baro','l-vp','l-di','l-rt','l-60','l-330','l-660','l-660m','l-1k','l-1320','l-1320m','l-notes','l-time','l-calc-et',
    'poe-60','poe-330','poe-660','poe-1k','poe-60e','poe-330e'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('l-res').value='';
   document.getElementById('l-lane').value='';
@@ -1949,6 +1961,8 @@ async function logFetchWeather(){
     document.getElementById('l-ws').value=c.wind_speed_10m.toFixed(1);
     document.getElementById('l-wd').value=wl;
     document.getElementById('l-baro').value=hpaToInHg(c.surface_pressure);
+    document.getElementById('l-vp').value=''; // clear so calcLogVP auto-fills
+    calcLogVP();
     wxs.className='wxs ok';
   }catch(e){
     wxs.textContent='Could not fetch weather — enter conditions manually';
@@ -2090,10 +2104,12 @@ function getPredHaleForRun(r,usePool){
   if(!usePool||usePool.length<5)return null;
   const poolAvgTemp=usePool.reduce((s,x)=>s+(x.temp||0),0)/usePool.length;
   const poolAvgHum=usePool.reduce((s,x)=>s+(x.humidity||0),0)/usePool.length;
-  // Best ref = most recent run with a valid ET
-  const sorted=[...usePool].sort((a,b)=>(b.date+b.time||'').localeCompare(a.date+a.time||''));
-  const bestRef=sorted.find(x=>getET(x)!=null);
-  if(!bestRef)return null;
+  // Best ref = run with DA closest to this run's DA (matches live predict() IDW-weighted anchor)
+  const withET=usePool.filter(x=>getET(x)!=null&&x.da!=null);
+  if(!withET.length)return null;
+  const bestRef=withET.reduce((best,x)=>
+    Math.abs((x.da||0)-(r.da||0))<Math.abs((best.da||0)-(r.da||0))?x:best
+  );
   const refET=getET(bestRef);
   const rTemp=r.temp||poolAvgTemp,rHum=r.humidity||poolAvgHum,rBaro=r.pressure||30.0;
   const bTemp=bestRef.temp||poolAvgTemp,bHum=bestRef.humidity||poolAvgHum,bBaro=bestRef.pressure||30.0;
@@ -2444,7 +2460,7 @@ function refreshDrops(){
 // ════════════════════════════════════════════════════════════════
 function expCSV(){
   if(!runs.length){toast('No runs to export.',true);return;}
-  const H=['date','time','track','distance','da','temp','humidity','pressure','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','calcET','result','quality','lane','notes','predIDW','predHale','predCarSpec','exclude'];
+  const H=['date','time','track','distance','da','temp','humidity','pressure','vp','windSpeed','windDir','sun','dialin','rt','ft60','ft330','ft660','mph660','ft1000','ft1320','mph1320','calcET','result','quality','lane','notes','predIDW','predHale','predCarSpec','exclude'];
   const rows=runs.map(r=>H.map(h=>r[h]??'').join(','));
   dlFile('dialin-pro-runs.csv',[H.join(','),...rows].join('\n'),'text/csv');
   toast(`Exported ${runs.length} runs.`);
